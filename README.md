@@ -1,16 +1,19 @@
-# trailblaze
+# trailblaze-flutter
 
-A new Flutter project.
+This is the flutter port of trailblaze-android, the original route-planning app that finds the scenic way to get to places. 
 
-## Getting Started
 
-This project is a starting point for a Flutter application.
+## Trailblaze History
 
-A few resources to get you started if this is your first Flutter project:
+Trailblaze was a 4-month long capstone project completed by Andrey Takhtamirov, Alex Braverman, and Filipe Brito (Conestoga College Software Engineering Technology 2023), including a client application (trailblaze-android) and a server application (trailblaze-server).
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Both projects are now open-sourced and available here:
+- https://dev.azure.com/trailblaze/trailblaze/_git/trailblaze-android
+- https://dev.azure.com/trailblaze/trailblaze/_git/trailblaze-server
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+There you may also find the DevOps methods used throughout the process.
+
+
+## What Now?
+
+trailblaze-flutter aims to carry the torch from the original project by expanding to support both iOS and Android, as well as take advantage of future scheduled server improvements. This will involve expanding on the functionalities of the trailblaze-server project to give smarter results that take more map data into account, aiming to deliver a truly revolutionary scenic routing algorithm.
