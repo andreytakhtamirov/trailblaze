@@ -1,3 +1,4 @@
+
 # trailblaze-flutter
 
 This is the flutter port of trailblaze-android, the original route-planning app that finds the scenic way to get to places. 
@@ -17,3 +18,38 @@ There you may also find the DevOps methods used throughout the process.
 ## What Now?
 
 trailblaze-flutter aims to carry the torch from the original project by expanding to support both iOS and Android, as well as take advantage of future scheduled server improvements. This will involve expanding on the functionalities of the trailblaze-server project to give smarter results that take more map data into account, aiming to deliver a truly revolutionary scenic routing algorithm.
+
+## Running Locally
+
+**Setting Mapbox access token**
+
+To create an access token, you must first create a Mapbox account. The token should have the `Downloads:Read` scope.
+
+-   to download the Android SDK add the token configuration to  `~/.gradle/gradle.properties`  :
+```
+  SDK_REGISTRY_TOKEN=YOUR_SECRET_MAPBOX_ACCESS_TOKEN
+```
+
+-   to download the iOS SDK add the token configuration to  `~/.netrc`  :
+
+```
+  machine api.mapbox.com
+  login mapbox
+  password YOUR_SECRET_MAPBOX_ACCESS_TOKEN
+```
+
+**Setting other secret tokens**
+
+Next, create a `.env` file in the root directory of the project. This file will contain other tokens required for the app. The file should look like this:
+
+    MAPBOX_ACCESS_TOKEN=MAPBOX_PUBLIC_TOKEN_HERE
+    TRAILBLAZE_APP_TOKEN=APP_SECRET_HERE
+    AUTH0_SCHEME=demo
+    AUTH0_DOMAIN=trailblaze-dev.us.auth0.com
+    AUTH0_CLIENT_ID=SECRET_CLIENT_ID_HERE
+    
+Note:
+- Use your Mapbox public token in this file.
+- For the app token, contact trailblaze.team@outlook.com
+- The Mapbox access token and the app token are the only required fields to use the basic functionality of the app (Creating routes locally and exploring existing community routes).
+- Other fields are only required for accessing your Trailblaze account (saving routes, posting on the community page) and will not be shared to preserve app security.
