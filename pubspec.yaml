@@ -35,7 +35,6 @@ dependencies:
   flutter_dotenv: ^5.0.0
   geolocator: ^9.0.2
   polyline_do: ^0.1.0
-  indexed: ^0.0.8
   turf: ^0.0.7
   flutter:
     sdk: flutter
