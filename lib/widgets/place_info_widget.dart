@@ -57,7 +57,14 @@ class _PlaceInfoState extends State<PlaceInfo> {
                       ),
                     )
                   else
-                    const CircularProgressIndicator(),
+                    Row(
+                      children: const [
+                        Padding(
+                          padding: EdgeInsets.all(6),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: 16),
                   MaterialButton(
                     onPressed: () {

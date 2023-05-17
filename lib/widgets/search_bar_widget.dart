@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart' as geo;
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/widgets/place_picker_widget.dart';
-import 'package:turf/turf.dart' as turf;
 
-import '../constants/map_constants.dart';
 
 class SearchBar extends StatefulWidget {
   const SearchBar({Key? key, this.selectedPlace, required this.onSelected})

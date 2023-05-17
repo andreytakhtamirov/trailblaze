@@ -33,6 +33,15 @@ class _MapPageState extends State<MapPage>
   String _selectedMode = defaultTransportationMode.value;
   bool _isRouteLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    geo.Geolocator.getServiceStatusStream().listen((geo.ServiceStatus status) {
+      // Listen for location permission granting.
+      _getCurrentPosition();
+    });
+  }
+
   final geocoding = GeoCoding(
     apiKey: mapboxAccessToken,
     types: [PlaceType.address],
@@ -308,6 +317,7 @@ class _MapPageState extends State<MapPage>
     setState(() {
       _startingLocation = startingLocation;
     });
+    _deleteAnnotations();
 
     _onSelectPlace(endingLocation);
 
@@ -340,23 +350,6 @@ class _MapPageState extends State<MapPage>
                     pitch: defaultCameraState.pitch),
                 onMapCreated: _onMapCreated,
               ),
-              floatingActionButton: Stack(
-                children: <Widget>[
-                  Positioned(
-                    bottom: 16.0,
-                    right: 0.0,
-                    child: FloatingActionButton(
-                      heroTag: 'showMyLocationFab',
-                      backgroundColor: Colors.orange,
-                      onPressed: _onGpsButtonPressed,
-                      child: const Icon(
-                        Icons.gps_fixed,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
             SafeArea(
               child: Stack(
@@ -388,15 +381,36 @@ class _MapPageState extends State<MapPage>
                 ],
               ),
             ),
-            Visibility(
-              visible: !_isDirectionsView && _selectedPlace != null,
-              child: Positioned(
-                bottom: 32.0,
-                left: 0,
-                right: 0,
-                child: PlaceInfo(
-                    selectedPlace: _selectedPlace,
-                    onDirectionsClicked: _onDirectionsClicked),
+            Positioned(
+              bottom: 32.0,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: FloatingActionButton(
+                          heroTag: 'showMyLocationFab',
+                          backgroundColor: Colors.orange,
+                          onPressed: _onGpsButtonPressed,
+                          child: const Icon(
+                            Icons.gps_fixed,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Visibility(
+                    visible: !_isDirectionsView && _selectedPlace != null,
+                    child: PlaceInfo(
+                        selectedPlace: _selectedPlace,
+                        onDirectionsClicked: _onDirectionsClicked),
+                  ),
+                ],
               ),
             ),
             if (_isRouteLoading)

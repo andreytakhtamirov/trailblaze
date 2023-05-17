@@ -20,15 +20,19 @@ class _PlacePickerState extends State<PlacePicker> {
   bool _isExpanded = false;
   final FocusNode _searchFocusNode = FocusNode();
   List<MapBoxPlace> _results = [];
-  late geo.Position? _futureLocation;
+  geo.Position? _futureLocation;
 
   @override
   void initState() {
     super.initState();
-    loadLocation();
+    _loadLocation();
+    geo.Geolocator.getServiceStatusStream().listen((geo.ServiceStatus status) {
+      // Listen for location permission granting.
+      _loadLocation();
+    });
   }
 
-  void loadLocation() async {
+  void _loadLocation() async {
     _futureLocation = await geo.Geolocator.getLastKnownPosition();
   }
 
