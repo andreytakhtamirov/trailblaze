@@ -48,19 +48,6 @@ class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
   final PageController _pageController = PageController();
 
-  Widget _getPageTitle(int index) {
-    switch (index) {
-      case 0:
-        return const Text("Discover");
-      case 1:
-        return const Text("Map");
-      case 2:
-        return const Text("Profile");
-      default:
-        throw Exception("Invalid page index");
-    }
-  }
-
   final List<Widget> _pages = [
     const DiscoverPage(),
     const MapPage(),
@@ -78,7 +65,6 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: _getPageTitle(_selectedIndex)),
       body: PageView(
         controller: _pageController,
         physics: const NeverScrollableScrollPhysics(),

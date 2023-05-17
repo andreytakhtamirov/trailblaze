@@ -17,10 +17,8 @@ Future<Map<String, dynamic>?> createRoute(
       headers: requestHeaderBasic, body: body);
 
   if (response.statusCode == 200) {
-    // Handle the success response
     return jsonDecode(response.body);
   } else {
-    // Handle the error response
     log("fail status: ${response.statusCode}");
   }
 
