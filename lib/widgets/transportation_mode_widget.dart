@@ -42,7 +42,7 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
           Icons.directions_walk,
           'Walking',
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 120),
         _buildTransportationModeWidget(
           TransportationMode.cycling,
           Icons.directions_bike,
@@ -71,12 +71,7 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
         ),
         child: Column(
           children: [
-            Icon(icon, size: 48),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(fontWeight: isSelected ? FontWeight.bold : null),
-            ),
+            Icon(icon, size: 28),
           ],
         ),
       ),
