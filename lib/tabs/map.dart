@@ -10,6 +10,7 @@ import 'package:trailblaze/extensions/mapbox_place_extensions.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:polyline_do/polyline_do.dart';
 import 'package:trailblaze/screens/waypoint_edit_screen.dart';
+import 'package:trailblaze/util/ui_helper.dart';
 import 'package:trailblaze/widgets/picked_locations_widget.dart';
 import 'package:trailblaze/widgets/place_info_widget.dart';
 import 'package:trailblaze/widgets/search_bar_widget.dart';
@@ -54,9 +55,25 @@ class _MapPageState extends State<MapPage>
         await mapboxMap.annotations.createPointAnnotationManager();
     _goToUserLocation(isAnimated: false);
     _showUserLocationPuck();
+    _setMapControlSettings();
+  }
+
+  void _setMapControlSettings() {
+    _mapboxMap.compass.updateSettings(defaultCompassSettings);
+    _mapboxMap.scaleBar.updateSettings(defaultScaleBarSettings);
+    _mapboxMap.attribution.updateSettings(defaultAttributionSettings);
   }
 
   Future<geo.Position?> _getCurrentPosition() async {
+    geo.LocationPermission permission;
+    permission = await geo.Geolocator.checkPermission();
+    permission = await geo.Geolocator.requestPermission();
+    if (permission == geo.LocationPermission.denied) {
+      if (context.mounted) {
+        UiHelper.showSnackBar(
+            context, 'Location permissions are needed to show routes.');
+      }
+    }
     geo.Position? position = await geo.Geolocator.getLastKnownPosition() ??
         await geo.Geolocator.getCurrentPosition();
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/extensions/mapbox_place_extensions.dart';
+import 'package:trailblaze/util/ui_helper.dart';
 import 'package:trailblaze/widgets/place_picker_widget.dart';
 
 class WaypointEditScreen extends StatefulWidget {
@@ -36,17 +37,14 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
 
   void _onSave() {
     List<dynamic> waypointsJson = [];
-    List validLocations = _locations.where((place) => place?.center != null).toList();
+    List validLocations =
+        _locations.where((place) => place?.center != null).toList();
 
     if (validLocations.length < 2) {
-      const snackBar = SnackBar(
-        content: Text('Please select at least two valid locations.'),
-        duration: Duration(seconds: 2),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      UiHelper.showSnackBar(
+          context, 'Please select at least two valid locations.');
       return;
     }
-
 
     for (MapBoxPlace? place in _locations) {
       waypointsJson.add(place?.toRawJsonWithNullCheck());

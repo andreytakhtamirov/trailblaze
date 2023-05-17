@@ -46,25 +46,27 @@ class _PlaceInfoState extends State<PlaceInfo> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (widget.selectedPlace?.placeName != null)
-                    Text(
-                      widget.selectedPlace!.placeName!,
-                      maxLines: _isExpanded ? 5 : 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  else
-                    Row(
-                      children: const [
-                        Padding(
+                  Row(
+                    children: [
+                      if (widget.selectedPlace?.placeName != null)
+                        Expanded(
+                          child: Text(
+                            widget.selectedPlace!.placeName!,
+                            maxLines: _isExpanded ? 5 : 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      else
+                        const Padding(
                           padding: EdgeInsets.all(6),
                           child: CircularProgressIndicator(),
                         ),
-                      ],
-                    ),
+                    ],
+                  ),
                   const SizedBox(height: 16),
                   MaterialButton(
                     onPressed: () {
