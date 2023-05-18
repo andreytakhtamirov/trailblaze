@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../constants/create_route_constants.dart';
+import '../data/transportation_mode.dart';
 
 class TransportationModeWidget extends StatefulWidget {
   const TransportationModeWidget(

@@ -15,6 +15,7 @@ import 'package:trailblaze/widgets/picked_locations_widget.dart';
 import 'package:trailblaze/widgets/place_info_widget.dart';
 import 'package:trailblaze/widgets/search_bar_widget.dart';
 
+import '../data/transportation_mode.dart';
 import '../requests/create_route.dart';
 
 class MapPage extends StatefulWidget {
