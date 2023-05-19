@@ -49,12 +49,14 @@ class _DiscoverPageState extends State<DiscoverPage>
           final modeStr = post[jsonKeyPostRouteId][jsonKeyPostRouteOptions]
               [jsonKeyPostProfile];
           final imageUrl = post[jsonKeyPostRouteId][jsonKeyPostImageUrl];
+          final route = post[jsonKeyPostRouteId][jsonKeyPostRoute];
 
           if (title != null &&
               description != null &&
               distance != null &&
               modeStr != null &&
-              imageUrl != null) {
+              imageUrl != null &&
+              route != null) {
             return Post(
               title: title,
               description: description,
@@ -62,6 +64,7 @@ class _DiscoverPageState extends State<DiscoverPage>
               transportationMode: getTransportationModeFromString(modeStr),
               likes: likes,
               imageUrl: imageUrl,
+              route: route,
             );
           }
         } catch (e) {

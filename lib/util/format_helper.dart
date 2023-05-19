@@ -22,7 +22,7 @@ class FormatHelper {
     return formattedDuration;
   }
 
-  static String formatDistance(double? distance) {
+  static String formatDistance(num? distance) {
     return "${(distance != null ? distance / 1000 : 0).toStringAsFixed(2)} km";
   }
 
