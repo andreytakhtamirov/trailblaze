@@ -4,8 +4,10 @@
 *     https://docs.mapbox.com/api/navigation/directions/#routing-profiles
 */
 enum TransportationMode {
+  none("none"),
   walking("walking"),
-  cycling("cycling");
+  cycling("cycling"),
+  gravelCycling("gravel_cycling");
 
   final String value;
 

@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'package:polyline_do/polyline_do.dart';
+import 'package:polyline_codec/polyline_codec.dart';
 
 import '../constants/map_constants.dart';
 import '../data/post.dart';
@@ -56,8 +56,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
     final geometry = route['geometry'];
 
     List<List<dynamic>> coordinates =
-        Polyline.Decode(encodedString: geometry, precision: polylinePrecision)
-            .decodedCoords
+        PolylineCodec.decode(geometry, precision: polylinePrecision)
             .map((c) => [c[1], c[0]])
             .toList();
 

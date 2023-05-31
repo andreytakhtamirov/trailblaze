@@ -1,25 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/constants/create_route_constants.dart';
-import 'package:trailblaze/widgets/transportation_mode_widget.dart';
+import 'package:trailblaze/transportation_mode_widget.dart';
 
 import '../data/transportation_mode.dart';
 
-class PickedLocationsWidget extends StatelessWidget {
+class PickedLocationsWidget extends StatefulWidget {
   final MapBoxPlace? startingLocation;
   final MapBoxPlace? endingLocation;
   final List<String> waypoints;
   final void Function() onBackClicked;
   final void Function(TransportationMode) onModeChanged;
 
-  const PickedLocationsWidget({
-    Key? key,
-    required this.startingLocation,
-    required this.endingLocation,
-    required this.waypoints,
-    required this.onBackClicked,
-    required this.onModeChanged,
-  }) : super(key: key);
+  const PickedLocationsWidget(
+      {super.key,
+      this.startingLocation,
+      this.endingLocation,
+      required this.waypoints,
+      required this.onBackClicked,
+      required this.onModeChanged});
+
+  @override
+  State<PickedLocationsWidget> createState() => _PickedLocationsWidgetState();
+}
+
+class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
+  bool _isExpanded = true;
+
+  void _onModeChanged(TransportationMode mode) {
+    setState(() {
+      _isExpanded = false;
+    });
+    widget.onModeChanged(mode);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,48 +53,101 @@ class PickedLocationsWidget extends StatelessWidget {
       child: Stack(
         children: [
           Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(48, 32, 48, 24),
-                child: ListView(
-                  shrinkWrap: true,
-                  padding: EdgeInsets.zero,
-                  physics: const NeverScrollableScrollPhysics(),
+              AnimatedCrossFade(
+                duration: const Duration(milliseconds: 300),
+                crossFadeState: _isExpanded
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                firstChild: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLocationTile('Starting Location',
-                        startingLocation!.placeName ?? "Select origin"),
-                    Visibility(
-                      visible: waypoints.isNotEmpty,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20.0, vertical: 8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              "${waypoints.length} waypoints",
-                              style: const TextStyle(
-                                fontSize: 12.0,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(48, 0, 48, 4),
+                      child: ListView(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          _buildLocationTile(
+                              subtitle: widget.startingLocation!.placeName ??
+                                  "Select origin"),
+                          Visibility(
+                            visible: widget.waypoints.isNotEmpty,
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "${widget.waypoints.length} waypoints",
+                                    style: const TextStyle(
+                                      fontSize: 12.0,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          _buildLocationTile(
+                              subtitle: widget.endingLocation?.placeName ??
+                                  widget.endingLocation?.center.toString() ??
+                                  "Select destination"),
+                        ],
                       ),
                     ),
-                    _buildLocationTile(
-                        'Ending Location',
-                        endingLocation?.placeName ??
-                            endingLocation?.center.toString() ??
-                            "Select destination"),
+                  ],
+                ),
+                secondChild: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(48, 32, 48, 4),
+                      child: ListView(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          _buildLocationTile(
+                              title: 'Starting Location',
+                              subtitle: widget.startingLocation!.placeName ??
+                                  "Select origin"),
+                          Visibility(
+                            visible: widget.waypoints.isNotEmpty,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20.0, vertical: 8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "${widget.waypoints.length} waypoints",
+                                    style: const TextStyle(
+                                      fontSize: 12.0,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          _buildLocationTile(
+                              title: 'Ending Location',
+                              subtitle: widget.endingLocation?.placeName ??
+                                  widget.endingLocation?.center.toString() ??
+                                  "Select destination"),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
                 child: TransportationModeWidget(
-                    onSelected: onModeChanged,
-                    initialMode: defaultTransportationMode),
+                    onSelected: _onModeChanged,
+                    initialMode: defaultTransportationMode,
+                    isMinifiedView: _isExpanded),
               ),
             ],
           ),
@@ -92,7 +158,7 @@ class PickedLocationsWidget extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               iconSize: 32,
               icon: const Icon(Icons.arrow_back),
-              onPressed: onBackClicked,
+              onPressed: widget.onBackClicked,
             ),
           ),
           const Positioned(
@@ -111,21 +177,25 @@ class PickedLocationsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildLocationTile(String title, String subtitle) {
+  Widget _buildLocationTile({String? title, required String subtitle}) {
     return ListTile(
-      title: Text(
-        title,
-        style: const TextStyle(fontSize: 14.0, fontWeight: FontWeight.bold),
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
-        child: Text(
-          subtitle,
-          style: const TextStyle(
-            fontSize: 16.0,
+        title: title != null
+            ? Text(
+                title,
+                style: const TextStyle(
+                    fontSize: 14.0, fontWeight: FontWeight.bold),
+              )
+            : null,
+        subtitle: Padding(
+          padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
+          child: Text(
+            subtitle,
+            maxLines: _isExpanded ? 5 : 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 16.0,
+            ),
           ),
-        ),
-      ),
-    );
+        ));
   }
 }

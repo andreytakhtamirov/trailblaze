@@ -34,7 +34,7 @@ dependencies:
   http: ^0.13.5
   flutter_dotenv: ^5.0.0
   geolocator: ^9.0.2
-  polyline_do: ^0.1.0
+  polyline_codec: ^0.1.6
   turf: ^0.0.7
   infinite_scroll_pagination: ^3.2.0
   flutter:
@@ -48,6 +48,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: "^0.13.1"
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -72,6 +73,12 @@ flutter:
     - assets/location-puck.png
     - assets/location-pin.png
     - .env
+
+
+  fonts:
+      - family: TrailblazeIcons
+        fonts:
+        - asset: fonts/TrailblazeIcons.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
@@ -98,3 +105,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#ffffff"
+  image_path: "assets/app_icon.png"
+  min_sdk_android: 21

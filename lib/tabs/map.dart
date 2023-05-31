@@ -6,13 +6,14 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/constants/create_route_constants.dart';
 import 'package:trailblaze/constants/map_constants.dart';
+import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/extensions/mapbox_place_extensions.dart';
 import 'package:geolocator/geolocator.dart' as geo;
-import 'package:polyline_do/polyline_do.dart';
 import 'package:trailblaze/screens/waypoint_edit_screen.dart';
 import 'package:trailblaze/util/ui_helper.dart';
 import 'package:trailblaze/widgets/picked_locations_widget.dart';
 import 'package:trailblaze/widgets/place_info_widget.dart';
+import 'package:trailblaze/widgets/route_info_widget.dart';
 import 'package:trailblaze/widgets/search_bar_widget.dart';
 
 import '../data/transportation_mode.dart';
@@ -34,6 +35,8 @@ class _MapPageState extends State<MapPage>
   MapBoxPlace _startingLocation = MapBoxPlace(placeName: "My Location");
   String _selectedMode = defaultTransportationMode.value;
   bool _isRouteLoading = false;
+  List<TrailblazeRoute> routesList = [];
+  TrailblazeRoute? _selectedRoute;
 
   @override
   void initState() {
@@ -112,70 +115,114 @@ class _MapPageState extends State<MapPage>
   }
 
   void displayRoute(String profile, List<dynamic> waypoints) async {
-    _removeRouteLayer();
+    _removeRouteLayers();
 
     setState(() {
       _isRouteLoading = true;
     });
 
-    final route = await createRoute(profile, waypoints);
+    final Map<String, dynamic>? routeResponse;
+    if (profile != TransportationMode.gravelCycling.value) {
+      routeResponse = await createRoute(profile, waypoints);
+    } else {
+      routeResponse = await createPathsenseRoute(waypoints);
+    }
 
     setState(() {
       _isRouteLoading = false;
     });
 
-    if (route != null && route['routes'] != null) {
-      final geometry = route['routes'][0]['geometry'];
+    routesList.clear();
 
-      List<List<dynamic>> coordinates =
-          Polyline.Decode(encodedString: geometry, precision: polylinePrecision)
-              .decodedCoords
-              .map((c) => [c[1], c[0]])
-              .toList();
+    if (routeResponse != null && routeResponse['routes'] != null) {
+      for (var i = routeResponse['routes'].length - 1; i >= 0; i--) {
+        final routeJson = routeResponse['routes'][i];
 
-      final geometryJson = {"type": "LineString", "coordinates": coordinates};
+        bool isFirstRoute = i == 0;
 
-      final fills = {
-        "type": "FeatureCollection",
-        "features": [
-          {
-            "type": "Feature",
-            "id": 0,
-            "properties": <String, dynamic>{},
-            "geometry": geometryJson,
-          },
-        ]
-      };
+        TrailblazeRoute route = TrailblazeRoute(routeSourceId + i.toString(),
+            routeLayerId + i.toString(), routeJson,
+            isActive: isFirstRoute);
 
-      await _mapboxMap.style.addSource(
-          mbm.GeoJsonSource(id: routeSourceId, data: json.encode(fills)));
+        await _mapboxMap.style.addSource(route.geoJsonSource);
 
-      await _mapboxMap.style.addLayer(mbm.LineLayer(
-          id: routeLayerId,
-          sourceId: routeSourceId,
-          lineJoin: mbm.LineJoin.ROUND,
-          lineCap: mbm.LineCap.ROUND,
-          lineColor: Colors.red.value,
-          lineWidth: routeLineWidth));
+        await _mapboxMap.style.addLayer(route.lineLayer);
 
-      mbm.CameraOptions cameraOptions = await _mapboxMap.cameraForGeometry(
-          geometryJson,
-          routeCameraState.padding,
-          routeCameraState.bearing,
-          routeCameraState.pitch);
-      _mapboxMap.flyTo(
-          cameraOptions, mbm.MapAnimationOptions(duration: 100, startDelay: 0));
+        routesList.add(route);
+      }
+    }
+
+    setState(() {
+      // The first route is selected initially.
+      _selectedRoute = routesList.last;
+    });
+
+    if (_selectedRoute != null) {
+      _flyToRoute(_selectedRoute!);
     }
   }
 
-  void _removeRouteLayer() async {
-    if (await _mapboxMap.style.styleLayerExists(routeLayerId)) {
-      await _mapboxMap.style.removeStyleLayer(routeLayerId);
+  void _flyToRoute(TrailblazeRoute route) async {
+    mbm.CameraOptions cameraOptions = await _mapboxMap.cameraForGeometry(
+        route.geometryJson,
+        routeCameraState.padding,
+        routeCameraState.bearing,
+        routeCameraState.pitch);
+    _mapboxMap.flyTo(
+        cameraOptions, mbm.MapAnimationOptions(duration: 100, startDelay: 0));
+  }
+
+  void _setSelectedRoute(TrailblazeRoute route) async {
+    setState(() {
+      _selectedRoute = route;
+    });
+
+    final allRoutes = [...routesList];
+    allRoutes.remove(_selectedRoute);
+
+    if (_selectedRoute != null) {
+      // Update all other routes (unselected grey)
+      for (var route in allRoutes) {
+        _updateRouteSelected(route, false);
+      }
+
+      // Update selected route (red)
+      _updateRouteSelected(_selectedRoute!, true);
+      _flyToRoute(_selectedRoute!);
+    }
+  }
+
+  void _updateRouteSelected(TrailblazeRoute route, bool isSelected) async {
+    // Make sure route is removed before we add it again.
+    await _removeRouteLayer(route);
+    route.setActive(isSelected);
+    await _mapboxMap.style.addSource(route.geoJsonSource);
+    await _mapboxMap.style.addLayer(route.lineLayer);
+  }
+
+  void _removeRouteLayers() async {
+    for (var route in routesList) {
+      _removeRouteLayer(route);
+    }
+  }
+
+  Future<void> _removeRouteLayer(TrailblazeRoute route) async {
+    if (await _mapboxMap.style.styleLayerExists(route.layerId)) {
+      await _mapboxMap.style.removeStyleLayer(route.layerId);
     }
 
-    if (await _mapboxMap.style.styleSourceExists(routeSourceId)) {
-      await _mapboxMap.style.removeStyleSource(routeSourceId);
+    if (await _mapboxMap.style.styleSourceExists(route.sourceId)) {
+      await _mapboxMap.style.removeStyleSource(route.sourceId);
     }
+  }
+
+  TrailblazeRoute? _getRouteBySourceId(String sourceId) {
+    for (var route in routesList) {
+      if (route.sourceId == sourceId) {
+        return route;
+      }
+    }
+    return null;
   }
 
   void _goToUserLocation({bool isAnimated = true}) async {
@@ -243,12 +290,15 @@ class _MapPageState extends State<MapPage>
 
   void _onDirectionsClicked(MapBoxPlace place) {
     setState(() {
-      _isDirectionsView = !_isDirectionsView;
+      _isDirectionsView = true;
     });
 
-    if (_isDirectionsView) {
-      _getDirectionsFromSettings();
+    if (_selectedMode == TransportationMode.none.value) {
+      // Prompt user to select mode
+      return;
     }
+
+    _getDirectionsFromSettings();
   }
 
   void _getDirectionsFromSettings() {
@@ -268,6 +318,41 @@ class _MapPageState extends State<MapPage>
 
   Future<void> _onMapTapListener(mbm.ScreenCoordinate coordinate) async {
     if (_isDirectionsView) {
+      mbm.ScreenCoordinate pixelCoordinates =
+          await _mapboxMap.pixelForCoordinate({
+        "coordinates": [coordinate.y, coordinate.x]
+      });
+
+      final mbm.RenderedQueryGeometry queryGeometry = mbm.RenderedQueryGeometry(
+          value: json.encode(pixelCoordinates.encode()),
+          type: mbm.Type.SCREEN_COORDINATE);
+
+      List<String> routeLayers = [];
+      for (var route in routesList) {
+        routeLayers.add(route.layerId);
+      }
+
+      final mbm.RenderedQueryOptions queryOptions = mbm.RenderedQueryOptions(
+        layerIds: routeLayers,
+      );
+
+      final List<mbm.QueriedFeature?> queriedFeatures =
+          await _mapboxMap.queryRenderedFeatures(queryGeometry, queryOptions);
+
+      if (queriedFeatures.isNotEmpty) {
+        // A feature has been clicked.
+        final selectedRoute =
+            _getRouteBySourceId(queriedFeatures.first!.source);
+        if (selectedRoute != null) {
+          _setSelectedRoute(selectedRoute);
+        }
+
+        // We've handled the click event for a route
+        //  so we can ignore all other things.
+        return;
+      }
+
+      // Block other map clicks when showing route.
       return;
     }
 
@@ -300,7 +385,7 @@ class _MapPageState extends State<MapPage>
   void _onDirectionsBackClicked() {
     setState(() {
       _isDirectionsView = false;
-      _removeRouteLayer();
+      _removeRouteLayers();
     });
   }
 
@@ -381,7 +466,7 @@ class _MapPageState extends State<MapPage>
                       crossFadeState: _isDirectionsView
                           ? CrossFadeState.showSecond
                           : CrossFadeState.showFirst,
-                      firstChild: SearchBar(
+                      firstChild: PlaceSearchBar(
                           onSelected: _onSelectPlace,
                           selectedPlace: _selectedPlace),
                       secondChild: InkWell(
@@ -427,6 +512,12 @@ class _MapPageState extends State<MapPage>
                     child: PlaceInfo(
                         selectedPlace: _selectedPlace,
                         onDirectionsClicked: _onDirectionsClicked),
+                  ),
+                  Visibility(
+                    visible: _isDirectionsView && _selectedRoute != null,
+                    child: RouteInfo(
+                      route: _selectedRoute,
+                    ),
                   ),
                 ],
               ),

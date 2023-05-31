@@ -1,5 +1,5 @@
 class FormatHelper {
-  static String formatDuration(double? durationSeconds) {
+  static String formatDuration(num? durationSeconds) {
     if (durationSeconds == null) {
       return "NaN";
     }

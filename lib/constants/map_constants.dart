@@ -9,7 +9,9 @@ final String mapboxAccessToken = dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
 const int polylinePrecision = 6;
 const String routeSourceId = "route-source-id";
 const String routeLayerId = "route-layer-id";
-const double routeLineWidth = 4.0;
+const double routeLineWidth = 6.0;
+const double routeActiveLineOpacity = 1.0;
+const double routeInactiveLineOpacity = 0.8;
 final double devicePixelRatio = WidgetsBinding.instance.window.devicePixelRatio;
 
 final CameraState defaultCameraState = CameraState(
@@ -23,9 +25,9 @@ final CameraState defaultCameraState = CameraState(
 final CameraState routeCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
     padding: MbxEdgeInsets(
-        top: devicePixelRatio * 400,
+        top: devicePixelRatio * 300,
         left: devicePixelRatio * 40,
-        bottom: devicePixelRatio * 50,
+        bottom: devicePixelRatio * 200,
         right: devicePixelRatio * 40),
     zoom: 12,
     bearing: 0,

@@ -3,17 +3,17 @@ import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/widgets/place_picker_widget.dart';
 
 
-class SearchBar extends StatefulWidget {
-  const SearchBar({Key? key, this.selectedPlace, required this.onSelected})
+class PlaceSearchBar extends StatefulWidget {
+  const PlaceSearchBar({Key? key, this.selectedPlace, required this.onSelected})
       : super(key: key);
   final MapBoxPlace? selectedPlace;
   final void Function(MapBoxPlace?) onSelected;
 
   @override
-  State<SearchBar> createState() => _SearchBarState();
+  State<PlaceSearchBar> createState() => _PlaceSearchBarState();
 }
 
-class _SearchBarState extends State<SearchBar> {
+class _PlaceSearchBarState extends State<PlaceSearchBar> {
   @override
   void initState() {
     super.initState();
