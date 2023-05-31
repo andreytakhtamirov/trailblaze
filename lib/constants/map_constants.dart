@@ -31,6 +31,17 @@ final CameraState routeCameraState = CameraState(
     bearing: 0,
     pitch: 0);
 
+final CameraState postDetailsCameraState = CameraState(
+    center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
+    padding: MbxEdgeInsets(
+        top: devicePixelRatio * 0,
+        left: devicePixelRatio * 40,
+        bottom: devicePixelRatio * 50,
+        right: devicePixelRatio * 40),
+    zoom: 12,
+    bearing: 0,
+    pitch: 0);
+
 final androidTopOffset = Platform.isAndroid ? 80 : 0;
 final mapUiTopOffset = devicePixelRatio * 60 + mapUiPadding + androidTopOffset;
 final mapUiPadding = devicePixelRatio * 6;

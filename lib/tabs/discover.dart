@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:trailblaze/data/transportation_mode.dart';
+import 'package:trailblaze/requests/fetch_posts.dart';
+
+import '../constants/discover_constants.dart';
+import '../data/post.dart';
+import '../widgets/post_widget.dart';
 
 class DiscoverPage extends StatefulWidget {
   const DiscoverPage({super.key});
@@ -7,17 +14,116 @@ class DiscoverPage extends StatefulWidget {
   State<DiscoverPage> createState() => _DiscoverPageState();
 }
 
-class _DiscoverPageState extends State<DiscoverPage> {
+class _DiscoverPageState extends State<DiscoverPage>
+    with AutomaticKeepAliveClientMixin<DiscoverPage> {
+  final ScrollController _scrollController = ScrollController();
+  final PagingController<int, Post> _pagingController =
+      PagingController(firstPageKey: 1);
+
+  @override
+  void initState() {
+    super.initState();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPosts(pageKey);
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _pagingController.dispose();
+    _scrollController.dispose();
+  }
+
+  Future<void> _fetchPosts(int pageKey) async {
+    final fetchedPosts = await getPosts(pageKey);
+
+    if (fetchedPosts != null) {
+      final newPosts = fetchedPosts.map((post) {
+        try {
+          final title = post[jsonKeyPostTitle];
+          final description = post[jsonKeyPostDescription];
+          final likes = post[jsonKeyPostLikes];
+          final distance =
+              post[jsonKeyPostRouteId][jsonKeyPostRoute][jsonKeyPostDistance];
+          final modeStr = post[jsonKeyPostRouteId][jsonKeyPostRouteOptions]
+              [jsonKeyPostProfile];
+          final imageUrl = post[jsonKeyPostRouteId][jsonKeyPostImageUrl];
+          final route = post[jsonKeyPostRouteId][jsonKeyPostRoute];
+
+          if (title != null &&
+              description != null &&
+              distance != null &&
+              modeStr != null &&
+              imageUrl != null &&
+              route != null) {
+            return Post(
+              title: title,
+              description: description,
+              distance: distance,
+              transportationMode: getTransportationModeFromString(modeStr),
+              likes: likes,
+              imageUrl: imageUrl,
+              route: route,
+            );
+          }
+        } catch (e) {
+          _pagingController.error = e;
+        }
+
+        return null;
+      }).whereType<Post>();
+
+      final isLastPage = newPosts.length < pageKey * postsPerPage;
+      if (isLastPage) {
+        _pagingController.appendLastPage(newPosts.toList());
+      } else {
+        final nextPageKey = pageKey + 1;
+        _pagingController.appendPage(newPosts.toList(), nextPageKey);
+      }
+    } else {
+      _pagingController.error = 'Failed to fetch posts';
+    }
+  }
+
+  Future<void> _refreshPosts() async {
+    _pagingController.refresh();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Icon(
-          Icons.public,
-          size: 150,
+    super.build(context);
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Posts'),
+      ),
+      body: RefreshIndicator(
+        onRefresh: _refreshPosts,
+        child: Container(
+          color: Colors.grey.withOpacity(0.4),
+          child: Scrollbar(
+            controller: _scrollController,
+            scrollbarOrientation: ScrollbarOrientation.right,
+            thumbVisibility: _pagingController.itemList?.isNotEmpty,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: PagedListView<int, Post>(
+                padding: EdgeInsets.zero,
+                scrollController: _scrollController,
+                pagingController: _pagingController,
+                builderDelegate: PagedChildBuilderDelegate<Post>(
+                  itemBuilder: (context, item, index) => PostView(
+                    post: item,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
