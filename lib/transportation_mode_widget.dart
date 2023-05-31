@@ -46,7 +46,7 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
             TransportationMode.cycling, Icons.directions_bike, false),
         SizedBox(width: widget.isMinifiedView ? 30 : 60),
         _buildTransportationModeWidget(TransportationMode.gravelCycling,
-            TrailblazeIcons.directions_bike_gravel, true),
+            TrailblazeIcons.kDirectionsBikeGravel, true),
       ],
     );
   }

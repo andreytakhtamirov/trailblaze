@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/util/format_helper.dart';
 

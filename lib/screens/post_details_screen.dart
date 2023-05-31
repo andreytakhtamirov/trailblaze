@@ -42,12 +42,12 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
   }
 
   void _removeRouteLayer() async {
-    if (await _mapboxMap!.style.styleLayerExists(routeLayerId)) {
-      await _mapboxMap!.style.removeStyleLayer(routeLayerId);
+    if (await _mapboxMap!.style.styleLayerExists(kRouteLayerId)) {
+      await _mapboxMap!.style.removeStyleLayer(kRouteLayerId);
     }
 
-    if (await _mapboxMap!.style.styleSourceExists(routeSourceId)) {
-      await _mapboxMap!.style.removeStyleSource(routeSourceId);
+    if (await _mapboxMap!.style.styleSourceExists(kRouteSourceId)) {
+      await _mapboxMap!.style.removeStyleSource(kRouteSourceId);
     }
   }
 
@@ -56,7 +56,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
     final geometry = route['geometry'];
 
     List<List<dynamic>> coordinates =
-        PolylineCodec.decode(geometry, precision: polylinePrecision)
+        PolylineCodec.decode(geometry, precision: kPolylinePrecision)
             .map((c) => [c[1], c[0]])
             .toList();
 
@@ -75,21 +75,21 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
     };
 
     await _mapboxMap!.style
-        .addSource(GeoJsonSource(id: routeSourceId, data: json.encode(fills)));
+        .addSource(GeoJsonSource(id: kRouteSourceId, data: json.encode(fills)));
 
     await _mapboxMap!.style.addLayer(LineLayer(
-        id: routeLayerId,
-        sourceId: routeSourceId,
+        id: kRouteLayerId,
+        sourceId: kRouteSourceId,
         lineJoin: LineJoin.ROUND,
         lineCap: LineCap.ROUND,
         lineColor: Colors.red.value,
-        lineWidth: routeLineWidth));
+        lineWidth: kRouteLineWidth));
 
     CameraOptions cameraOptions = await _mapboxMap!.cameraForGeometry(
         geometryJson,
-        postDetailsCameraState.padding,
-        postDetailsCameraState.bearing,
-        postDetailsCameraState.pitch);
+        kPostDetailsCameraState.padding,
+        kPostDetailsCameraState.bearing,
+        kPostDetailsCameraState.pitch);
 
     await _mapboxMap!.cancelCameraAnimation();
     await _mapboxMap!.setCamera(cameraOptions);
@@ -127,14 +127,14 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
         ignoring: true,
         child: MapWidget(
           resourceOptions: ResourceOptions(
-            accessToken: mapboxAccessToken,
+            accessToken: kMapboxAccessToken,
           ),
           cameraOptions: CameraOptions(
-              zoom: postDetailsCameraState.zoom,
-              center: postDetailsCameraState.center,
-              bearing: postDetailsCameraState.bearing,
-              padding: postDetailsCameraState.padding,
-              pitch: postDetailsCameraState.pitch),
+              zoom: kPostDetailsCameraState.zoom,
+              center: kPostDetailsCameraState.center,
+              bearing: kPostDetailsCameraState.bearing,
+              padding: kPostDetailsCameraState.padding,
+              pitch: kPostDetailsCameraState.pitch),
           onMapCreated: _onMapCreated,
         ),
       ),

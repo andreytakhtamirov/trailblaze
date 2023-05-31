@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../constants/auth_constants.dart';
 
@@ -20,11 +19,11 @@ class _ProfilePageState extends State<ProfilePage> with AutomaticKeepAliveClient
   void initState() {
     super.initState();
     _auth0 = Auth0(
-        auth0Domain, auth0ClientId);
+        kAuth0Domain, kAuth0ClientId);
   }
 
   Future<void> _onLoginPressed() async {
-    final credentials = await _auth0.webAuthentication(scheme: auth0Scheme).login();
+    final credentials = await _auth0.webAuthentication(scheme: kAuth0Scheme).login();
 
     if (!credentials.expiresAt.isBefore(DateTime.now())) {
       setState(() {
@@ -35,7 +34,7 @@ class _ProfilePageState extends State<ProfilePage> with AutomaticKeepAliveClient
   }
 
   Future<void> _onLogoutPressed() async {
-    await _auth0.webAuthentication(scheme: auth0Scheme).logout();
+    await _auth0.webAuthentication(scheme: kAuth0Scheme).logout();
 
     setState(() {
       _credentials = null;

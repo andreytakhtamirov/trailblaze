@@ -41,15 +41,15 @@ class _DiscoverPageState extends State<DiscoverPage>
     if (fetchedPosts != null) {
       final newPosts = fetchedPosts.map((post) {
         try {
-          final title = post[jsonKeyPostTitle];
-          final description = post[jsonKeyPostDescription];
-          final likes = post[jsonKeyPostLikes];
+          final title = post[kJsonKeyPostTitle];
+          final description = post[kJsonKeyPostDescription];
+          final likes = post[kJsonKeyPostLikes];
           final distance =
-              post[jsonKeyPostRouteId][jsonKeyPostRoute][jsonKeyPostDistance];
-          final modeStr = post[jsonKeyPostRouteId][jsonKeyPostRouteOptions]
-              [jsonKeyPostProfile];
-          final imageUrl = post[jsonKeyPostRouteId][jsonKeyPostImageUrl];
-          final route = post[jsonKeyPostRouteId][jsonKeyPostRoute];
+              post[kJsonKeyPostRouteId][kJsonKeyPostRoute][kJsonKeyPostDistance];
+          final modeStr = post[kJsonKeyPostRouteId][kJsonKeyPostRouteOptions]
+              [kJsonKeyPostProfile];
+          final imageUrl = post[kJsonKeyPostRouteId][kJsonKeyPostImageUrl];
+          final route = post[kJsonKeyPostRouteId][kJsonKeyPostRoute];
 
           if (title != null &&
               description != null &&

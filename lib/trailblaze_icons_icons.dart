@@ -10,5 +10,5 @@ class TrailblazeIcons {
   static const _kFontFam = 'TrailblazeIcons';
   static const String? _kFontPkg = null;
 
-  static const IconData directions_bike_gravel = IconData(0xe800, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData kDirectionsBikeGravel = IconData(0xe800, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }

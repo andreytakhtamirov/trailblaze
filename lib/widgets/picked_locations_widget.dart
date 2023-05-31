@@ -146,7 +146,7 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
                 child: TransportationModeWidget(
                     onSelected: _onModeChanged,
-                    initialMode: defaultTransportationMode,
+                    initialMode: kDefaultTransportationMode,
                     isMinifiedView: _isExpanded),
               ),
             ],

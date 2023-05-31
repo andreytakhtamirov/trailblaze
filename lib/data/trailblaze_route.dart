@@ -22,15 +22,15 @@ class TrailblazeRoute {
         lineJoin: LineJoin.ROUND,
         lineCap: LineCap.ROUND,
         lineColor: isActive ? Colors.red.value : Colors.grey.value,
-        lineOpacity: isActive ? routeActiveLineOpacity : routeInactiveLineOpacity,
-        lineWidth: routeLineWidth);
+        lineOpacity: isActive ? kRouteActiveLineOpacity : kRouteInactiveLineOpacity,
+        lineWidth: kRouteLineWidth);
 
     final geometry = routeJson['geometry'];
     distance = routeJson['distance'];
     duration = routeJson['duration'];
 
     List<List<dynamic>> coordinates =
-    PolylineCodec.decode(geometry, precision: polylinePrecision)
+    PolylineCodec.decode(geometry, precision: kPolylinePrecision)
         .map((c) => [c[1], c[0]])
         .toList();
 
@@ -54,11 +54,11 @@ class TrailblazeRoute {
   void setActive(bool isActive) {
     if (isActive) {
       lineLayer.lineColor = Colors.red.value;
-      lineLayer.lineOpacity = routeActiveLineOpacity;
+      lineLayer.lineOpacity = kRouteActiveLineOpacity;
 
     } else {
       lineLayer.lineColor = Colors.grey.value;
-      lineLayer.lineOpacity = routeInactiveLineOpacity;
+      lineLayer.lineOpacity = kRouteInactiveLineOpacity;
     }
   }
 }

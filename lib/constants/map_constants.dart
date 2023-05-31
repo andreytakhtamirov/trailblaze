@@ -4,68 +4,68 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
-final String mapboxAccessToken = dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
+final String kMapboxAccessToken = dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
 
-const int polylinePrecision = 6;
-const String routeSourceId = "route-source-id";
-const String routeLayerId = "route-layer-id";
-const double routeLineWidth = 6.0;
-const double routeActiveLineOpacity = 1.0;
-const double routeInactiveLineOpacity = 0.8;
-final double devicePixelRatio = WidgetsBinding.instance.window.devicePixelRatio;
+const int kPolylinePrecision = 6;
+const String kRouteSourceId = "route-source-id";
+const String kRouteLayerId = "route-layer-id";
+const double kRouteLineWidth = 6.0;
+const double kRouteActiveLineOpacity = 1.0;
+const double kRouteInactiveLineOpacity = 0.8;
+final double kDevicePixelRatio = WidgetsBinding.instance.window.devicePixelRatio;
 
-final CameraState defaultCameraState = CameraState(
+final CameraState kDefaultCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
     padding: MbxEdgeInsets(
-        top: devicePixelRatio * 50.0, left: 0.0, bottom: 0.0, right: 0.0),
+        top: kDevicePixelRatio * 50.0, left: 0.0, bottom: 0.0, right: 0.0),
     zoom: 12,
     bearing: 0,
     pitch: 0);
 
-final CameraState routeCameraState = CameraState(
+final CameraState kRouteCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
     padding: MbxEdgeInsets(
-        top: devicePixelRatio * 300,
-        left: devicePixelRatio * 40,
-        bottom: devicePixelRatio * 200,
-        right: devicePixelRatio * 40),
+        top: kDevicePixelRatio * 300,
+        left: kDevicePixelRatio * 40,
+        bottom: kDevicePixelRatio * 200,
+        right: kDevicePixelRatio * 40),
     zoom: 12,
     bearing: 0,
     pitch: 0);
 
-final CameraState postDetailsCameraState = CameraState(
+final CameraState kPostDetailsCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
     padding: MbxEdgeInsets(
-        top: devicePixelRatio * 0,
-        left: devicePixelRatio * 40,
-        bottom: devicePixelRatio * 50,
-        right: devicePixelRatio * 40),
+        top: kDevicePixelRatio * 0,
+        left: kDevicePixelRatio * 40,
+        bottom: kDevicePixelRatio * 50,
+        right: kDevicePixelRatio * 40),
     zoom: 12,
     bearing: 0,
     pitch: 0);
 
-final androidTopOffset = Platform.isAndroid ? 80 : 0;
-final mapUiTopOffset = devicePixelRatio * 60 + mapUiPadding + androidTopOffset;
-final mapUiPadding = devicePixelRatio * 6;
+final kAndroidTopOffset = Platform.isAndroid ? 80 : 0;
+final kMapUiPadding = kDevicePixelRatio * 6;
+final kMapUiTopOffset = kDevicePixelRatio * 60 + kMapUiPadding + kAndroidTopOffset;
 
-final CompassSettings defaultCompassSettings = CompassSettings(
+final CompassSettings kDefaultCompassSettings = CompassSettings(
     position: OrnamentPosition.TOP_RIGHT,
-    marginTop: mapUiTopOffset,
+    marginTop: kMapUiTopOffset,
     marginBottom: 0,
     marginLeft: 0,
-    marginRight: mapUiPadding);
+    marginRight: kMapUiPadding);
 
 final ScaleBarSettings defaultScaleBarSettings = ScaleBarSettings(
     isMetricUnits: true,
     position: OrnamentPosition.TOP_LEFT,
-    marginTop: mapUiTopOffset,
+    marginTop: kMapUiTopOffset,
     marginBottom: 0,
-    marginLeft: mapUiPadding,
+    marginLeft: kMapUiPadding,
     marginRight: 0);
 
 final AttributionSettings defaultAttributionSettings = AttributionSettings(
     position: OrnamentPosition.BOTTOM_LEFT,
     marginTop: 0,
-    marginBottom: mapUiPadding,
-    marginLeft: devicePixelRatio * 90 + mapUiPadding,
+    marginBottom: kMapUiPadding,
+    marginLeft: kDevicePixelRatio * 90 + kMapUiPadding,
     marginRight: 0);
