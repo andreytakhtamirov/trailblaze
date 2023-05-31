@@ -63,7 +63,7 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(48, 8, 48, 4),
+                      padding: const EdgeInsets.fromLTRB(48, 0, 48, 4),
                       child: ListView(
                         shrinkWrap: true,
                         padding: EdgeInsets.zero,
@@ -190,6 +190,8 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
           padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
           child: Text(
             subtitle,
+            maxLines: _isExpanded ? 5 : 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 16.0,
             ),

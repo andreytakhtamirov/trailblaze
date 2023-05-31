@@ -22,6 +22,7 @@ class TrailblazeRoute {
         lineJoin: LineJoin.ROUND,
         lineCap: LineCap.ROUND,
         lineColor: isActive ? Colors.red.value : Colors.grey.value,
+        lineOpacity: isActive ? routeActiveLineOpacity : routeInactiveLineOpacity,
         lineWidth: routeLineWidth);
 
     final geometry = routeJson['geometry'];
@@ -53,8 +54,11 @@ class TrailblazeRoute {
   void setActive(bool isActive) {
     if (isActive) {
       lineLayer.lineColor = Colors.red.value;
+      lineLayer.lineOpacity = routeActiveLineOpacity;
+
     } else {
       lineLayer.lineColor = Colors.grey.value;
+      lineLayer.lineOpacity = routeInactiveLineOpacity;
     }
   }
 }
