@@ -23,9 +23,9 @@ final CameraState defaultCameraState = CameraState(
 final CameraState routeCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
     padding: MbxEdgeInsets(
-        top: devicePixelRatio * 400,
+        top: devicePixelRatio * 300,
         left: devicePixelRatio * 40,
-        bottom: devicePixelRatio * 50,
+        bottom: devicePixelRatio * 200,
         right: devicePixelRatio * 40),
     zoom: 12,
     bearing: 0,

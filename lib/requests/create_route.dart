@@ -24,3 +24,21 @@ Future<Map<String, dynamic>?> createRoute(
 
   return null;
 }
+
+Future<Map<String, dynamic>?> createPathsenseRoute(
+    List<dynamic> waypoints) async {
+  const endpoint = '$baseUrl/routes/create-route-pathsense';
+
+  final body = jsonEncode({'waypoints': waypoints});
+
+  final response = await http.post(Uri.parse(endpoint),
+      headers: requestHeaderBasic, body: body);
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  } else {
+    log("fail status: ${response.statusCode}");
+  }
+
+  return null;
+}
