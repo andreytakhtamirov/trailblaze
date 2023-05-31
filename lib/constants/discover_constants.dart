@@ -1,11 +1,11 @@
 const int postsPerPage = 5;
 
-const String jsonKeyPostTitle = 'title';
-const String jsonKeyPostDescription = 'description';
-const String jsonKeyPostLikes = 'likes';
-const String jsonKeyPostRouteId = 'routeId';
-const String jsonKeyPostRoute = 'route';
-const String jsonKeyPostDistance = 'distance';
-const String jsonKeyPostRouteOptions = 'routeOptions';
-const String jsonKeyPostProfile = 'profile';
-const String jsonKeyPostImageUrl = 'imageUrl';
+const String kJsonKeyPostTitle = 'title';
+const String kJsonKeyPostDescription = 'description';
+const String kJsonKeyPostLikes = 'likes';
+const String kJsonKeyPostRouteId = 'routeId';
+const String kJsonKeyPostRoute = 'route';
+const String kJsonKeyPostDistance = 'distance';
+const String kJsonKeyPostRouteOptions = 'routeOptions';
+const String kJsonKeyPostProfile = 'profile';
+const String kJsonKeyPostImageUrl = 'imageUrl';

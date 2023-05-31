@@ -33,7 +33,7 @@ class _MapPageState extends State<MapPage>
   MapBoxPlace? _selectedPlace;
   bool _isDirectionsView = false;
   MapBoxPlace _startingLocation = MapBoxPlace(placeName: "My Location");
-  String _selectedMode = defaultTransportationMode.value;
+  String _selectedMode = kDefaultTransportationMode.value;
   bool _isRouteLoading = false;
   List<TrailblazeRoute> routesList = [];
   TrailblazeRoute? _selectedRoute;
@@ -48,7 +48,7 @@ class _MapPageState extends State<MapPage>
   }
 
   final geocoding = GeoCoding(
-    apiKey: mapboxAccessToken,
+    apiKey: kMapboxAccessToken,
     types: [PlaceType.address],
     limit: 1,
   );
@@ -63,30 +63,44 @@ class _MapPageState extends State<MapPage>
   }
 
   void _setMapControlSettings() {
-    _mapboxMap.compass.updateSettings(defaultCompassSettings);
+    _mapboxMap.compass.updateSettings(kDefaultCompassSettings);
     _mapboxMap.scaleBar.updateSettings(defaultScaleBarSettings);
     _mapboxMap.attribution.updateSettings(defaultAttributionSettings);
   }
 
   Future<geo.Position?> _getCurrentPosition() async {
     geo.LocationPermission permission;
-    permission = await geo.Geolocator.checkPermission();
-    permission = await geo.Geolocator.requestPermission();
-    if (permission == geo.LocationPermission.denied) {
+    try {
+      permission = await geo.Geolocator.checkPermission();
+    } catch (e) {
+      permission = await geo.Geolocator.requestPermission();
+      if (permission == geo.LocationPermission.denied) {
+        if (context.mounted) {
+          UiHelper.showSnackBar(
+              context, 'Location permissions are needed to show routes.');
+        }
+
+        return null;
+      }
+    }
+
+    geo.Position? position;
+    try {
+      position = await geo.Geolocator.getLastKnownPosition() ??
+          await geo.Geolocator.getCurrentPosition();
+    } catch (e) {
       if (context.mounted) {
         UiHelper.showSnackBar(
             context, 'Location permissions are needed to show routes.');
       }
-    }
-    geo.Position? position = await geo.Geolocator.getLastKnownPosition() ??
-        await geo.Geolocator.getCurrentPosition();
 
-    if (position != null) {
-      MapBoxPlace myLocation = MapBoxPlace(
-          placeName: "My Location",
-          center: [position.longitude, position.latitude]);
-      _startingLocation = myLocation;
+      return null;
     }
+
+    MapBoxPlace myLocation = MapBoxPlace(
+        placeName: "My Location",
+        center: [position.longitude, position.latitude]);
+    _startingLocation = myLocation;
 
     return position;
   }
@@ -100,14 +114,14 @@ class _MapPageState extends State<MapPage>
               coordinates: mbm.Position(position!.longitude, position.latitude))
           .toJson();
     } else {
-      center = defaultCameraState.center;
+      center = kDefaultCameraState.center;
     }
     return mbm.CameraOptions(
-        zoom: defaultCameraState.zoom,
+        zoom: kDefaultCameraState.zoom,
         center: center,
-        bearing: defaultCameraState.bearing,
-        padding: defaultCameraState.padding,
-        pitch: defaultCameraState.pitch);
+        bearing: kDefaultCameraState.bearing,
+        padding: kDefaultCameraState.padding,
+        pitch: kDefaultCameraState.pitch);
   }
 
   void _onGpsButtonPressed() {
@@ -140,8 +154,8 @@ class _MapPageState extends State<MapPage>
 
         bool isFirstRoute = i == 0;
 
-        TrailblazeRoute route = TrailblazeRoute(routeSourceId + i.toString(),
-            routeLayerId + i.toString(), routeJson,
+        TrailblazeRoute route = TrailblazeRoute(kRouteSourceId + i.toString(),
+            kRouteLayerId + i.toString(), routeJson,
             isActive: isFirstRoute);
 
         await _mapboxMap.style.addSource(route.geoJsonSource);
@@ -165,9 +179,9 @@ class _MapPageState extends State<MapPage>
   void _flyToRoute(TrailblazeRoute route) async {
     mbm.CameraOptions cameraOptions = await _mapboxMap.cameraForGeometry(
         route.geometryJson,
-        routeCameraState.padding,
-        routeCameraState.bearing,
-        routeCameraState.pitch);
+        kRouteCameraState.padding,
+        kRouteCameraState.bearing,
+        kRouteCameraState.pitch);
     _mapboxMap.flyTo(
         cameraOptions, mbm.MapAnimationOptions(duration: 100, startDelay: 0));
   }
@@ -264,10 +278,10 @@ class _MapPageState extends State<MapPage>
       _mapboxMap.flyTo(
           mbm.CameraOptions(
               center: point.toJson(),
-              padding: defaultCameraState.padding,
-              zoom: defaultCameraState.zoom,
-              bearing: defaultCameraState.bearing,
-              pitch: defaultCameraState.pitch),
+              padding: kDefaultCameraState.padding,
+              zoom: kDefaultCameraState.zoom,
+              bearing: kDefaultCameraState.bearing,
+              pitch: kDefaultCameraState.pitch),
           mbm.MapAnimationOptions(duration: 100, startDelay: 0));
 
       final ByteData bytes = await rootBundle.load('assets/location-pin.png');
@@ -443,14 +457,14 @@ class _MapPageState extends State<MapPage>
               body: mbm.MapWidget(
                 onTapListener: _onMapTapListener,
                 resourceOptions: mbm.ResourceOptions(
-                  accessToken: mapboxAccessToken,
+                  accessToken: kMapboxAccessToken,
                 ),
                 cameraOptions: mbm.CameraOptions(
-                    zoom: defaultCameraState.zoom,
-                    center: defaultCameraState.center,
-                    bearing: defaultCameraState.bearing,
-                    padding: defaultCameraState.padding,
-                    pitch: defaultCameraState.pitch),
+                    zoom: kDefaultCameraState.zoom,
+                    center: kDefaultCameraState.center,
+                    bearing: kDefaultCameraState.bearing,
+                    padding: kDefaultCameraState.padding,
+                    pitch: kDefaultCameraState.pitch),
                 onMapCreated: _onMapCreated,
               ),
             ),

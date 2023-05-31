@@ -8,10 +8,10 @@ import '../constants/request_constants.dart';
 Future<List<dynamic>?> getPosts(
   int page,
 ) async {
-  final endpoint = '$baseUrl/posts/get-posts?page=$page';
+  final endpoint = '$kBaseUrl/posts/get-posts?page=$page';
 
   final response =
-      await http.get(Uri.parse(endpoint), headers: requestHeaderBasic);
+      await http.get(Uri.parse(endpoint), headers: kRequestHeaderBasic);
 
   if (response.statusCode == 200) {
     return jsonDecode(response.body);

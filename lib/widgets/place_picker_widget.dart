@@ -50,7 +50,7 @@ class _PlacePickerState extends State<PlacePicker> {
     }
 
     final geocoding = GeoCoding(
-      apiKey: mapboxAccessToken,
+      apiKey: kMapboxAccessToken,
       types: [
         PlaceType.address,
         PlaceType.place,
