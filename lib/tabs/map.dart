@@ -37,6 +37,7 @@ class _MapPageState extends State<MapPage>
   bool _isRouteLoading = false;
   List<TrailblazeRoute> routesList = [];
   TrailblazeRoute? _selectedRoute;
+  final List<mbm.PointAnnotationOptions> _pointAnnotations = [];
 
   @override
   void initState() {
@@ -159,11 +160,11 @@ class _MapPageState extends State<MapPage>
             isActive: isFirstRoute);
 
         await _mapboxMap.style.addSource(route.geoJsonSource);
-
         await _mapboxMap.style.addLayer(route.lineLayer);
-
         routesList.add(route);
       }
+
+      _drawAllAnnotations();
     }
 
     setState(() {
@@ -197,16 +198,18 @@ class _MapPageState extends State<MapPage>
     if (_selectedRoute != null) {
       // Update all other routes (unselected grey)
       for (var route in allRoutes) {
-        _updateRouteSelected(route, false);
+        await _updateRouteSelected(route, false);
       }
 
       // Update selected route (red)
-      _updateRouteSelected(_selectedRoute!, true);
+      await _updateRouteSelected(_selectedRoute!, true);
       _flyToRoute(_selectedRoute!);
     }
+
+    _drawAllAnnotations();
   }
 
-  void _updateRouteSelected(TrailblazeRoute route, bool isSelected) async {
+  Future<void> _updateRouteSelected(TrailblazeRoute route, bool isSelected) async {
     // Make sure route is removed before we add it again.
     await _removeRouteLayer(route);
     route.setActive(isSelected);
@@ -288,9 +291,20 @@ class _MapPageState extends State<MapPage>
       final Uint8List list = bytes.buffer.asUint8List();
       var options =
           mbm.PointAnnotationOptions(geometry: point.toJson(), image: list);
+      _pointAnnotations.add(options);
       _showAnnotation(options);
     } else {
       _deleteAnnotations();
+    }
+  }
+
+  void _drawAllAnnotations() async {
+    _annotationManager.deleteAll();
+    _annotationManager =
+        await _mapboxMap.annotations.createPointAnnotationManager();
+
+    for (var annotation in _pointAnnotations) {
+      _showAnnotation(annotation);
     }
   }
 
@@ -299,6 +313,7 @@ class _MapPageState extends State<MapPage>
   }
 
   void _deleteAnnotations() async {
+    _pointAnnotations.clear();
     _annotationManager.deleteAll();
   }
 
@@ -399,6 +414,7 @@ class _MapPageState extends State<MapPage>
   void _onDirectionsBackClicked() {
     setState(() {
       _isDirectionsView = false;
+      _selectedRoute = null;
       _removeRouteLayers();
     });
   }
