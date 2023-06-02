@@ -14,6 +14,8 @@ class TrailblazeRoute {
   late final Map<String?, Object?> geometryJson;
   late final num distance;
   late final num duration;
+  late final dynamic surfaceMetrics;
+  late final dynamic highwayMetrics;
 
   TrailblazeRoute(this.sourceId, this.layerId, dynamic routeJson, {bool isActive = false}) {
     lineLayer = LineLayer(
@@ -28,6 +30,8 @@ class TrailblazeRoute {
     final geometry = routeJson['geometry'];
     distance = routeJson['distance'];
     duration = routeJson['duration'];
+    surfaceMetrics = routeJson['metrics']['surfaceMetrics'];
+    highwayMetrics = routeJson['metrics']['highwayMetrics'];
 
     List<List<dynamic>> coordinates =
     PolylineCodec.decode(geometry, precision: kPolylinePrecision)

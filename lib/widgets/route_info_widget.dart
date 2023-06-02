@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/util/format_helper.dart';
 
@@ -12,6 +13,46 @@ class RouteInfo extends StatefulWidget {
 
 class _RouteInfoState extends State<RouteInfo> {
   bool _isExpanded = false;
+
+  List<StackedBarSeries<dynamic, String>> _getStackedBarSeries() {
+    final surfaceMetrics = widget.route!.surfaceMetrics;
+    final List<dynamic> dataPoints = surfaceMetrics.entries.toList();
+
+    List<StackedBarSeries<dynamic, String>> series =
+        <StackedBarSeries<dynamic, String>>[];
+
+    for (var point in dataPoints) {
+      series.add(StackedBarSeries<dynamic, String>(
+        dataSource: [point],
+        xValueMapper: (p, _) => "",
+        yValueMapper: (p, _) => p.value,
+        legendItemText: point.key,
+        legendIconType: LegendIconType.circle,
+      ));
+    }
+
+    return series;
+  }
+
+  List<StackedBarSeries<dynamic, String>> _getStackedBarHighway() {
+    final surfaceMetrics = widget.route!.highwayMetrics;
+    final List<dynamic> dataPoints = surfaceMetrics.entries.toList();
+
+    List<StackedBarSeries<dynamic, String>> series =
+        <StackedBarSeries<dynamic, String>>[];
+
+    for (var point in dataPoints) {
+      series.add(StackedBarSeries<dynamic, String>(
+        dataSource: [point],
+        xValueMapper: (p, _) => "",
+        yValueMapper: (p, _) => p.value,
+        legendItemText: point.key,
+        legendIconType: LegendIconType.circle,
+      ));
+    }
+
+    return series;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,6 +126,46 @@ class _RouteInfoState extends State<RouteInfo> {
                     ],
                   ),
                 ],
+              ),
+            ),
+            SizedBox(
+              height: 200,
+              child: SfCartesianChart(
+                title: ChartTitle(text: "Surface Types"),
+                primaryXAxis: CategoryAxis(),
+                series: _getStackedBarSeries(),
+                legend: Legend(
+                  isVisible: true,
+                  position: LegendPosition.bottom,
+                  alignment: ChartAlignment.center,
+                  shouldAlwaysShowScrollbar: true,
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 200,
+              child: SfCartesianChart(
+                title: ChartTitle(text: "Highway Types"),
+                primaryXAxis: CategoryAxis(),
+                series: _getStackedBarHighway(),
+                palette: const <Color>[
+                  Color.fromRGBO(73, 76, 162, 1),
+                  Color.fromRGBO(255, 205, 96, 1),
+                  Color.fromRGBO(0, 168, 181, 1),
+                  Color.fromRGBO(246, 114, 128, 1),
+                  Color.fromRGBO(75, 135, 185, 1),
+                  Color.fromRGBO(192, 108, 132, 1),
+                  Color.fromRGBO(248, 177, 149, 1),
+                  Color.fromRGBO(116, 180, 155, 1),
+                  Color.fromRGBO(255, 240, 219, 1),
+                  Color.fromRGBO(238, 238, 238, 1)
+                ],
+                legend: Legend(
+                  isVisible: true,
+                  position: LegendPosition.bottom,
+                  alignment: ChartAlignment.center,
+                  shouldAlwaysShowScrollbar: true,
+                ),
               ),
             ),
           ],
