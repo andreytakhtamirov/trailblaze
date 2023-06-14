@@ -63,14 +63,14 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(48, 0, 48, 4),
+                      padding: const EdgeInsets.fromLTRB(48, 0, 48, 0),
                       child: ListView(
                         shrinkWrap: true,
                         padding: EdgeInsets.zero,
                         physics: const NeverScrollableScrollPhysics(),
                         children: [
                           _buildLocationTile(
-                              subtitle: widget.startingLocation!.placeName ??
+                              title: widget.startingLocation!.placeName ??
                                   "Select origin"),
                           Visibility(
                             visible: widget.waypoints.isNotEmpty,
@@ -91,7 +91,7 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
                             ),
                           ),
                           _buildLocationTile(
-                              subtitle: widget.endingLocation?.placeName ??
+                              title: widget.endingLocation?.placeName ??
                                   widget.endingLocation?.center.toString() ??
                                   "Select destination"),
                         ],
@@ -103,7 +103,7 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(48, 32, 48, 4),
+                      padding: const EdgeInsets.fromLTRB(48, 8, 48, 4),
                       child: ListView(
                         shrinkWrap: true,
                         padding: EdgeInsets.zero,
@@ -143,7 +143,7 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
                 child: TransportationModeWidget(
                     onSelected: _onModeChanged,
                     initialMode: kDefaultTransportationMode,
@@ -177,25 +177,30 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
     );
   }
 
-  Widget _buildLocationTile({String? title, required String subtitle}) {
+  Widget _buildLocationTile({required String title, String? subtitle}) {
+    bool isDense = subtitle == null;
     return ListTile(
-        title: title != null
-            ? Text(
-                title,
-                style: const TextStyle(
-                    fontSize: 14.0, fontWeight: FontWeight.bold),
-              )
-            : null,
-        subtitle: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
-          child: Text(
-            subtitle,
-            maxLines: _isExpanded ? 5 : 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 16.0,
-            ),
+        dense: isDense,
+        visualDensity: VisualDensity.comfortable,
+        title: Text(
+          title,
+          style: TextStyle(
+            fontSize: 14.0,
+            fontWeight: !isDense ? FontWeight.bold : FontWeight.normal,
           ),
-        ));
+        ),
+        subtitle: !isDense
+            ? Padding(
+                padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
+                child: Text(
+                  subtitle,
+                  maxLines: _isExpanded ? 5 : 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16.0,
+                  ),
+                ),
+              )
+            : null);
   }
 }

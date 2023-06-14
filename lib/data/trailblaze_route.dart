@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -14,8 +15,8 @@ class TrailblazeRoute {
   late final Map<String?, Object?> geometryJson;
   late final num distance;
   late final num duration;
-  late final dynamic surfaceMetrics;
-  late final dynamic highwayMetrics;
+  dynamic surfaceMetrics;
+  dynamic highwayMetrics;
 
   TrailblazeRoute(this.sourceId, this.layerId, dynamic routeJson, {bool isActive = false}) {
     lineLayer = LineLayer(
@@ -30,8 +31,13 @@ class TrailblazeRoute {
     final geometry = routeJson['geometry'];
     distance = routeJson['distance'];
     duration = routeJson['duration'];
-    surfaceMetrics = routeJson['metrics']['surfaceMetrics'];
-    highwayMetrics = routeJson['metrics']['highwayMetrics'];
+
+    try {
+      surfaceMetrics = routeJson['metrics']['surfaceMetrics'];
+      highwayMetrics = routeJson['metrics']['highwayMetrics'];
+    } catch (e) {
+      log("Old style route object, will get metrics in a separate request.");
+    }
 
     List<List<dynamic>> coordinates =
     PolylineCodec.decode(geometry, precision: kPolylinePrecision)

@@ -129,7 +129,7 @@ class _MapPageState extends State<MapPage>
     _goToUserLocation();
   }
 
-  void displayRoute(String profile, List<dynamic> waypoints) async {
+  void _displayRoute(String profile, List<dynamic> waypoints) async {
     _removeRouteLayers();
 
     setState(() {
@@ -209,7 +209,8 @@ class _MapPageState extends State<MapPage>
     _drawAllAnnotations();
   }
 
-  Future<void> _updateRouteSelected(TrailblazeRoute route, bool isSelected) async {
+  Future<void> _updateRouteSelected(
+      TrailblazeRoute route, bool isSelected) async {
     // Make sure route is removed before we add it again.
     await _removeRouteLayer(route);
     route.setActive(isSelected);
@@ -342,7 +343,7 @@ class _MapPageState extends State<MapPage>
       waypointsJson.add(place.toRawJsonWithNullCheck());
     }
 
-    displayRoute(_selectedMode, waypointsJson);
+    _displayRoute(_selectedMode, waypointsJson);
   }
 
   Future<void> _onMapTapListener(mbm.ScreenCoordinate coordinate) async {
@@ -454,7 +455,7 @@ class _MapPageState extends State<MapPage>
 
     _onSelectPlace(endingLocation);
 
-    displayRoute(_selectedMode, waypoints);
+    _displayRoute(_selectedMode, waypoints);
   }
 
   @override
@@ -515,7 +516,7 @@ class _MapPageState extends State<MapPage>
               ),
             ),
             Positioned(
-              bottom: 32.0,
+              bottom: 16.0,
               left: 0,
               right: 0,
               child: Column(
@@ -524,7 +525,7 @@ class _MapPageState extends State<MapPage>
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                         child: FloatingActionButton(
                           heroTag: 'showMyLocationFab',
                           backgroundColor: Colors.orange,

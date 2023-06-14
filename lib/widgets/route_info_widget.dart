@@ -1,5 +1,8 @@
+import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:trailblaze/constants/route_info_constants.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/util/format_helper.dart';
 
@@ -12,9 +15,8 @@ class RouteInfo extends StatefulWidget {
 }
 
 class _RouteInfoState extends State<RouteInfo> {
-  bool _isExpanded = false;
 
-  List<StackedBarSeries<dynamic, String>> _getStackedBarSeries() {
+  List<StackedBarSeries<dynamic, String>> _getStackedBarSurfaces() {
     final surfaceMetrics = widget.route!.surfaceMetrics;
     final List<dynamic> dataPoints = surfaceMetrics.entries.toList();
 
@@ -24,6 +26,7 @@ class _RouteInfoState extends State<RouteInfo> {
     for (var point in dataPoints) {
       series.add(StackedBarSeries<dynamic, String>(
         dataSource: [point],
+        name: point.key,
         xValueMapper: (p, _) => "",
         yValueMapper: (p, _) => p.value,
         legendItemText: point.key,
@@ -44,6 +47,7 @@ class _RouteInfoState extends State<RouteInfo> {
     for (var point in dataPoints) {
       series.add(StackedBarSeries<dynamic, String>(
         dataSource: [point],
+        name: point.key,
         xValueMapper: (p, _) => "",
         yValueMapper: (p, _) => p.value,
         legendItemText: point.key,
@@ -54,19 +58,79 @@ class _RouteInfoState extends State<RouteInfo> {
     return series;
   }
 
+  SfCartesianChart _buildChart(
+      List<StackedBarSeries> series, List<Color> palette) {
+    return SfCartesianChart(
+      tooltipBehavior: TooltipBehavior(
+        activationMode: ActivationMode.singleTap,
+        enable: true,
+      ),
+      primaryXAxis: CategoryAxis(),
+      primaryYAxis: NumericAxis(
+        labelFormat: '{value}m',
+        numberFormat: NumberFormat.compact(),
+        maximum: widget.route!.distance.toDouble() +
+            widget.route!.distance.toDouble() * 0.05,
+      ),
+      series: series,
+      palette: palette,
+      legend: Legend(
+        isVisible: true,
+        position: LegendPosition.bottom,
+        alignment: ChartAlignment.center,
+        shouldAlwaysShowScrollbar: true,
+      ),
+      margin: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+    );
+  }
+
+  ExpandableNotifier _buildExpandablePanel(
+      String title, SfCartesianChart chart) {
+    return ExpandableNotifier(
+      child: ScrollOnExpand(
+        child: ExpandablePanel(
+          theme: const ExpandableThemeData(
+            tapHeaderToExpand: true,
+            tapBodyToExpand: true,
+            tapBodyToCollapse: true,
+            hasIcon: true,
+            iconPlacement: ExpandablePanelIconPlacement.right,
+            iconColor: Colors.black,
+            bodyAlignment: ExpandablePanelBodyAlignment.right,
+            headerAlignment: ExpandablePanelHeaderAlignment.center,
+            alignment: Alignment.center,
+            iconSize: 20,
+            expandIcon: Icons.add_rounded,
+            collapseIcon: Icons.close_rounded,
+          ),
+          header: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 15.0,
+              ),
+            ),
+          ),
+          collapsed: const SizedBox(),
+          expanded: SizedBox(height: 100, child: chart),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isExpanded = !_isExpanded;
-        });
-      },
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: 0,
+        maxHeight: MediaQuery.of(context).size.height - 450,
+      ),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(16.0),
+        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -78,97 +142,75 @@ class _RouteInfoState extends State<RouteInfo> {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Text(
-              "Route Info",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 16.0, 0, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Duration:",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      Text(
-                        "Distance:",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        FormatHelper.formatDuration(widget.route!.duration),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        FormatHelper.formatDistance(widget.route!.distance),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 200,
-              child: SfCartesianChart(
-                title: ChartTitle(text: "Surface Types"),
-                primaryXAxis: CategoryAxis(),
-                series: _getStackedBarSeries(),
-                legend: Legend(
-                  isVisible: true,
-                  position: LegendPosition.bottom,
-                  alignment: ChartAlignment.center,
-                  shouldAlwaysShowScrollbar: true,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Text(
+                "Route Info",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            SizedBox(
-              height: 200,
-              child: SfCartesianChart(
-                title: ChartTitle(text: "Highway Types"),
-                primaryXAxis: CategoryAxis(),
-                series: _getStackedBarHighway(),
-                palette: const <Color>[
-                  Color.fromRGBO(73, 76, 162, 1),
-                  Color.fromRGBO(255, 205, 96, 1),
-                  Color.fromRGBO(0, 168, 181, 1),
-                  Color.fromRGBO(246, 114, 128, 1),
-                  Color.fromRGBO(75, 135, 185, 1),
-                  Color.fromRGBO(192, 108, 132, 1),
-                  Color.fromRGBO(248, 177, 149, 1),
-                  Color.fromRGBO(116, 180, 155, 1),
-                  Color.fromRGBO(255, 240, 219, 1),
-                  Color.fromRGBO(238, 238, 238, 1)
-                ],
-                legend: Legend(
-                  isVisible: true,
-                  position: LegendPosition.bottom,
-                  alignment: ChartAlignment.center,
-                  shouldAlwaysShowScrollbar: true,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Duration:",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          "Distance:",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          FormatHelper.formatDuration(widget.route!.duration),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          FormatHelper.formatDistance(widget.route!.distance),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              widget.route!.surfaceMetrics != null
+                  ? Column(
+                      children: [
+                        _buildExpandablePanel(
+                          "Surface Types",
+                          _buildChart(
+                              _getStackedBarSurfaces(), kChartPalette1),
+                        ),
+                        _buildExpandablePanel(
+                          "Highway Types",
+                          _buildChart(
+                              _getStackedBarHighway(), kChartPalette2),
+                        ),
+                      ],
+                    )
+                  : const SizedBox(),
+            ],
+          ),
         ),
       ),
     );
