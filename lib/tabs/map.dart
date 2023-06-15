@@ -183,8 +183,8 @@ class _MapPageState extends State<MapPage>
         kRouteCameraState.padding,
         kRouteCameraState.bearing,
         kRouteCameraState.pitch);
-    _mapboxMap.flyTo(
-        cameraOptions, mbm.MapAnimationOptions(duration: 100, startDelay: 0));
+    _mapboxMap.flyTo(cameraOptions,
+        mbm.MapAnimationOptions(duration: kMapFlyToDuration, startDelay: 0));
   }
 
   void _setSelectedRoute(TrailblazeRoute route) async {
@@ -247,8 +247,8 @@ class _MapPageState extends State<MapPage>
     mbm.CameraOptions options = await _getCameraOptions();
 
     if (isAnimated) {
-      _mapboxMap.flyTo(
-          options, mbm.MapAnimationOptions(duration: 100, startDelay: 0));
+      _mapboxMap.flyTo(options,
+          mbm.MapAnimationOptions(duration: kMapFlyToDuration, startDelay: 0));
     } else {
       _mapboxMap.setCamera(options);
     }
@@ -286,7 +286,7 @@ class _MapPageState extends State<MapPage>
               zoom: kDefaultCameraState.zoom,
               bearing: kDefaultCameraState.bearing,
               pitch: kDefaultCameraState.pitch),
-          mbm.MapAnimationOptions(duration: 100, startDelay: 0));
+          mbm.MapAnimationOptions(duration: kMapFlyToDuration, startDelay: 0));
 
       final ByteData bytes = await rootBundle.load('assets/location-pin.png');
       final Uint8List list = bytes.buffer.asUint8List();

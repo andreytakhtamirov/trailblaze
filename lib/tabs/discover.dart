@@ -4,7 +4,9 @@ import 'package:trailblaze/data/transportation_mode.dart';
 import 'package:trailblaze/requests/fetch_posts.dart';
 
 import '../constants/discover_constants.dart';
+import '../constants/map_constants.dart';
 import '../data/post.dart';
+import '../data/trailblaze_route.dart';
 import '../widgets/post_widget.dart';
 
 class DiscoverPage extends StatefulWidget {
@@ -49,14 +51,18 @@ class _DiscoverPageState extends State<DiscoverPage>
           final modeStr = post[kJsonKeyPostRouteId][kJsonKeyPostRouteOptions]
               [kJsonKeyPostProfile];
           final imageUrl = post[kJsonKeyPostRouteId][kJsonKeyPostImageUrl];
-          final route = post[kJsonKeyPostRouteId][kJsonKeyPostRoute];
+          final routeJson = post[kJsonKeyPostRouteId][kJsonKeyPostRoute];
+
+          TrailblazeRoute route = TrailblazeRoute(
+              kRouteSourceId,
+              kRouteLayerId, routeJson,
+              isActive: true);
 
           if (title != null &&
               description != null &&
               distance != null &&
               modeStr != null &&
-              imageUrl != null &&
-              route != null) {
+              imageUrl != null) {
             return Post(
               title: title,
               description: description,
