@@ -46,32 +46,30 @@ class _DiscoverPageState extends State<DiscoverPage>
           final title = post[kJsonKeyPostTitle];
           final description = post[kJsonKeyPostDescription];
           final likes = post[kJsonKeyPostLikes];
-          final distance =
-              post[kJsonKeyPostRouteId][kJsonKeyPostRoute][kJsonKeyPostDistance];
+          final distance = post[kJsonKeyPostRouteId][kJsonKeyPostRoute]
+              [kJsonKeyPostDistance];
           final modeStr = post[kJsonKeyPostRouteId][kJsonKeyPostRouteOptions]
               [kJsonKeyPostProfile];
           final imageUrl = post[kJsonKeyPostRouteId][kJsonKeyPostImageUrl];
           final routeJson = post[kJsonKeyPostRouteId][kJsonKeyPostRoute];
-
-          TrailblazeRoute route = TrailblazeRoute(
-              kRouteSourceId,
-              kRouteLayerId, routeJson,
-              isActive: true);
 
           if (title != null &&
               description != null &&
               distance != null &&
               modeStr != null &&
               imageUrl != null) {
+            TrailblazeRoute route = TrailblazeRoute(
+                kRouteSourceId, kRouteLayerId, routeJson,
+                isActive: true);
+
             return Post(
-              title: title,
-              description: description,
-              distance: distance,
-              transportationMode: getTransportationModeFromString(modeStr),
-              likes: likes,
-              imageUrl: imageUrl,
-              route: route,
-            );
+                title: title,
+                description: description,
+                distance: distance,
+                transportationMode: getTransportationModeFromString(modeStr),
+                likes: likes,
+                imageUrl: imageUrl,
+                route: route);
           }
         } catch (e) {
           _pagingController.error = e;

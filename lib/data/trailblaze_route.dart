@@ -17,8 +17,9 @@ class TrailblazeRoute {
   late final num duration;
   dynamic surfaceMetrics;
   dynamic highwayMetrics;
+  dynamic routeJson;
 
-  TrailblazeRoute(this.sourceId, this.layerId, dynamic routeJson, {bool isActive = false}) {
+  TrailblazeRoute(this.sourceId, this.layerId, this.routeJson, {bool isActive = false}) {
     lineLayer = LineLayer(
         id: layerId,
         sourceId: sourceId,

@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -5,6 +7,8 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:trailblaze/constants/route_info_constants.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/util/format_helper.dart';
+
+import '../requests/route_metrics.dart';
 
 class RouteInfo extends StatefulWidget {
   const RouteInfo({Key? key, required this.route}) : super(key: key);
@@ -15,6 +19,27 @@ class RouteInfo extends StatefulWidget {
 }
 
 class _RouteInfoState extends State<RouteInfo> {
+  TrailblazeRoute? _route;
+
+  @override
+  initState() {
+    super.initState();
+
+    if (widget.route?.surfaceMetrics == null) {
+      _fetchRouteMetrics();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant RouteInfo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (_route != widget.route && widget.route?.surfaceMetrics == null) {
+      _fetchRouteMetrics();
+    }
+
+    _route = widget.route;
+  }
 
   List<StackedBarSeries<dynamic, String>> _getStackedBarSurfaces() {
     final surfaceMetrics = widget.route!.surfaceMetrics;
@@ -38,8 +63,8 @@ class _RouteInfoState extends State<RouteInfo> {
   }
 
   List<StackedBarSeries<dynamic, String>> _getStackedBarHighway() {
-    final surfaceMetrics = widget.route!.highwayMetrics;
-    final List<dynamic> dataPoints = surfaceMetrics.entries.toList();
+    final highwayMetrics = widget.route!.highwayMetrics;
+    final List<dynamic> dataPoints = highwayMetrics.entries.toList();
 
     List<StackedBarSeries<dynamic, String>> series =
         <StackedBarSeries<dynamic, String>>[];
@@ -119,6 +144,27 @@ class _RouteInfoState extends State<RouteInfo> {
     );
   }
 
+  void _fetchRouteMetrics() async {
+    Map<String, dynamic>? metrics =
+        await getRouteMetrics(widget.route?.routeJson);
+
+    if (metrics == null) {
+      log("Could not fetch metrics for route.");
+      return;
+    }
+
+    // Only fetch surface metrics for now.
+    Map<String, dynamic>? surfaceMetrics = metrics['surfaceMetrics'];
+    if (mounted) {
+      setState(() {
+        widget.route?.surfaceMetrics = surfaceMetrics;
+      });
+    } else {
+      // If the widget isn't mounted, update the metrics silently.
+      widget.route?.surfaceMetrics = surfaceMetrics;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
@@ -130,7 +176,7 @@ class _RouteInfoState extends State<RouteInfo> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
         margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -143,6 +189,7 @@ class _RouteInfoState extends State<RouteInfo> {
           ],
         ),
         child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -193,22 +240,24 @@ class _RouteInfoState extends State<RouteInfo> {
                   ],
                 ),
               ),
-              widget.route!.surfaceMetrics != null
-                  ? Column(
-                      children: [
-                        _buildExpandablePanel(
+              Column(
+                children: [
+                  widget.route!.surfaceMetrics != null
+                      ? _buildExpandablePanel(
                           "Surface Types",
-                          _buildChart(
-                              _getStackedBarSurfaces(), kChartPalette1),
+                          _buildChart(_getStackedBarSurfaces(), kChartPalette1),
+                        )
+                      : const Center(
+                          child: CircularProgressIndicator(),
                         ),
-                        _buildExpandablePanel(
+                  widget.route!.highwayMetrics != null
+                      ? _buildExpandablePanel(
                           "Highway Types",
-                          _buildChart(
-                              _getStackedBarHighway(), kChartPalette2),
-                        ),
-                      ],
-                    )
-                  : const SizedBox(),
+                          _buildChart(_getStackedBarHighway(), kChartPalette2),
+                        )
+                      : const SizedBox(),
+                ],
+              )
             ],
           ),
         ),
