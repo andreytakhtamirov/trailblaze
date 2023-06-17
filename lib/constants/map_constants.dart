@@ -6,13 +6,15 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 final String kMapboxAccessToken = dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
 
+const int kMapFlyToDuration = 100;
 const int kPolylinePrecision = 6;
 const String kRouteSourceId = "route-source-id";
 const String kRouteLayerId = "route-layer-id";
 const double kRouteLineWidth = 6.0;
 const double kRouteActiveLineOpacity = 1.0;
 const double kRouteInactiveLineOpacity = 0.8;
-final double kDevicePixelRatio = WidgetsBinding.instance.window.devicePixelRatio;
+final double kDevicePixelRatio =
+    WidgetsBinding.instance.window.devicePixelRatio;
 
 final CameraState kDefaultCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
@@ -25,9 +27,9 @@ final CameraState kDefaultCameraState = CameraState(
 final CameraState kRouteCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
     padding: MbxEdgeInsets(
-        top: kDevicePixelRatio * 300,
+        top: kDevicePixelRatio * 230,
         left: kDevicePixelRatio * 40,
-        bottom: kDevicePixelRatio * 200,
+        bottom: kDevicePixelRatio * 220,
         right: kDevicePixelRatio * 40),
     zoom: 12,
     bearing: 0,
@@ -46,7 +48,8 @@ final CameraState kPostDetailsCameraState = CameraState(
 
 final kAndroidTopOffset = Platform.isAndroid ? 80 : 0;
 final kMapUiPadding = kDevicePixelRatio * 6;
-final kMapUiTopOffset = kDevicePixelRatio * 60 + kMapUiPadding + kAndroidTopOffset;
+final kMapUiTopOffset =
+    kDevicePixelRatio * 60 + kMapUiPadding + kAndroidTopOffset;
 
 final CompassSettings kDefaultCompassSettings = CompassSettings(
     position: OrnamentPosition.TOP_RIGHT,

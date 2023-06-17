@@ -1,3 +1,4 @@
+import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/data/transportation_mode.dart';
 
 class Post {
@@ -7,7 +8,7 @@ class Post {
   final num distance;
   final TransportationMode transportationMode;
   final String imageUrl;
-  final dynamic route;
+  final TrailblazeRoute route;
 
   Post(
       {required this.title,

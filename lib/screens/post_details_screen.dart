@@ -1,11 +1,10 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'package:polyline_codec/polyline_codec.dart';
+import 'package:trailblaze/data/trailblaze_route.dart';
 
 import '../constants/map_constants.dart';
 import '../data/post.dart';
+import '../widgets/route_info_widget.dart';
 
 class PostDetailsScreen extends StatefulWidget {
   const PostDetailsScreen({super.key, required this.post});
@@ -20,6 +19,13 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
   MapboxMap? _mapboxMap;
   late PointAnnotationManager _annotationManager;
   bool _isRouteShowDeferred = false;
+  late final TrailblazeRoute _route;
+
+  @override
+  initState() {
+    super.initState();
+    _route = widget.post.route;
+  }
 
   _onMapCreated(MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
@@ -52,30 +58,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
   }
 
   void _displayRoute() async {
-    final route = widget.post.route;
-    final geometry = route['geometry'];
-
-    List<List<dynamic>> coordinates =
-        PolylineCodec.decode(geometry, precision: kPolylinePrecision)
-            .map((c) => [c[1], c[0]])
-            .toList();
-
-    final geometryJson = {"type": "LineString", "coordinates": coordinates};
-
-    final fills = {
-      "type": "FeatureCollection",
-      "features": [
-        {
-          "type": "Feature",
-          "id": 0,
-          "properties": <String, dynamic>{},
-          "geometry": geometryJson,
-        },
-      ]
-    };
-
-    await _mapboxMap!.style
-        .addSource(GeoJsonSource(id: kRouteSourceId, data: json.encode(fills)));
+    await _mapboxMap!.style.addSource(_route.geoJsonSource);
 
     await _mapboxMap!.style.addLayer(LineLayer(
         id: kRouteLayerId,
@@ -86,13 +69,24 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
         lineWidth: kRouteLineWidth));
 
     CameraOptions cameraOptions = await _mapboxMap!.cameraForGeometry(
-        geometryJson,
+        _route.geometryJson,
         kPostDetailsCameraState.padding,
         kPostDetailsCameraState.bearing,
         kPostDetailsCameraState.pitch);
 
     await _mapboxMap!.cancelCameraAnimation();
     await _mapboxMap!.setCamera(cameraOptions);
+  }
+
+  void _resetMapCamera() async {
+    CameraOptions cameraOptions = await _mapboxMap!.cameraForGeometry(
+        _route.geometryJson,
+        kPostDetailsCameraState.padding,
+        kPostDetailsCameraState.bearing,
+        kPostDetailsCameraState.pitch);
+
+    await _mapboxMap!.flyTo(cameraOptions,
+        MapAnimationOptions(duration: kMapFlyToDuration, startDelay: 0));
   }
 
   @override
@@ -124,18 +118,51 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
         title: Text(widget.post.title),
       ),
       body: IgnorePointer(
-        ignoring: true,
-        child: MapWidget(
-          resourceOptions: ResourceOptions(
-            accessToken: kMapboxAccessToken,
-          ),
-          cameraOptions: CameraOptions(
-              zoom: kPostDetailsCameraState.zoom,
-              center: kPostDetailsCameraState.center,
-              bearing: kPostDetailsCameraState.bearing,
-              padding: kPostDetailsCameraState.padding,
-              pitch: kPostDetailsCameraState.pitch),
-          onMapCreated: _onMapCreated,
+        ignoring: false,
+        child: Stack(
+          children: [
+            MapWidget(
+              resourceOptions: ResourceOptions(
+                accessToken: kMapboxAccessToken,
+              ),
+              cameraOptions: CameraOptions(
+                  zoom: kPostDetailsCameraState.zoom,
+                  center: kPostDetailsCameraState.center,
+                  bearing: kPostDetailsCameraState.bearing,
+                  padding: kPostDetailsCameraState.padding,
+                  pitch: kPostDetailsCameraState.pitch),
+              onMapCreated: _onMapCreated,
+            ),
+            Positioned(
+              bottom: 16.0,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: FloatingActionButton(
+                          heroTag: 'showMyLocationFab',
+                          backgroundColor: Colors.orange,
+                          onPressed: _resetMapCamera,
+                          child: const Icon(
+                            Icons.gps_fixed,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  RouteInfo(
+                    route: _route,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
