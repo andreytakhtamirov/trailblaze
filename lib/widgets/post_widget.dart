@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:trailblaze/util/format_helper.dart';
 
@@ -37,9 +38,12 @@ class PostView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Expanded(
-                    child: Image.network(
-                      post.imageUrl,
-                      fit: BoxFit.fill,
+                    child: CachedNetworkImage(
+                      fit: BoxFit.scaleDown,
+                      imageUrl: post.imageUrl,
+                      errorWidget: (context, url, error) => const Icon(Icons.error),
+                      fadeOutDuration: const Duration(milliseconds: 0),
+                      fadeInDuration: const Duration(milliseconds: 0),
                     ),
                   ),
                 ],
