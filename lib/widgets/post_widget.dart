@@ -41,7 +41,6 @@ class PostView extends StatelessWidget {
                     child: CachedNetworkImage(
                       fit: BoxFit.scaleDown,
                       imageUrl: post.imageUrl,
-                      placeholder: (context, url) => const CircularProgressIndicator(),
                       errorWidget: (context, url, error) => const Icon(Icons.error),
                       fadeOutDuration: const Duration(milliseconds: 0),
                       fadeInDuration: const Duration(milliseconds: 0),
