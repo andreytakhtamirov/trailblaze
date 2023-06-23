@@ -1,13 +1,18 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trailblaze/tabs/discover.dart';
 import 'package:trailblaze/tabs/map.dart';
 import 'package:trailblaze/tabs/profile.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'managers/credential_manager.dart';
+
 Future<void> main() async {
   await dotenv.load();
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -42,14 +47,14 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MainPage extends StatefulWidget {
+class MainPage extends ConsumerStatefulWidget {
   const MainPage({super.key});
 
   @override
-  State<MainPage> createState() => _MainPageState();
+  ConsumerState<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MainPageState extends ConsumerState<MainPage> {
   int _selectedIndex = 0;
   final PageController _pageController = PageController();
 
@@ -59,12 +64,61 @@ class _MainPageState extends State<MainPage> {
     const ProfilePage(),
   ];
 
-  //
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _loadCredentials();
+    });
+  }
+
+  Future<void> _loadCredentials() async {
+    final credentials = await ref.watch(credentialsFutureProvider.future);
+
+    if (credentials == null) {
+      log('User is not logged in');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showAlertDialog(context);
+      });
+    } else {
+      log('User IS LOGGED IN');
+    }
+
+    ref.watch(credentialsNotifierProvider.notifier).setCredentials(credentials);
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
       _pageController.jumpToPage(index);
     });
+  }
+
+  showAlertDialog(BuildContext context) {
+    // set up the button
+    Widget okButton = TextButton(
+      child: const Text('OK'),
+      onPressed: () {
+        Navigator.of(context, rootNavigator: true).pop();
+      },
+    );
+
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(
+      title: const Text('You are logged out'),
+      actions: [
+        okButton,
+      ],
+    );
+
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
   }
 
   @override

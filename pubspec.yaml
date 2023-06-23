@@ -41,6 +41,8 @@ dependencies:
   expandable: ^5.0.1
   intl: ^0.18.1
   cached_network_image: ^3.2.3
+  flutter_secure_storage: ^8.0.0
+  flutter_riverpod: ^2.3.6
   flutter:
     sdk: flutter
 

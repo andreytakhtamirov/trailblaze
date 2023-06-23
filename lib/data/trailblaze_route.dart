@@ -37,7 +37,7 @@ class TrailblazeRoute {
       surfaceMetrics = routeJson['metrics']['surfaceMetrics'];
       highwayMetrics = routeJson['metrics']['highwayMetrics'];
     } catch (e) {
-      log("Old style route object, will get metrics in a separate request.");
+      // Old style route object, will get metrics in a separate request later.
     }
 
     List<List<dynamic>> coordinates =
