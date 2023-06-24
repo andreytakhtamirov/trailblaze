@@ -4,9 +4,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trailblaze/data/list_item.dart';
+import 'package:trailblaze/requests/fetch_items.dart';
+import 'package:trailblaze/widgets/items_feed_widget.dart';
 
 import '../constants/auth_constants.dart';
 import '../managers/credential_manager.dart';
+import '../widgets/profile/login_widget.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -29,11 +33,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     ref.read(credentialsNotifierProvider.notifier).setCredentials(credentials);
   }
 
-  Future<void> _onLoginPressed() async {
-    _signIn();
-  }
-
-  void _signIn() async {
+  void _onLoginPressed() async {
     final Credentials credentials;
 
     try {
@@ -56,34 +56,67 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   }
 
   Future<void> _onLogoutPressed() async {
-    await _auth0.webAuthentication(scheme: kAuth0Scheme).logout();
+    try {
+      await _auth0.webAuthentication(scheme: kAuth0Scheme).logout();
+    } on WebAuthenticationException {
+      // This exception occurs if user cancels the browser prompt to log out.
+      // Let's assume that this means they don't want to log out.
+      return;
+    } catch (e) {
+      log('Log out error: $e');
+    }
+
     _storeCredentials(null);
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Consumer(
-      builder: (BuildContext context, WidgetRef ref, Widget? child) {
-        final credentials = ref.watch(credentialsNotifierProvider);
+    final credentials = ref.read(credentialsNotifierProvider);
 
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Your Profile'),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Your Profile'),
+        actions: [
+          PopupMenuButton(
+            icon: const Icon(
+              Icons.more_vert,
+              size: 28,
+            ),
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem(
+                value: 'log_out',
+                child: ListTile(
+                  title: Text('Log Out'),
+                ),
+              ),
+            ],
+            onSelected: (value) {
+              if (value == 'log_out') {
+                _onLogoutPressed();
+              }
+            },
           ),
-          body: ListView(
-              shrinkWrap: true,
-              padding: EdgeInsets.zero,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      CachedNetworkImage(
-                        height: 150,
+        ],
+      ),
+      body: Center(
+        child: Visibility(
+          visible: credentials != null,
+          replacement: LoginView(
+            onLoginPressed: _onLoginPressed,
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: CachedNetworkImage(
+                        height: 100,
                         fit: BoxFit.scaleDown,
                         imageUrl: credentials?.user.pictureUrl.toString() ?? '',
                         errorWidget: (context, url, error) =>
@@ -91,45 +124,53 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                         fadeOutDuration: const Duration(milliseconds: 0),
                         fadeInDuration: const Duration(milliseconds: 0),
                       ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Text(
-                            credentials?.user.name ?? '',
-                            style: const TextStyle(fontSize: 20),
-                          ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              credentials?.user.name ?? '',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(
+                              height: 10,
+                            ),
+                            Text(
+                              credentials?.user.email ?? '',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            Text(
+                              credentials?.user.birthdate ?? '',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                // Profile elements will go here (posts, routes).
-                const SizedBox(
-                  height: 200,
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(50.0),
-                  child: Text(
-                    'Expires At: ${credentials?.expiresAt.toIso8601String()}',
-                    style: const TextStyle(height: 0, fontSize: 20),
-                  ),
-                ),
-                Center(
-                  child: Visibility(
-                    visible: credentials == null,
-                    replacement: ElevatedButton(
-                      onPressed: _onLogoutPressed,
-                      child: const Text('Log out'),
                     ),
-                    child: ElevatedButton(
-                      onPressed: _onLoginPressed,
-                      child: const Text('Log in'),
-                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
+                  child: ItemsFeed(
+                    UserRoutesApiService(),
+                    RouteListItem,
+                    isMinified: true,
+                    jwtToken: credentials?.idToken ?? '',
                   ),
                 ),
-              ]),
-        );
-      },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

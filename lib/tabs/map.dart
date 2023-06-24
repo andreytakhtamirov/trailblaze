@@ -471,18 +471,28 @@ class _MapPageState extends State<MapPage>
         child: Stack(
           children: [
             Scaffold(
-              body: mbm.MapWidget(
-                onTapListener: _onMapTapListener,
-                resourceOptions: mbm.ResourceOptions(
-                  accessToken: kMapboxAccessToken,
+              body: Container(
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      width: 1.0,
+                      color: Colors.grey,
+                    ),
+                  ),
                 ),
-                cameraOptions: mbm.CameraOptions(
-                    zoom: kDefaultCameraState.zoom,
-                    center: kDefaultCameraState.center,
-                    bearing: kDefaultCameraState.bearing,
-                    padding: kDefaultCameraState.padding,
-                    pitch: kDefaultCameraState.pitch),
-                onMapCreated: _onMapCreated,
+                child: mbm.MapWidget(
+                  onTapListener: _onMapTapListener,
+                  resourceOptions: mbm.ResourceOptions(
+                    accessToken: kMapboxAccessToken,
+                  ),
+                  cameraOptions: mbm.CameraOptions(
+                      zoom: kDefaultCameraState.zoom,
+                      center: kDefaultCameraState.center,
+                      bearing: kDefaultCameraState.bearing,
+                      padding: kDefaultCameraState.padding,
+                      pitch: kDefaultCameraState.pitch),
+                  onMapCreated: _onMapCreated,
+                ),
               ),
             ),
             SafeArea(

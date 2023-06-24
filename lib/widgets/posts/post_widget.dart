@@ -2,15 +2,15 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:trailblaze/util/format_helper.dart';
 
-import '../data/post.dart';
-import '../data/transportation_mode.dart';
-import '../screens/post_details_screen.dart';
+import '../../data/list_item.dart';
+import '../../data/transportation_mode.dart';
+import '../../screens/post_details_screen.dart';
 import 'likes_widget.dart';
 
 class PostView extends StatelessWidget {
-  final Post post;
+  final Item item;
 
-  const PostView({super.key, required this.post});
+  const PostView({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,7 @@ class PostView extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PostDetailsScreen(post: post),
+            builder: (context) => PostDetailsScreen(item: item),
           ),
         );
       },
@@ -40,8 +40,9 @@ class PostView extends StatelessWidget {
                   Expanded(
                     child: CachedNetworkImage(
                       fit: BoxFit.scaleDown,
-                      imageUrl: post.imageUrl,
-                      errorWidget: (context, url, error) => const Icon(Icons.error),
+                      imageUrl: item.imageUrl,
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.error),
                       fadeOutDuration: const Duration(milliseconds: 0),
                       fadeInDuration: const Duration(milliseconds: 0),
                     ),
@@ -58,7 +59,7 @@ class PostView extends StatelessWidget {
                         alignment: Alignment.center,
                         transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
                         child: Icon(
-                          post.transportationMode == TransportationMode.walking
+                          item.transportationMode == TransportationMode.walking
                               ? Icons.directions_walk_rounded
                               : Icons.directions_bike_rounded,
                           color: Colors.green.shade800,
@@ -69,7 +70,7 @@ class PostView extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: Text(
-                          post.title,
+                          item.title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -79,14 +80,17 @@ class PostView extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
-                      child: Column(
-                        children: [
-                          LikesView(
-                            likesCount: post.likes,
-                          ),
-                        ],
+                    Visibility(
+                      visible: item.likes != null,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 0, 0, 0),
+                        child: Column(
+                          children: [
+                            LikesView(
+                              likesCount: item.likes ?? 0,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -96,19 +100,22 @@ class PostView extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 0, 16, 0),
-                        child: Text(
-                          post.description,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 15),
+                    Visibility(
+                      visible: item.description != null,
+                      child: Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(0, 0, 16, 0),
+                          child: Text(
+                            item.description ?? '',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 15),
+                          ),
                         ),
                       ),
                     ),
                     Text(
-                      FormatHelper.formatDistance(post.distance),
+                      FormatHelper.formatDistance(item.route.distance),
                       style: const TextStyle(
                           fontSize: 18, fontWeight: FontWeight.bold),
                     ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../util/format_helper.dart';
+import '../../util/format_helper.dart';
 
 class LikesView extends StatelessWidget {
   final int likesCount;
