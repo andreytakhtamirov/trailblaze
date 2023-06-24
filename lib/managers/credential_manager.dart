@@ -61,11 +61,9 @@ class CredentialManager {
   Future<Credentials?> renewUserToken() async {
     String? refreshToken = await _storage.read(key: kRefreshTokenKey);
     if (refreshToken == null) {
-      log('unable to sign user in. no refresh token');
       return null;
     }
 
-    log('signing user in...');
     return await _renewSession(refreshToken);
   }
 
@@ -75,7 +73,6 @@ class CredentialManager {
     try {
       credentials =
           await _auth0.api.renewCredentials(refreshToken: refreshToken);
-      log('Refreshed JWT');
     } catch (e) {
       log('Authentication error: $e');
       return null;

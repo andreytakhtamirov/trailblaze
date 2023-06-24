@@ -70,3 +70,25 @@ class UserRoutesApiService implements ApiEndpointService {
     return null;
   }
 }
+
+class LikedPostsApiService implements ApiEndpointService {
+  @override
+  Future<List<dynamic>?> fetchData(int page, String jwtToken) async {
+    final endpoint = '$kBaseUrl/posts/get-user-likes?page=$page';
+    final kRequestHeaders = {
+      ...kRequestHeaderBasic,
+      'Authorization': 'Bearer $jwtToken',
+    };
+
+    final response =
+        await http.get(Uri.parse(endpoint), headers: kRequestHeaders);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      log("Failed to fetch user liked posts. Status code: ${response.statusCode}");
+    }
+
+    return null;
+  }
+}

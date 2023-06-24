@@ -72,7 +72,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final credentials = ref.read(credentialsNotifierProvider);
+    final credentials = ref.watch(credentialsNotifierProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -83,17 +83,35 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
               Icons.more_vert,
               size: 28,
             ),
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem(
-                value: 'log_out',
-                child: ListTile(
-                  title: Text('Log Out'),
+            itemBuilder: (BuildContext context) {
+              final menuItems = [
+                const PopupMenuItem(
+                  value: 'about',
+                  child: ListTile(
+                    title: Text('About'),
+                  ),
                 ),
-              ),
-            ],
+              ];
+
+              if (credentials != null) {
+                menuItems.add(
+                  const PopupMenuItem(
+                    value: 'log_out',
+                    child: ListTile(
+                      title: Text('Log Out'),
+                    ),
+                  ),
+                );
+              }
+
+              return menuItems;
+            },
             onSelected: (value) {
               if (value == 'log_out') {
                 _onLogoutPressed();
+              }
+              if (value == 'about') {
+                // TODO implement about screen
               }
             },
           ),
@@ -114,9 +132,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      padding: const EdgeInsets.fromLTRB(48, 16, 0, 16),
                       child: CachedNetworkImage(
-                        height: 100,
+                        height: 70,
                         fit: BoxFit.scaleDown,
                         imageUrl: credentials?.user.pictureUrl.toString() ?? '',
                         errorWidget: (context, url, error) =>
@@ -127,15 +145,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                     ),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               credentials?.user.name ?? '',
                               style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                fontWeight: FontWeight.normal,
                               ),
                             ),
                             const SizedBox(
@@ -143,11 +161,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                             ),
                             Text(
                               credentials?.user.email ?? '',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            Text(
-                              credentials?.user.birthdate ?? '',
-                              style: const TextStyle(fontSize: 12),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w300,
+                              ),
                             ),
                           ],
                         ),
@@ -157,13 +174,47 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                 ),
               ),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
-                  child: ItemsFeed(
-                    UserRoutesApiService(),
-                    RouteListItem,
-                    isMinified: true,
-                    jwtToken: credentials?.idToken ?? '',
+                child: DefaultTabController(
+                  length: 2,
+                  child: Column(
+                    children: [
+                      TabBar(
+                        tabs: [
+                          Tab(
+                            icon: Icon(Icons.favorite_border,
+                                color: Theme.of(context).primaryColor),
+                          ),
+                          Tab(
+                            icon: Icon(
+                              Icons.route_outlined,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Expanded(
+                        child: TabBarView(
+                          children: [
+                            ItemsFeed(
+                              LikedPostsApiService(),
+                              PostListItem,
+                              isMinified: true,
+                              jwtToken: credentials?.idToken ?? '',
+                              feedInfoText:
+                                  "Posts you've liked will appear here.",
+                            ),
+                            ItemsFeed(
+                              UserRoutesApiService(),
+                              RouteListItem,
+                              isMinified: true,
+                              jwtToken: credentials?.idToken ?? '',
+                              feedInfoText:
+                                  "Routes you've created will appear here.",
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

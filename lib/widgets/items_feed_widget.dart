@@ -9,19 +9,25 @@ import '../requests/fetch_items.dart';
 import 'posts/mini_post_widget.dart';
 
 class ItemsFeed extends ConsumerStatefulWidget {
-  const ItemsFeed(this.endpointService, this.itemType, {Key? key, this.isMinified = false, this.jwtToken = ""})
+  const ItemsFeed(this.endpointService, this.itemType,
+      {Key? key,
+      this.isMinified = false,
+      this.jwtToken = "",
+      this.feedInfoText = "No items found."})
       : super(key: key);
 
   final Type itemType;
   final bool isMinified;
   final String jwtToken;
   final ApiEndpointService endpointService;
+  final String feedInfoText;
 
   @override
   ConsumerState<ItemsFeed> createState() => _ItemsFeedState();
 }
 
-class _ItemsFeedState extends ConsumerState<ItemsFeed> {
+class _ItemsFeedState extends ConsumerState<ItemsFeed>
+    with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
   final PagingController<int, Item> _pagingController =
       PagingController(firstPageKey: 1);
@@ -42,7 +48,8 @@ class _ItemsFeedState extends ConsumerState<ItemsFeed> {
   }
 
   Future<void> _fetchItems(int pageKey) async {
-    final fetchedItems = await widget.endpointService.fetchData(pageKey, widget.jwtToken);
+    final fetchedItems =
+        await widget.endpointService.fetchData(pageKey, widget.jwtToken);
 
     if (fetchedItems != null) {
       final newItems = fetchedItems.map((item) {
@@ -69,7 +76,7 @@ class _ItemsFeedState extends ConsumerState<ItemsFeed> {
         _pagingController.appendPage(newItems.toList(), nextPageKey);
       }
     } else {
-      _pagingController.error = 'Failed to fetch items';
+      _pagingController.appendLastPage([]);
     }
   }
 
@@ -79,21 +86,12 @@ class _ItemsFeedState extends ConsumerState<ItemsFeed> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return RefreshIndicator(
       onRefresh: _refreshItems,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.grey.withOpacity(0.4),
-          border: const Border(
-            top: BorderSide(
-              width: 1.0,
-              color: Colors.grey,
-            ),
-            bottom: BorderSide(
-              width: 1.0,
-              color: Colors.grey,
-            ),
-          ),
         ),
         child: Scrollbar(
           controller: _scrollController,
@@ -103,7 +101,21 @@ class _ItemsFeedState extends ConsumerState<ItemsFeed> {
             padding: EdgeInsets.zero,
             scrollController: _scrollController,
             pagingController: _pagingController,
+            physics: const AlwaysScrollableScrollPhysics(),
             builderDelegate: PagedChildBuilderDelegate<Item>(
+              animateTransitions: true,
+              transitionDuration: const Duration(milliseconds: 150),
+              noItemsFoundIndicatorBuilder: (context) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(
+                      widget.feedInfoText,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                );
+              },
               itemBuilder: (context, item, index) {
                 if (widget.isMinified) {
                   return MiniPostView(item: item);
@@ -117,4 +129,9 @@ class _ItemsFeedState extends ConsumerState<ItemsFeed> {
       ),
     );
   }
+
+  @override
+  // Keep feed alive to not refresh the list
+  // on navigation to other tabs within the app.
+  bool get wantKeepAlive => true;
 }

@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,16 +73,6 @@ class _MainPageState extends ConsumerState<MainPage> {
 
   Future<void> _loadCredentials() async {
     final credentials = await ref.watch(credentialsFutureProvider.future);
-
-    if (credentials == null) {
-      log('User is not logged in');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        showAlertDialog(context);
-      });
-    } else {
-      log('User IS LOGGED IN');
-    }
-
     ref.watch(credentialsNotifierProvider.notifier).setCredentials(credentials);
   }
 
@@ -93,32 +81,6 @@ class _MainPageState extends ConsumerState<MainPage> {
       _selectedIndex = index;
       _pageController.jumpToPage(index);
     });
-  }
-
-  showAlertDialog(BuildContext context) {
-    // set up the button
-    Widget okButton = TextButton(
-      child: const Text('OK'),
-      onPressed: () {
-        Navigator.of(context, rootNavigator: true).pop();
-      },
-    );
-
-    // set up the AlertDialog
-    AlertDialog alert = AlertDialog(
-      title: const Text('You are logged out'),
-      actions: [
-        okButton,
-      ],
-    );
-
-    // show the dialog
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return alert;
-      },
-    );
   }
 
   @override
