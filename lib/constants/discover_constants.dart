@@ -1,4 +1,4 @@
-const int postsPerPage = 5;
+const int kItemsPerPage = 5;
 
 const String kJsonKeyPostTitle = 'title';
 const String kJsonKeyPostDescription = 'description';

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -37,7 +36,7 @@ class TrailblazeRoute {
       surfaceMetrics = routeJson['metrics']['surfaceMetrics'];
       highwayMetrics = routeJson['metrics']['highwayMetrics'];
     } catch (e) {
-      log("Old style route object, will get metrics in a separate request.");
+      // Old style route object, will get metrics in a separate request later.
     }
 
     List<List<dynamic>> coordinates =

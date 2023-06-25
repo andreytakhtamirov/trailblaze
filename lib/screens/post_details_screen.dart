@@ -3,13 +3,13 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 
 import '../constants/map_constants.dart';
-import '../data/post.dart';
+import '../data/list_item.dart';
 import '../widgets/route_info_widget.dart';
 
 class PostDetailsScreen extends StatefulWidget {
-  const PostDetailsScreen({super.key, required this.post});
+  const PostDetailsScreen({super.key, required this.item});
 
-  final Post post;
+  final Item item;
 
   @override
   State<PostDetailsScreen> createState() => _PostDetailsScreenState();
@@ -24,7 +24,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
   @override
   initState() {
     super.initState();
-    _route = widget.post.route;
+    _route = widget.item.route;
   }
 
   _onMapCreated(MapboxMap mapboxMap) async {
@@ -115,7 +115,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.post.title),
+        title: Text(widget.item.title),
       ),
       body: IgnorePointer(
         ignoring: false,
