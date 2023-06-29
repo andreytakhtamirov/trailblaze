@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:dartz/dartz.dart' as dartz;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
@@ -136,7 +137,7 @@ class _MapPageState extends State<MapPage>
       _isRouteLoading = true;
     });
 
-    final Map<String, dynamic>? routeResponse;
+    final dartz.Either<int, Map<String, dynamic>?> routeResponse;
     if (profile != TransportationMode.gravelCycling.value) {
       routeResponse = await createRoute(profile, waypoints);
     } else {
@@ -149,23 +150,42 @@ class _MapPageState extends State<MapPage>
 
     routesList.clear();
 
-    if (routeResponse != null && routeResponse['routes'] != null) {
-      for (var i = routeResponse['routes'].length - 1; i >= 0; i--) {
-        final routeJson = routeResponse['routes'][i];
+    Map<String, dynamic>? routeData;
 
-        bool isFirstRoute = i == 0;
+    routeResponse.fold(
+      (error) => {
+        if (error == 400)
+          {
+            UiHelper.showSnackBar(
+                context, "Sorry, this region is not supported yet.")
+          }
+        else if (error == 404)
+          {UiHelper.showSnackBar(context, "Failed to connect to the server.")}
+        else
+          {UiHelper.showSnackBar(context, "An unknown error occurred.")}
+      },
+      (data) => {routeData = data},
+    );
 
-        TrailblazeRoute route = TrailblazeRoute(kRouteSourceId + i.toString(),
-            kRouteLayerId + i.toString(), routeJson,
-            isActive: isFirstRoute);
-
-        await _mapboxMap.style.addSource(route.geoJsonSource);
-        await _mapboxMap.style.addLayer(route.lineLayer);
-        routesList.add(route);
-      }
-
-      _drawAllAnnotations();
+    if (routeData == null || routeData?['routes'] == null) {
+      return;
     }
+
+    for (var i = routeData!['routes'].length - 1; i >= 0; i--) {
+      final routeJson = routeData!['routes'][i];
+
+      bool isFirstRoute = i == 0;
+
+      TrailblazeRoute route = TrailblazeRoute(kRouteSourceId + i.toString(),
+          kRouteLayerId + i.toString(), routeJson,
+          isActive: isFirstRoute);
+
+      await _mapboxMap.style.addSource(route.geoJsonSource);
+      await _mapboxMap.style.addLayer(route.lineLayer);
+      routesList.add(route);
+    }
+
+    _drawAllAnnotations();
 
     setState(() {
       // The first route is selected initially.

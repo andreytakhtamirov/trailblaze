@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:dartz/dartz.dart';
 import 'package:http/http.dart' as http;
 
 import '../constants/request_constants.dart';
 
-Future<Map<String, dynamic>?> createRoute(
+Future<Either<int, Map<String, dynamic>?>> createRoute(
   String profile,
   List<dynamic> waypoints,
 ) async {
@@ -17,15 +18,15 @@ Future<Map<String, dynamic>?> createRoute(
       headers: kRequestHeaderBasic, body: body);
 
   if (response.statusCode == 200) {
-    return jsonDecode(response.body);
+    return Right(jsonDecode(response.body));
   } else {
     log("fail status: ${response.statusCode}");
   }
 
-  return null;
+  return Left(response.statusCode);
 }
 
-Future<Map<String, dynamic>?> createPathsenseRoute(
+Future<Either<int, Map<String, dynamic>?>> createPathsenseRoute(
     List<dynamic> waypoints) async {
   const endpoint = '$kBaseUrl/routes/create-route-pathsense';
 
@@ -35,10 +36,10 @@ Future<Map<String, dynamic>?> createPathsenseRoute(
       headers: kRequestHeaderBasic, body: body);
 
   if (response.statusCode == 200) {
-    return jsonDecode(response.body);
+    return Right(jsonDecode(response.body));
   } else {
     log("fail status: ${response.statusCode}");
   }
 
-  return null;
+  return Left(response.statusCode);
 }
