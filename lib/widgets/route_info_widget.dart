@@ -7,6 +7,7 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:trailblaze/constants/route_info_constants.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/util/format_helper.dart';
+import 'package:http/http.dart' as http;
 
 import '../requests/route_metrics.dart';
 
@@ -20,6 +21,7 @@ class RouteInfo extends StatefulWidget {
 
 class _RouteInfoState extends State<RouteInfo> {
   TrailblazeRoute? _route;
+  final http.Client _client = http.Client();
 
   @override
   initState() {
@@ -33,6 +35,7 @@ class _RouteInfoState extends State<RouteInfo> {
   @override
   void didUpdateWidget(covariant RouteInfo oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _client.close();
 
     if (_route != widget.route && widget.route?.surfaceMetrics == null) {
       _fetchRouteMetrics();
@@ -146,7 +149,7 @@ class _RouteInfoState extends State<RouteInfo> {
 
   void _fetchRouteMetrics() async {
     Map<String, dynamic>? metrics =
-        await getRouteMetrics(widget.route?.routeJson);
+        await getRouteMetrics(_client, widget.route?.routeJson);
 
     if (metrics == null) {
       log("Could not fetch metrics for route.");
