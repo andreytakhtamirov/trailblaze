@@ -21,7 +21,7 @@ class RouteInfo extends StatefulWidget {
 
 class _RouteInfoState extends State<RouteInfo> {
   TrailblazeRoute? _route;
-  final http.Client _client = http.Client();
+  http.Client _client = http.Client();
 
   @override
   initState() {
@@ -36,12 +36,19 @@ class _RouteInfoState extends State<RouteInfo> {
   void didUpdateWidget(covariant RouteInfo oldWidget) {
     super.didUpdateWidget(oldWidget);
     _client.close();
+    _client = http.Client();
 
     if (_route != widget.route && widget.route?.surfaceMetrics == null) {
       _fetchRouteMetrics();
     }
 
     _route = widget.route;
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _client.close();
   }
 
   List<StackedBarSeries<dynamic, String>> _getStackedBarSurfaces() {

@@ -44,7 +44,9 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
   }
 
   void _setMapControlSettings() {
-    _mapboxMap!.attribution.updateSettings(defaultAttributionSettings);
+    _mapboxMap!.compass.updateSettings(kPostDetailsCompassSettings);
+    _mapboxMap!.scaleBar.updateSettings(kPostDetailsScaleBarSettings);
+    _mapboxMap!.attribution.updateSettings(kDefaultAttributionSettings);
   }
 
   void _removeRouteLayer() async {
@@ -134,7 +136,7 @@ class _PostDetailsScreenState extends State<PostDetailsScreen> {
               onMapCreated: _onMapCreated,
             ),
             Positioned(
-              bottom: 16.0,
+              bottom: 72.0,
               left: 0,
               right: 0,
               child: Column(

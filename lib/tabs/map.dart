@@ -67,8 +67,8 @@ class _MapPageState extends State<MapPage>
 
   void _setMapControlSettings() {
     _mapboxMap.compass.updateSettings(kDefaultCompassSettings);
-    _mapboxMap.scaleBar.updateSettings(defaultScaleBarSettings);
-    _mapboxMap.attribution.updateSettings(defaultAttributionSettings);
+    _mapboxMap.scaleBar.updateSettings(kDefaultScaleBarSettings);
+    _mapboxMap.attribution.updateSettings(kDefaultAttributionSettings);
   }
 
   Future<geo.Position?> _getCurrentPosition() async {
@@ -457,7 +457,7 @@ class _MapPageState extends State<MapPage>
         builder: (context) => WaypointEditScreen(
           startingLocation: _startingLocation,
           endingLocation: _selectedPlace,
-          waypoints: [],
+          waypoints: const [],
         ),
       ),
     );
@@ -529,7 +529,7 @@ class _MapPageState extends State<MapPage>
                           onModeChanged: _onTransportationModeChanged,
                           startingLocation: _startingLocation,
                           endingLocation: _selectedPlace,
-                          waypoints: [],
+                          waypoints: const [],
                         ),
                       ),
                     ),

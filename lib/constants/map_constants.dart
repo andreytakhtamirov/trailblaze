@@ -27,7 +27,7 @@ final CameraState kDefaultCameraState = CameraState(
 final CameraState kRouteCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
     padding: MbxEdgeInsets(
-        top: kDevicePixelRatio * 230,
+        top: kDevicePixelRatio * 240,
         left: kDevicePixelRatio * 40,
         bottom: kDevicePixelRatio * 220,
         right: kDevicePixelRatio * 40),
@@ -40,7 +40,7 @@ final CameraState kPostDetailsCameraState = CameraState(
     padding: MbxEdgeInsets(
         top: kDevicePixelRatio * 0,
         left: kDevicePixelRatio * 40,
-        bottom: kDevicePixelRatio * 50,
+        bottom: kDevicePixelRatio * 150,
         right: kDevicePixelRatio * 40),
     zoom: 12,
     bearing: 0,
@@ -58,7 +58,14 @@ final CompassSettings kDefaultCompassSettings = CompassSettings(
     marginLeft: 0,
     marginRight: kMapUiPadding);
 
-final ScaleBarSettings defaultScaleBarSettings = ScaleBarSettings(
+final CompassSettings kPostDetailsCompassSettings = CompassSettings(
+    position: OrnamentPosition.TOP_RIGHT,
+    marginTop: 0,
+    marginBottom: 0,
+    marginLeft: 0,
+    marginRight: kMapUiPadding);
+
+final ScaleBarSettings kDefaultScaleBarSettings = ScaleBarSettings(
     isMetricUnits: true,
     position: OrnamentPosition.TOP_LEFT,
     marginTop: kMapUiTopOffset,
@@ -66,7 +73,15 @@ final ScaleBarSettings defaultScaleBarSettings = ScaleBarSettings(
     marginLeft: kMapUiPadding,
     marginRight: 0);
 
-final AttributionSettings defaultAttributionSettings = AttributionSettings(
+final ScaleBarSettings kPostDetailsScaleBarSettings = ScaleBarSettings(
+    isMetricUnits: true,
+    position: OrnamentPosition.TOP_LEFT,
+    marginTop: 0,
+    marginBottom: 0,
+    marginLeft: kMapUiPadding,
+    marginRight: 0);
+
+final AttributionSettings kDefaultAttributionSettings = AttributionSettings(
     position: OrnamentPosition.BOTTOM_LEFT,
     marginTop: 0,
     marginBottom: kMapUiPadding,
