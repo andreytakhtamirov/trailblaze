@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
@@ -33,7 +35,12 @@ class _PlacePickerState extends State<PlacePicker> {
   }
 
   void _loadLocation() async {
-    _futureLocation = await geo.Geolocator.getLastKnownPosition();
+    try {
+      _futureLocation = await geo.Geolocator.getLastKnownPosition();
+    } catch (e) {
+      log('Failed to check or request location permission: $e');
+      return null;
+    }
   }
 
   void _search(String query) async {

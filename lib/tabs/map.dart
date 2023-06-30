@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:dartz/dartz.dart' as dartz;
 import 'package:flutter/material.dart';
@@ -74,16 +75,21 @@ class _MapPageState extends State<MapPage>
     geo.LocationPermission permission;
     try {
       permission = await geo.Geolocator.checkPermission();
-    } catch (e) {
-      permission = await geo.Geolocator.requestPermission();
       if (permission == geo.LocationPermission.denied) {
+        permission = await geo.Geolocator.requestPermission();
+      }
+      if (permission == geo.LocationPermission.deniedForever) {
         if (context.mounted) {
           UiHelper.showSnackBar(
-              context, 'Location permissions are needed to show routes.');
+            context,
+            'Location permissions are needed to show routes.',
+          );
         }
-
         return null;
       }
+    } catch (e) {
+      log('Failed to check or request location permission: $e');
+      return null;
     }
 
     geo.Position? position;
@@ -91,11 +97,7 @@ class _MapPageState extends State<MapPage>
       position = await geo.Geolocator.getLastKnownPosition() ??
           await geo.Geolocator.getCurrentPosition();
     } catch (e) {
-      if (context.mounted) {
-        UiHelper.showSnackBar(
-            context, 'Location permissions are needed to show routes.');
-      }
-
+      log('Failed to fetch user location: $e');
       return null;
     }
 
@@ -111,9 +113,9 @@ class _MapPageState extends State<MapPage>
     geo.Position? position = await _getCurrentPosition();
 
     Map<String?, Object?>? center;
-    if (position?.latitude != 0 && position?.longitude != 0) {
+    if (position != null && position.latitude != 0 && position.longitude != 0) {
       center = mbm.Point(
-              coordinates: mbm.Position(position!.longitude, position.latitude))
+              coordinates: mbm.Position(position.longitude, position.latitude))
           .toJson();
     } else {
       center = kDefaultCameraState.center;
