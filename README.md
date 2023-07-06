@@ -4,6 +4,12 @@
 A route-planning app that finds the scenic way to get to places. 
 
 
+## Releases
+Check out the latest release of Trailblaze for iOS & Android:
+
+[![Latest Release](https://img.shields.io/github/v/release/andreytakhtamirov/trailblaze-flutter?include_prereleases&style=flat)](https://github.com/andreytakhtamirov/trailblaze-flutter/releases/latest)
+
+
 ## Features
 - Walking, cycling navigation that aims to include nearby parks along the way.
 - **[BETA] Gravel-cycling-friendly routing prioritizing unpaved trails.** [See availability map here](https://github.com/andreytakhtamirov/trailblaze-pathsense#supported-regions)
