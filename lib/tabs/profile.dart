@@ -6,10 +6,13 @@ import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trailblaze/data/list_item.dart';
 import 'package:trailblaze/requests/fetch_items.dart';
+import 'package:trailblaze/requests/user_profile.dart';
+import 'package:trailblaze/screens/create_profile_screen.dart';
 import 'package:trailblaze/widgets/items_feed_widget.dart';
 
 import '../constants/auth_constants.dart';
 import '../managers/credential_manager.dart';
+import '../util/ui_helper.dart';
 import '../widgets/profile/login_widget.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -69,6 +72,47 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     _storeCredentials(null);
   }
 
+  void _relogin(Credentials? credentials) async {
+    final response = await getProfile(credentials?.idToken ?? '');
+    response.fold(
+      (error) => {
+        // User account requires setup (first sign-in).
+        if (error == 204)
+          {
+            UiHelper.showSnackBar(context, "Set up your account"),
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CreateProfileScreen(
+                  credentials: credentials,
+                ),
+              ),
+            ),
+          }
+        else
+          {
+            UiHelper.showSnackBar(context, "An unknown error occurred."),
+          }
+      },
+      (data) => {
+        log('All good! Username: ${data?['username']}'),
+      },
+    );
+  }
+
+  void _onEditProfilePressed(Credentials? credentials) async {
+    final userProfile = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreateProfileScreen(
+          credentials: credentials,
+        ),
+      ),
+    );
+
+    log('user profile: $userProfile');
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -96,6 +140,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
               if (credentials != null) {
                 menuItems.add(
                   const PopupMenuItem(
+                    value: 'edit_profile',
+                    child: ListTile(
+                      title: Text('Edit Profile'),
+                    ),
+                  ),
+                );
+                menuItems.add(
+                  const PopupMenuItem(
                     value: 'log_out',
                     child: ListTile(
                       title: Text('Log Out'),
@@ -109,6 +161,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             onSelected: (value) {
               if (value == 'log_out') {
                 _onLogoutPressed();
+              } else if (value == 'edit_profile') {
+                _onEditProfilePressed(credentials);
               }
               if (value == 'about') {
                 // TODO implement about screen
@@ -173,6 +227,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                   ],
                 ),
               ),
+              ElevatedButton(
+                  onPressed: () => _relogin(credentials),
+                  child: Text("relogin")),
               Expanded(
                 child: DefaultTabController(
                   length: 2,
