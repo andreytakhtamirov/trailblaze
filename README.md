@@ -24,7 +24,7 @@ Check out the latest release of Trailblaze for iOS & Android:
 <img width="500" alt="screenshot2" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/c6a3d4fc-a71e-477f-8e7d-5f876c3877e7">
 
 
-## Building Locally
+## Building
 
 **Setting Mapbox access token**
 
