@@ -44,6 +44,8 @@ dependencies:
   cached_network_image: ^3.2.3
   flutter_secure_storage: ^8.0.0
   flutter_riverpod: ^2.3.6
+  image_picker: ^1.0.0
+  image_cropper: ^4.0.1
   flutter:
     sdk: flutter
 

@@ -80,7 +80,7 @@ class CredentialManager {
 
     _storage.write(key: kJwtTokenKey, value: credentials.accessToken);
     _storage.write(key: kRefreshTokenKey, value: credentials.refreshToken);
-
+    log('Renewed session');
     return credentials;
   }
 

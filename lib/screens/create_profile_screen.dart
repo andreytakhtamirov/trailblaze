@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:trailblaze/constants/validation_constants.dart';
@@ -14,9 +17,11 @@ import 'package:trailblaze/widgets/profile/username_validity_widget.dart';
 import '../util/ui_helper.dart';
 
 class CreateProfileScreen extends StatefulWidget {
-  const CreateProfileScreen({super.key, required this.credentials});
+  const CreateProfileScreen(
+      {super.key, required this.credentials, this.userProfile});
 
   final Credentials? credentials;
+  final dynamic userProfile;
 
   @override
   State<CreateProfileScreen> createState() => _CreateProfileScreenState();
@@ -29,6 +34,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   Timer? _debounceTimer;
   bool _isAvailable = false;
   Future<bool>? _isAvailableFuture;
+  List<int>? _changedProfilePicture;
 
   @override
   initState() {
@@ -42,10 +48,14 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   }
 
   bool _isFormValid() {
-    return _formValidator(_username) == null;
+    return _usernameValidator(_username) == null;
   }
 
-  String? _formValidator(String? username) {
+  bool _isFormEmpty() {
+    return _username == null || _username!.isEmpty;
+  }
+
+  String? _usernameValidator(String? username) {
     if (username == null) {
       return '';
     }
@@ -69,6 +79,17 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     }
 
     return null;
+  }
+
+  String? _formValidator(String? username) {
+    if (widget.userProfile?['username'] != null &&
+        _isFormEmpty() &&
+        _changedProfilePicture != null) {
+      // User has only changed profile picture and not username.
+      return null;
+    } else {
+      return _usernameValidator(username);
+    }
   }
 
   Future<bool> checkAvailability(String username) async {
@@ -107,14 +128,73 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   }
 
   void _onChangeProfilePicture() {
+    _openImagePicker();
+  }
 
+  void _openImagePicker() async {
+    final picker = ImagePicker();
+    final XFile? pickedImage;
+    try {
+      pickedImage = await picker.pickImage(
+        requestFullMetadata: false,
+        source: ImageSource.gallery,
+      );
+    } on PlatformException {
+      UiHelper.showSnackBar(context, "There was a problem getting your image.");
+      return;
+    }
+
+    if (pickedImage != null) {
+      File imageFile = File(pickedImage.path);
+      await _cropImage(imageFile);
+    }
+  }
+
+  Future<void> _cropImage(File imageFile) async {
+    CroppedFile? croppedFile = await ImageCropper().cropImage(
+      sourcePath: imageFile.path,
+      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+      compressQuality: 70,
+      maxWidth: 512,
+      maxHeight: 512,
+      uiSettings: <PlatformUiSettings>[
+        AndroidUiSettings(
+          toolbarTitle: 'Crop Profile Picture',
+          toolbarColor: Theme.of(context).primaryColor,
+          toolbarWidgetColor: Colors.white,
+          initAspectRatio: CropAspectRatioPreset.square,
+          lockAspectRatio: true,
+          hideBottomControls: true,
+        ),
+        IOSUiSettings(
+          title: 'Crop Profile Picture',
+          aspectRatioLockEnabled: true,
+          resetButtonHidden: true,
+          aspectRatioPickerButtonHidden: true,
+        ),
+      ],
+    );
+
+    if (croppedFile != null) {
+      List<int>? imageBytes = await croppedFile.readAsBytes();
+      setState(() {
+        _changedProfilePicture = imageBytes;
+      });
+    }
   }
 
   void _onSubmitForm() async {
     if (_formKey.currentState?.validate() == true) {
+      String? base64Image;
+
+      if (_changedProfilePicture != null) {
+        base64Image = base64Encode(_changedProfilePicture!);
+      }
+
       final response = await saveProfile(
         widget.credentials?.idToken ?? '',
-        _username!,
+        _username,
+        base64Image,
       );
 
       response.fold(
@@ -142,6 +222,16 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ImageProvider? userPicture;
+
+    if (_changedProfilePicture != null) {
+      userPicture = MemoryImage(Uint8List.fromList(_changedProfilePicture!));
+    } else if (widget.userProfile?['profile_picture'] != null) {
+      Uint8List imageBytes =
+          base64Decode(widget.userProfile['profile_picture']);
+      userPicture = MemoryImage(imageBytes);
+    }
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
@@ -158,14 +248,20 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(24),
-                          child: CachedNetworkImage(
-                            fit: BoxFit.fitWidth,
-                            width: 200,
-                            maxWidthDiskCache: 200,
-                            imageUrl: widget.credentials?.user.pictureUrl
-                                    .toString() ??
-                                '',
-                          ),
+                          child: userPicture != null
+                              ? Image(
+                                  image: userPicture,
+                                  width: 200,
+                                  fit: BoxFit.fitWidth,
+                                )
+                              : CachedNetworkImage(
+                                  fit: BoxFit.fitWidth,
+                                  width: 200,
+                                  maxWidthDiskCache: 200,
+                                  imageUrl: widget.credentials?.user.pictureUrl
+                                          .toString() ??
+                                      '',
+                                ),
                         ),
                         Positioned(
                           bottom: 0,
@@ -195,6 +291,23 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
+                          Visibility(
+                            visible: widget.userProfile != null,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              child: Row(
+                                children: [
+                                  const Text(
+                                    "Current username:",
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Text(
+                                    widget.userProfile?['username'] ?? '',
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                           Stack(
                             children: [
                               TextFormField(
@@ -209,7 +322,8 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                                 validator: _formValidator,
                                 onChanged: _onUsernameChanged,
                                 controller: _usernameController,
-                                autofocus: true,
+                                // Focus by default if username on server is null.
+                                autofocus: widget.userProfile == null,
                                 maxLength: kMaxUsernameLength,
                                 scrollPadding:
                                     const EdgeInsets.only(bottom: 150),
@@ -230,9 +344,12 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                             height: 24,
                           ),
                           ElevatedButton(
-                            onPressed: _isAvailable &&
-                                    _isAvailableFuture != null &&
-                                    _isFormValid()
+                            onPressed: (_isAvailable &&
+                                        _isAvailableFuture != null &&
+                                        _isFormValid()) ||
+                                    (widget.userProfile?['username'] != null &&
+                                        _isFormEmpty() &&
+                                        _changedProfilePicture != null)
                                 ? _onSubmitForm
                                 : null,
                             child: const Text('Submit'),

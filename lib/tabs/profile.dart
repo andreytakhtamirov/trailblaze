@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:developer';
+import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -25,11 +27,24 @@ class ProfilePage extends ConsumerStatefulWidget {
 class _ProfilePageState extends ConsumerState<ProfilePage>
     with AutomaticKeepAliveClientMixin<ProfilePage> {
   late Auth0 _auth0;
+  dynamic _userProfile;
+  bool _accountSetupNeeded = false;
 
   @override
   void initState() {
     super.initState();
     _auth0 = Auth0(kAuth0Domain, kAuth0ClientId);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final credentials = ref.watch(credentialsNotifierProvider);
+    refreshProfile(credentials);
+  }
+
+  Future<void> refreshProfile(Credentials? credentials) async {
+    _relogin(credentials);
   }
 
   void _mutateCredentials(Credentials? credentials) {
@@ -79,15 +94,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         // User account requires setup (first sign-in).
         if (error == 204)
           {
-            UiHelper.showSnackBar(context, "Set up your account"),
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CreateProfileScreen(
-                  credentials: credentials,
-                ),
-              ),
-            ),
+            setState(() {
+              _accountSetupNeeded = true;
+            }),
           }
         else
           {
@@ -95,28 +104,45 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           }
       },
       (data) => {
-        log('All good! Username: ${data?['username']}'),
+        setState(() {
+          _userProfile = data;
+          _accountSetupNeeded = false;
+        }),
       },
     );
   }
 
   void _onEditProfilePressed(Credentials? credentials) async {
-    final userProfile = await Navigator.push(
+    final data = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CreateProfileScreen(
           credentials: credentials,
+          userProfile: _userProfile,
         ),
       ),
     );
 
-    log('user profile: $userProfile');
+    if (data == null) {
+      return;
+    }
+
+    setState(() {
+      _userProfile = data;
+      _accountSetupNeeded = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
     final credentials = ref.watch(credentialsNotifierProvider);
+    ImageProvider? userPicture;
+
+    if (_userProfile?['profile_picture'] != null) {
+      Uint8List imageBytes = base64Decode(_userProfile?['profile_picture']);
+      userPicture = MemoryImage(imageBytes);
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -179,57 +205,103 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           ),
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(48, 16, 0, 16),
-                      child: CachedNetworkImage(
-                        height: 70,
-                        fit: BoxFit.scaleDown,
-                        imageUrl: credentials?.user.pictureUrl.toString() ?? '',
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.error),
-                        fadeOutDuration: const Duration(milliseconds: 0),
-                        fadeInDuration: const Duration(milliseconds: 0),
-                      ),
+              Stack(
+                children: [
+                  RefreshIndicator(
+                    onRefresh: () => refreshProfile(credentials),
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                                child: userPicture != null
+                                    ? Image(
+                                        width: 150,
+                                        fit: BoxFit.fitWidth,
+                                        image: userPicture,
+                                      )
+                                    : CachedNetworkImage(
+                                        width: 150,
+                                        fit: BoxFit.fitWidth,
+                                        imageUrl: credentials?.user.pictureUrl
+                                                .toString() ??
+                                            '',
+                                        errorWidget: (context, url, error) =>
+                                            const Icon(Icons.error),
+                                        fadeOutDuration:
+                                            const Duration(milliseconds: 0),
+                                        fadeInDuration:
+                                            const Duration(milliseconds: 0),
+                                      ),
+                              ),
+                              Expanded(
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(0, 48, 0, 48),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _userProfile?['username'] ??
+                                            credentials?.user.name ??
+                                            '',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.normal,
+                                        ),
+                                      ),
+                                      const SizedBox(
+                                        height: 10,
+                                      ),
+                                      Text(
+                                        credentials?.user.email ?? '',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w300,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              credentials?.user.name ?? '',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.normal,
-                              ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    left: 0,
+                    child: Center(
+                      child: Visibility(
+                        visible: _accountSetupNeeded,
+                        child: MaterialButton(
+                          onPressed: () => _onEditProfilePressed(credentials),
+                          color: Colors.red,
+                          shape: const StadiumBorder(),
+                          child: const Text(
+                            "Complete account setup",
+                            style: TextStyle(
+                              color: Colors.white,
                             ),
-                            const SizedBox(
-                              height: 10,
-                            ),
-                            Text(
-                              credentials?.user.email ?? '',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w300,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              ElevatedButton(
-                  onPressed: () => _relogin(credentials),
-                  child: Text("relogin")),
               Expanded(
                 child: DefaultTabController(
                   length: 2,

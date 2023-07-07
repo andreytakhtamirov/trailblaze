@@ -17,7 +17,6 @@ Future<Either<int, Map<String, dynamic>?>> getProfile(String jwtToken) async {
       await http.get(Uri.parse(endpoint), headers: kRequestHeaders);
 
   if (response.statusCode == 200) {
-    log('response: ${jsonDecode(response.body)}');
     return Right(jsonDecode(response.body));
   } else {
     log("Failed to fetch user profile. Status code: ${response.statusCode}");
@@ -27,14 +26,17 @@ Future<Either<int, Map<String, dynamic>?>> getProfile(String jwtToken) async {
 }
 
 Future<Either<int, Map<String, dynamic>?>> saveProfile(
-    String jwtToken, String username) async {
+    String jwtToken, String? username, String? profilePicture) async {
   const endpoint = '$kBaseUrl/users';
   final kRequestHeaders = {
     ...kRequestHeaderBasic,
     'Authorization': 'Bearer $jwtToken',
   };
 
-  final body = jsonEncode({'username': username});
+  final body = jsonEncode({
+    'username': username,
+    'profile_picture': profilePicture,
+  });
 
   final response = await http.post(
     Uri.parse(endpoint),
