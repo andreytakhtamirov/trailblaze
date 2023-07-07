@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'dart:developer';
-import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +11,9 @@ import 'package:trailblaze/screens/create_profile_screen.dart';
 import 'package:trailblaze/widgets/items_feed_widget.dart';
 
 import '../constants/auth_constants.dart';
+import '../data/profile.dart';
 import '../managers/credential_manager.dart';
+import '../managers/profile_manager.dart';
 import '../util/ui_helper.dart';
 import '../widgets/profile/login_widget.dart';
 
@@ -27,8 +27,6 @@ class ProfilePage extends ConsumerStatefulWidget {
 class _ProfilePageState extends ConsumerState<ProfilePage>
     with AutomaticKeepAliveClientMixin<ProfilePage> {
   late Auth0 _auth0;
-  dynamic _userProfile;
-  bool _accountSetupNeeded = false;
 
   @override
   void initState() {
@@ -36,19 +34,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     _auth0 = Auth0(kAuth0Domain, kAuth0ClientId);
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final credentials = ref.watch(credentialsNotifierProvider);
-    refreshProfile(credentials);
-  }
-
   Future<void> refreshProfile(Credentials? credentials) async {
     _relogin(credentials);
   }
 
   void _mutateCredentials(Credentials? credentials) {
-    ref.read(credentialsNotifierProvider.notifier).setCredentials(credentials);
+    ref.read(credentialsProvider.notifier).setCredentials(credentials);
   }
 
   void _onLoginPressed() async {
@@ -91,22 +82,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final response = await getProfile(credentials?.idToken ?? '');
     response.fold(
       (error) => {
-        // User account requires setup (first sign-in).
-        if (error == 204)
-          {
-            setState(() {
-              _accountSetupNeeded = true;
-            }),
-          }
-        else
+        if (error != 204)
           {
             UiHelper.showSnackBar(context, "An unknown error occurred."),
           }
       },
       (data) => {
         setState(() {
-          _userProfile = data;
-          _accountSetupNeeded = false;
+          ref.watch(profileProvider.notifier).setProfile(Profile(data));
         }),
       },
     );
@@ -118,7 +101,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       MaterialPageRoute(
         builder: (context) => CreateProfileScreen(
           credentials: credentials,
-          userProfile: _userProfile,
         ),
       ),
     );
@@ -128,21 +110,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     }
 
     setState(() {
-      _userProfile = data;
-      _accountSetupNeeded = false;
+      ref.watch(profileProvider.notifier).setProfile(Profile(data));
     });
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final credentials = ref.watch(credentialsNotifierProvider);
-    ImageProvider? userPicture;
-
-    if (_userProfile?['profile_picture'] != null) {
-      Uint8List imageBytes = base64Decode(_userProfile?['profile_picture']);
-      userPicture = MemoryImage(imageBytes);
-    }
+    final credentials = ref.watch(credentialsProvider);
+    final profile = ref.watch(profileProvider);
+    ImageProvider? userPicture = profile?.profilePicture;
+    bool accountSetupNeeded = profile != null && profile.username == null;
 
     return Scaffold(
       appBar: AppBar(
@@ -251,7 +229,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        _userProfile?['username'] ??
+                                        profile?.username ??
                                             credentials?.user.name ??
                                             '',
                                         style: const TextStyle(
@@ -285,7 +263,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                     left: 0,
                     child: Center(
                       child: Visibility(
-                        visible: _accountSetupNeeded,
+                        visible: accountSetupNeeded,
                         child: MaterialButton(
                           onPressed: () => _onEditProfilePressed(credentials),
                           color: Colors.red,

@@ -1,11 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter/material.dart';
 
 class Profile {
-  late Credentials? credentials;
   late final String? _username;
   late final MemoryImage? _profilePicture;
 
@@ -13,7 +11,7 @@ class Profile {
 
   MemoryImage? get profilePicture => _profilePicture;
 
-  Profile(this.credentials, dynamic userProfileJson) {
+  Profile(dynamic userProfileJson) {
     setProfileData(userProfileJson);
   }
 
@@ -23,6 +21,8 @@ class Profile {
     if (userProfileJson?['profile_picture'] != null) {
       Uint8List imageBytes = base64Decode(userProfileJson?['profile_picture']);
       _profilePicture = MemoryImage(imageBytes);
+    } else {
+      _profilePicture = null;
     }
   }
 }

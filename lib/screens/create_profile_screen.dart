@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:trailblaze/constants/validation_constants.dart';
@@ -14,20 +14,21 @@ import 'package:trailblaze/requests/user_profile.dart';
 import 'package:trailblaze/widgets/profile/username_availability_widget.dart';
 import 'package:trailblaze/widgets/profile/username_validity_widget.dart';
 
+import '../data/profile.dart';
+import '../managers/profile_manager.dart';
 import '../util/ui_helper.dart';
 
-class CreateProfileScreen extends StatefulWidget {
-  const CreateProfileScreen(
-      {super.key, required this.credentials, this.userProfile});
+class CreateProfileScreen extends ConsumerStatefulWidget {
+  const CreateProfileScreen({super.key, required this.credentials});
 
   final Credentials? credentials;
-  final dynamic userProfile;
 
   @override
-  State<CreateProfileScreen> createState() => _CreateProfileScreenState();
+  ConsumerState<CreateProfileScreen> createState() =>
+      _CreateProfileScreenState();
 }
 
-class _CreateProfileScreenState extends State<CreateProfileScreen> {
+class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   String? _username;
@@ -81,8 +82,8 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     return null;
   }
 
-  String? _formValidator(String? username) {
-    if (widget.userProfile?['username'] != null &&
+  String? _formValidator(String? username, Profile? profile) {
+    if (profile?.username != null &&
         _isFormEmpty() &&
         _changedProfilePicture != null) {
       // User has only changed profile picture and not username.
@@ -222,14 +223,14 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(profileProvider);
+
     ImageProvider? userPicture;
 
     if (_changedProfilePicture != null) {
       userPicture = MemoryImage(Uint8List.fromList(_changedProfilePicture!));
-    } else if (widget.userProfile?['profile_picture'] != null) {
-      Uint8List imageBytes =
-          base64Decode(widget.userProfile['profile_picture']);
-      userPicture = MemoryImage(imageBytes);
+    } else {
+      userPicture = profile?.profilePicture;
     }
 
     return Scaffold(
@@ -292,7 +293,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Visibility(
-                            visible: widget.userProfile != null,
+                            visible: profile != null,
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               child: Row(
@@ -302,7 +303,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                                   ),
                                   const SizedBox(width: 16),
                                   Text(
-                                    widget.userProfile?['username'] ?? '',
+                                    profile?.username ?? '',
                                   ),
                                 ],
                               ),
@@ -319,11 +320,12 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                                     fontSize: 0,
                                   ),
                                 ),
-                                validator: _formValidator,
+                                validator: (value) =>
+                                    _formValidator(value, profile),
                                 onChanged: _onUsernameChanged,
                                 controller: _usernameController,
                                 // Focus by default if username on server is null.
-                                autofocus: widget.userProfile == null,
+                                autofocus: profile == null,
                                 maxLength: kMaxUsernameLength,
                                 scrollPadding:
                                     const EdgeInsets.only(bottom: 150),
@@ -339,7 +341,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                             ],
                           ),
                           UsernameValidity(
-                              errorMessage: _formValidator(_username)),
+                              errorMessage: _formValidator(_username, profile)),
                           const SizedBox(
                             height: 24,
                           ),
@@ -347,7 +349,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                             onPressed: (_isAvailable &&
                                         _isAvailableFuture != null &&
                                         _isFormValid()) ||
-                                    (widget.userProfile?['username'] != null &&
+                                    (profile?.username != null &&
                                         _isFormEmpty() &&
                                         _changedProfilePicture != null)
                                 ? _onSubmitForm

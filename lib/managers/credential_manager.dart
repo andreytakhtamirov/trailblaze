@@ -7,14 +7,9 @@ import 'package:trailblaze/constants/jwt_constants.dart';
 
 import '../constants/auth_constants.dart';
 
-final credentialsFutureProvider = FutureProvider<Credentials?>((ref) async {
-  final credentialManager = ref.watch(credentialManagerProvider);
-  return credentialManager.renewUserToken();
-});
-
-final credentialsNotifierProvider =
+final credentialsProvider =
     StateNotifierProvider<CredentialsNotifier, Credentials?>((ref) {
-  final credentialManager = ref.watch(credentialManagerProvider);
+  final credentialManager = CredentialManager();
   return CredentialsNotifier(credentialManager);
 });
 
@@ -44,10 +39,6 @@ class CredentialsNotifier extends StateNotifier<Credentials?> {
     this.state = state;
   }
 }
-
-final credentialManagerProvider = Provider<CredentialManager>((ref) {
-  return CredentialManager();
-});
 
 class CredentialManager {
   late final Auth0 _auth0;
@@ -80,7 +71,6 @@ class CredentialManager {
 
     _storage.write(key: kJwtTokenKey, value: credentials.accessToken);
     _storage.write(key: kRefreshTokenKey, value: credentials.refreshToken);
-    log('Renewed session');
     return credentials;
   }
 
