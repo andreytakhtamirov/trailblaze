@@ -7,15 +7,16 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_cropper/image_cropper.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:trailblaze/constants/validation_constants.dart';
 import 'package:trailblaze/data/profile.dart';
 import 'package:trailblaze/managers/profile_manager.dart';
 import 'package:trailblaze/requests/user_profile.dart';
 import 'package:trailblaze/tabs/profile/widgets/username_availability_widget.dart';
 import 'package:trailblaze/tabs/profile/widgets/username_validity_widget.dart';
+import 'package:trailblaze/util/image_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
+
+import '../constants/map_constants.dart';
 
 class CreateProfileScreen extends ConsumerStatefulWidget {
   const CreateProfileScreen({super.key, required this.credentials});
@@ -127,60 +128,25 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
     });
   }
 
-  void _onChangeProfilePicture() {
-    _openImagePicker();
-  }
+  void _onChangeProfilePicture() async {
+    final helper = ImageHelper();
+    final toolBarColor = Theme.of(context).primaryColor;
 
-  void _openImagePicker() async {
-    final picker = ImagePicker();
-    final XFile? pickedImage;
-    try {
-      pickedImage = await picker.pickImage(
-        requestFullMetadata: false,
-        source: ImageSource.gallery,
-      );
-    } on PlatformException {
-      UiHelper.showSnackBar(context, "There was a problem getting your image.");
+    final File? image = await helper.pickImage(context);
+
+    if (image == null) {
       return;
     }
 
-    if (pickedImage != null) {
-      File imageFile = File(pickedImage.path);
-      await _cropImage(imageFile);
+    final croppedImage = await helper.cropImage(toolBarColor, image);
+    List<int>? imageBytes;
+    if (croppedImage != null) {
+      imageBytes = await croppedImage.readAsBytes();
     }
-  }
 
-  Future<void> _cropImage(File imageFile) async {
-    CroppedFile? croppedFile = await ImageCropper().cropImage(
-      sourcePath: imageFile.path,
-      aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-      compressQuality: 70,
-      maxWidth: 512,
-      maxHeight: 512,
-      uiSettings: <PlatformUiSettings>[
-        AndroidUiSettings(
-          toolbarTitle: 'Crop Profile Picture',
-          toolbarColor: Theme.of(context).primaryColor,
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.square,
-          lockAspectRatio: true,
-          hideBottomControls: true,
-        ),
-        IOSUiSettings(
-          title: 'Crop Profile Picture',
-          aspectRatioLockEnabled: true,
-          resetButtonHidden: true,
-          aspectRatioPickerButtonHidden: true,
-        ),
-      ],
-    );
-
-    if (croppedFile != null) {
-      List<int>? imageBytes = await croppedFile.readAsBytes();
-      setState(() {
-        _changedProfilePicture = imageBytes;
-      });
-    }
+    setState(() {
+      _changedProfilePicture = imageBytes;
+    });
   }
 
   void _onSubmitForm() async {
@@ -251,12 +217,12 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                           child: userPicture != null
                               ? Image(
                                   image: userPicture,
-                                  width: 200,
+                                  width: 70 * kDevicePixelRatio,
                                   fit: BoxFit.fitWidth,
                                 )
                               : CachedNetworkImage(
                                   fit: BoxFit.fitWidth,
-                                  width: 200,
+                                  width: 70 * kDevicePixelRatio,
                                   maxWidthDiskCache: 200,
                                   imageUrl: widget.credentials?.user.pictureUrl
                                           .toString() ??
@@ -311,9 +277,11 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                           Stack(
                             children: [
                               TextFormField(
-                                decoration: const InputDecoration(
-                                  labelText: 'Username',
-                                  errorStyle: TextStyle(
+                                decoration: InputDecoration(
+                                  labelText: profile?.username != null
+                                      ? 'New Username'
+                                      : 'Username',
+                                  errorStyle: const TextStyle(
                                     // Don't show error message in form.
                                     color: Colors.transparent,
                                     fontSize: 0,
@@ -324,7 +292,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                 onChanged: _onUsernameChanged,
                                 controller: _usernameController,
                                 // Focus by default if username on server is null.
-                                autofocus: profile == null,
+                                autofocus: profile?.username == null,
                                 maxLength: kMaxUsernameLength,
                                 scrollPadding:
                                     const EdgeInsets.only(bottom: 150),

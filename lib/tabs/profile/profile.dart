@@ -36,7 +36,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final response = await getProfile(credentials?.idToken ?? '');
     response.fold(
       (error) => {
-        if (error != 204)
+        if (error == 204)
+          {
+            _mutateProfile(Profile(null)),
+          }
+        else
           {
             UiHelper.showSnackBar(context, "An unknown error occurred."),
           }

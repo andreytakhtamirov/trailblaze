@@ -1,6 +1,9 @@
+import 'dart:developer';
+
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/data/profile.dart';
 
 class ProfileHeader extends StatelessWidget {
@@ -21,6 +24,9 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     ImageProvider? userPicture = profile?.profilePicture;
     bool accountSetupNeeded = profile != null && profile!.username == null;
+    log('accoutnsetup: $accountSetupNeeded');
+    log('profile null?]: ${profile == null}');
+    log('username null?]: ${profile?.username == null}');
 
     return Stack(
       children: [
@@ -37,15 +43,15 @@ class ProfileHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                      padding: const EdgeInsets.fromLTRB(24, 16, 4, 16),
                       child: userPicture != null
                           ? Image(
-                              width: 150,
+                              width: 50 * kDevicePixelRatio,
                               fit: BoxFit.fitWidth,
                               image: userPicture,
                             )
                           : CachedNetworkImage(
-                              width: 150,
+                              width: 50 * kDevicePixelRatio,
                               fit: BoxFit.fitWidth,
                               imageUrl:
                                   credentials?.user.pictureUrl.toString() ?? '',
@@ -57,25 +63,18 @@ class ProfileHeader extends StatelessWidget {
                     ),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 48, 0, 48),
+                        padding: const EdgeInsets.fromLTRB(16, 48, 16, 48),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              profile?.username ?? credentials?.user.name ?? '',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.normal,
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 10,
-                            ),
-                            Text(
-                              credentials?.user.email ?? '',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w300,
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                profile?.username ?? credentials?.user.email ?? '',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.normal,
+                                ),
                               ),
                             ),
                           ],
