@@ -10,13 +10,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:trailblaze/constants/validation_constants.dart';
+import 'package:trailblaze/data/profile.dart';
+import 'package:trailblaze/managers/profile_manager.dart';
 import 'package:trailblaze/requests/user_profile.dart';
-import 'package:trailblaze/widgets/profile/username_availability_widget.dart';
-import 'package:trailblaze/widgets/profile/username_validity_widget.dart';
-
-import '../data/profile.dart';
-import '../managers/profile_manager.dart';
-import '../util/ui_helper.dart';
+import 'package:trailblaze/tabs/profile/widgets/username_availability_widget.dart';
+import 'package:trailblaze/tabs/profile/widgets/username_validity_widget.dart';
+import 'package:trailblaze/util/ui_helper.dart';
 
 class CreateProfileScreen extends ConsumerStatefulWidget {
   const CreateProfileScreen({super.key, required this.credentials});
@@ -293,7 +292,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Visibility(
-                            visible: profile != null,
+                            visible: profile?.username != null,
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               child: Row(

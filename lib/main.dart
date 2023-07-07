@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trailblaze/tabs/discover.dart';
 import 'package:trailblaze/tabs/map.dart';
-import 'package:trailblaze/tabs/profile.dart';
+import 'package:trailblaze/tabs/profile/profile.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'managers/credential_manager.dart';
