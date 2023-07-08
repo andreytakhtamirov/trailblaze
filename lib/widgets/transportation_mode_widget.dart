@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:trailblaze/trailblaze_icons_icons.dart';
 
-import 'data/transportation_mode.dart';
+import '../data/transportation_mode.dart';
 
 class TransportationModeWidget extends StatefulWidget {
   const TransportationModeWidget(
@@ -73,14 +73,12 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _buildTransportationModeWidget(
             TransportationMode.walking, Icons.directions_walk, false),
-        SizedBox(width: widget.isMinifiedView ? 30 : 40),
         _buildTransportationModeWidget(
             TransportationMode.cycling, Icons.directions_bike, false),
-        SizedBox(width: widget.isMinifiedView ? 30 : 40),
         _buildTransportationModeWidget(TransportationMode.gravelCycling,
             TrailblazeIcons.kDirectionsBikeGravel, true),
       ],

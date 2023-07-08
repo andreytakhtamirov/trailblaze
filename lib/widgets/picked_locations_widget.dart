@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/constants/create_route_constants.dart';
-import 'package:trailblaze/transportation_mode_widget.dart';
+import 'package:trailblaze/widgets/transportation_mode_widget.dart';
 
 import '../data/transportation_mode.dart';
 

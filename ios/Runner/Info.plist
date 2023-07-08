@@ -41,6 +41,8 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Location permissions are needed to show your location on the map.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Photo Library permissions are needed to select a profile picture.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

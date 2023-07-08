@@ -1,12 +1,14 @@
+import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trailblaze/tabs/discover.dart';
 import 'package:trailblaze/tabs/map.dart';
-import 'package:trailblaze/tabs/profile.dart';
+import 'package:trailblaze/tabs/profile/profile.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'managers/credential_manager.dart';
+import 'managers/profile_manager.dart';
 
 Future<void> main() async {
   await dotenv.load();
@@ -67,13 +69,20 @@ class _MainPageState extends ConsumerState<MainPage> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      _loadCredentials();
+      final credentials = await _loadCredentials();
+      _refreshProfile(credentials);
     });
   }
 
-  Future<void> _loadCredentials() async {
-    final credentials = await ref.watch(credentialsFutureProvider.future);
-    ref.watch(credentialsNotifierProvider.notifier).setCredentials(credentials);
+  Future<Credentials?> _loadCredentials() async {
+    final credentials = await CredentialManager().renewUserToken();
+    ref.watch(credentialsProvider.notifier).setCredentials(credentials);
+    return credentials;
+  }
+
+  Future<void> _refreshProfile(Credentials? credentials) async {
+    final profile = await ProfileManager().refreshProfile(credentials);
+    ref.watch(profileProvider.notifier).setProfile(profile);
   }
 
   void _onItemTapped(int index) {
