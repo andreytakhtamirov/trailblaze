@@ -24,9 +24,6 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     ImageProvider? userPicture = profile?.profilePicture;
     bool accountSetupNeeded = profile != null && profile!.username == null;
-    log('accoutnsetup: $accountSetupNeeded');
-    log('profile null?]: ${profile == null}');
-    log('username null?]: ${profile?.username == null}');
 
     return Stack(
       children: [

@@ -4,6 +4,7 @@ import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/constants/route_info_constants.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/util/format_helper.dart';
@@ -180,7 +181,7 @@ class _RouteInfoState extends State<RouteInfo> {
     return ConstrainedBox(
       constraints: BoxConstraints(
         minHeight: 0,
-        maxHeight: MediaQuery.of(context).size.height - 450,
+        maxHeight: MediaQuery.of(context).size.height - 160 * kDevicePixelRatio,
       ),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
