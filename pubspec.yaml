@@ -46,6 +46,7 @@ dependencies:
   flutter_riverpod: ^2.3.6
   image_picker: ^1.0.0
   image_cropper: ^4.0.1
+  connectivity_plus: ^4.0.1
   flutter:
     sdk: flutter
 

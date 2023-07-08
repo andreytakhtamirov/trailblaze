@@ -25,4 +25,16 @@ class Profile {
       _profilePicture = null;
     }
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'username': _username,
+      'profile_picture':
+          _profilePicture != null ? base64Encode(_profilePicture!.bytes) : null,
+    };
+  }
+
+  factory Profile.fromMap(Map<String, dynamic> map) {
+    return Profile(map);
+  }
 }
