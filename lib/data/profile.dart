@@ -25,4 +25,12 @@ class Profile {
       _profilePicture = null;
     }
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'username': _username,
+      'profile_picture':
+          _profilePicture != null ? base64Encode(_profilePicture!.bytes) : null,
+    };
+  }
 }

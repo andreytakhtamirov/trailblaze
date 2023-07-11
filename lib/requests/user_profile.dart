@@ -13,8 +13,13 @@ Future<Either<int, Map<String, dynamic>?>> getProfile(String jwtToken) async {
     'Authorization': 'Bearer $jwtToken',
   };
 
-  final response =
-      await http.get(Uri.parse(endpoint), headers: kRequestHeaders);
+  final http.Response response;
+  try {
+    response = await http.get(Uri.parse(endpoint), headers: kRequestHeaders);
+  } catch (e) {
+    log("Failed to fetch data for $endpoint. $e");
+    return const Left(-1);
+  }
 
   if (response.statusCode == 200) {
     return Right(jsonDecode(response.body));
@@ -38,11 +43,17 @@ Future<Either<int, Map<String, dynamic>?>> saveProfile(
     'profile_picture': profilePicture,
   });
 
-  final response = await http.post(
-    Uri.parse(endpoint),
-    headers: kRequestHeaders,
-    body: body,
-  );
+  final http.Response response;
+  try {
+    response = await http.post(
+      Uri.parse(endpoint),
+      headers: kRequestHeaders,
+      body: body,
+    );
+  } catch (e) {
+    log("Failed to fetch data for $endpoint. $e");
+    return const Left(-1);
+  }
 
   if (response.statusCode == 201 || response.statusCode == 200) {
     return Right(jsonDecode(response.body));
@@ -57,10 +68,16 @@ Future<Either<int, Map<String, dynamic>?>> checkUsernameAvailability(
     String username) async {
   final endpoint = '$kBaseUrl/users/check/$username';
 
-  final response = await http.get(
-    Uri.parse(endpoint),
-    headers: kRequestHeaderBasic,
-  );
+  final http.Response response;
+  try {
+    response = await http.get(
+      Uri.parse(endpoint),
+      headers: kRequestHeaderBasic,
+    );
+  } catch (e) {
+    log("Failed to fetch data for $endpoint. $e");
+    return const Left(-1);
+  }
 
   if (response.statusCode == 200) {
     return Right(jsonDecode(response.body));

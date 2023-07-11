@@ -9,7 +9,7 @@ import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/constants/create_route_constants.dart';
 import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
-import 'package:trailblaze/extensions/mapbox_place_extensions.dart';
+import 'package:trailblaze/extensions/mapbox_place_extension.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:trailblaze/screens/waypoint_edit_screen.dart';
 import 'package:trailblaze/util/ui_helper.dart';

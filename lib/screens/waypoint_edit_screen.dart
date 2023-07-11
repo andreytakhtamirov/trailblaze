@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mapbox_search/mapbox_search.dart';
-import 'package:trailblaze/extensions/mapbox_place_extensions.dart';
+import 'package:trailblaze/extensions/mapbox_place_extension.dart';
 import 'package:trailblaze/util/ui_helper.dart';
 import 'package:trailblaze/widgets/place_picker_widget.dart';
 
