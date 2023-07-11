@@ -31,13 +31,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   void initState() {
     super.initState();
     _auth0 = Auth0(kAuth0Domain, kAuth0ClientId);
-    // WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-    //   ref.watch(credentialsProvider.notifier).addListener((state) {
-    //     setState(() {
-    //       _credentials = state;
-    //     });
-    //   });
-    // });
   }
 
   Future<void> refreshProfile(Credentials? credentials) async {
@@ -68,8 +61,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   }
 
   void _deleteCache() {
-    final CacheManager cacheManager = DefaultCacheManager();
-    cacheManager.emptyCache();
+    DefaultCacheManager().emptyCache();
   }
 
   void _onLoginPressed() async {
