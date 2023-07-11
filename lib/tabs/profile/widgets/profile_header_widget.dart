@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -67,7 +65,11 @@ class ProfileHeader extends StatelessWidget {
                             FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(
-                                profile?.username ?? credentials?.user.email ?? '',
+                                profile?.username ??
+                                    credentials?.user.email ??
+                                    ' ',
+                                // Fall back to single space character so that
+                                // FittedFox always has at least a small space.
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.normal,

@@ -37,7 +37,7 @@ class ProfileManager {
     _storage = const FlutterSecureStorage();
   }
 
-  dynamic refreshProfile(Credentials? credentials) async {
+  Future<Profile?> refreshProfile(Credentials? credentials) async {
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult == ConnectivityResult.none) {
       // Fall back to stored profile.
@@ -75,7 +75,7 @@ class ProfileManager {
     final profileJson = await _storage.read(key: kUserProfileKey);
     if (profileJson != null) {
       final profileMap = jsonDecode(profileJson) as Map<String, dynamic>;
-      return Profile.fromMap(profileMap);
+      return Profile(profileMap);
     }
 
     return null;

@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trailblaze/constants/auth_constants.dart';
 import 'package:trailblaze/data/profile.dart';
@@ -30,6 +31,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   void initState() {
     super.initState();
     _auth0 = Auth0(kAuth0Domain, kAuth0ClientId);
+    // WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+    //   ref.watch(credentialsProvider.notifier).addListener((state) {
+    //     setState(() {
+    //       _credentials = state;
+    //     });
+    //   });
+    // });
   }
 
   Future<void> refreshProfile(Credentials? credentials) async {
@@ -57,6 +65,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
 
   void _mutateProfile(Profile? profile) {
     ref.read(profileProvider.notifier).setProfile(profile);
+  }
+
+  void _deleteCache() {
+    final CacheManager cacheManager = DefaultCacheManager();
+    cacheManager.emptyCache();
   }
 
   void _onLoginPressed() async {
@@ -95,6 +108,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
 
     _storeCredentials(null);
     _mutateProfile(null);
+    _deleteCache();
   }
 
   void _onEditProfilePressed(Credentials? credentials) async {
@@ -117,8 +131,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final credentials = ref.watch(credentialsProvider);
     final profile = ref.watch(profileProvider);
+    final credentials = ref.watch(credentialsProvider);
 
     return Scaffold(
       appBar: AppBar(
