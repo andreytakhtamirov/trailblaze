@@ -7,11 +7,13 @@ class ProfileMenuWidget extends StatelessWidget {
     this.credentials,
     required this.onLogoutPressed,
     required this.onEditProfilePressed,
+    required this.onAboutPressed(),
   });
 
   final Credentials? credentials;
   final void Function() onLogoutPressed;
   final void Function(Credentials?) onEditProfilePressed;
+  final void Function() onAboutPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +60,7 @@ class ProfileMenuWidget extends StatelessWidget {
           onEditProfilePressed(credentials);
         }
         if (value == 'about') {
-          // TODO implement about screen
+          onAboutPressed();
         }
       },
     );

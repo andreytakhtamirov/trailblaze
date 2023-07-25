@@ -76,9 +76,9 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _buildTransportationModeWidget(
-            TransportationMode.walking, Icons.directions_walk, false),
+            TransportationMode.walking, TrailblazeIcons.kDirectionsWalkParks, false),
         _buildTransportationModeWidget(
-            TransportationMode.cycling, Icons.directions_bike, false),
+            TransportationMode.cycling, TrailblazeIcons.kDirectionsBikeParks, false),
         _buildTransportationModeWidget(TransportationMode.gravelCycling,
             TrailblazeIcons.kDirectionsBikeGravel, true),
       ],

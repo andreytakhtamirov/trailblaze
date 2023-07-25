@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class UiHelper {
   static showSnackBar(BuildContext context, String message,
@@ -36,5 +39,13 @@ class UiHelper {
         return alert;
       },
     );
+  }
+
+  static openUri(Uri uri) async {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      log('Could not launch $uri');
+    }
   }
 }

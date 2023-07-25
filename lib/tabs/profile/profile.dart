@@ -9,6 +9,7 @@ import 'package:trailblaze/data/profile.dart';
 import 'package:trailblaze/managers/credential_manager.dart';
 import 'package:trailblaze/managers/profile_manager.dart';
 import 'package:trailblaze/requests/user_profile.dart';
+import 'package:trailblaze/screens/about_screen.dart';
 import 'package:trailblaze/screens/create_profile_screen.dart';
 import 'package:trailblaze/tabs/profile/widgets/login_widget.dart';
 import 'package:trailblaze/tabs/profile/widgets/profile_header_widget.dart';
@@ -120,6 +121,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     _mutateProfile(Profile(data));
   }
 
+  void _onAboutPressed() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AboutScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -134,6 +144,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             credentials: credentials,
             onLogoutPressed: _onLogoutPressed,
             onEditProfilePressed: _onEditProfilePressed,
+            onAboutPressed: _onAboutPressed,
           )
         ],
       ),
