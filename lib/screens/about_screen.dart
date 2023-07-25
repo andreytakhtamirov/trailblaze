@@ -1,8 +1,13 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
+import 'package:mailto/mailto.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:trailblaze/constants/about_constants.dart';
+import 'package:trailblaze/constants/map_constants.dart';
+import 'package:trailblaze/constants/pubspec.yaml.g.dart';
+import 'package:trailblaze/util/ui_helper.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import 'dependencies_screen.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -13,10 +18,7 @@ class AboutScreen extends StatefulWidget {
 
 class _AboutScreenState extends State<AboutScreen> {
   String _appName = 'Loading...';
-  String _packageName = '';
-  String _appVersion = 'Loading...';
-  Uri kGithubUri =
-      Uri.parse('https://github.com/andreytakhtamirov/trailblaze-flutter');
+  String _packageName = 'Loading...';
 
   @override
   void initState() {
@@ -26,36 +28,57 @@ class _AboutScreenState extends State<AboutScreen> {
 
   void _getAppVersion() async {
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    String version = packageInfo.version.toString();
     String appName = packageInfo.appName;
     String? packageName = packageInfo.packageName;
     setState(() {
       _packageName = packageName;
       _appName = appName;
-      _appVersion = version;
     });
   }
 
-  void _launchURL() async {
-    if (await canLaunchUrl(kGithubUri)) {
-      await launchUrl(kGithubUri);
-    } else {
-      log('Could not launch $kGithubUri');
-    }
+  void _openGitHubPage() async {
+    UiHelper.openUri(kGithubUri);
+  }
+
+  void _openEmailContact() async {
+    await launchUrl(Uri.parse(Mailto(to: [kContactEmail]).toString()));
+  }
+
+  void _showDependenciesScreen() async {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const DependenciesScreen(),
+      ),
+    );
+  }
+
+  Widget _clickableLink(String title, Function() onClick) {
+    return InkWell(
+      onTap: onClick,
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          color: Colors.blue,
+          decoration: TextDecoration.underline,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('About App'),
+        title: const Text('About'),
       ),
       body: SafeArea(
         child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: SingleChildScrollView(
+            SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -70,10 +93,10 @@ class _AboutScreenState extends State<AboutScreen> {
                         padding: const EdgeInsets.all(2),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(20.0),
-                          child: const Image(
-                            width: 150,
+                          child: Image(
+                            width: kDevicePixelRatio * 50,
                             fit: BoxFit.fill,
-                            image: AssetImage('assets/app_icon.jpg'),
+                            image: const AssetImage('assets/app_icon.jpg'),
                           ),
                         ),
                       ),
@@ -91,7 +114,7 @@ class _AboutScreenState extends State<AboutScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          _appVersion,
+                          Pubspec.version.canonical,
                           style: const TextStyle(
                             fontSize: 24,
                             color: Colors.grey,
@@ -109,22 +132,25 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      'A route-planning app that finds the scenic way to get to places.',
+                      Pubspec.description,
                       style: TextStyle(
                         fontSize: 20,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    InkWell(
-                      onTap: _launchURL,
-                      child: const Text(
-                        'View on GitHub',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.blue,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
+                    const SizedBox(height: 24),
+                    _clickableLink(
+                      'View on GitHub',
+                      _openGitHubPage,
+                    ),
+                    const SizedBox(height: 12),
+                    _clickableLink(
+                      'Contact',
+                      _openEmailContact,
+                    ),
+                    const SizedBox(height: 12),
+                    _clickableLink(
+                      'Dependencies',
+                      _showDependenciesScreen,
                     ),
                   ],
                 ),
@@ -136,10 +162,10 @@ class _AboutScreenState extends State<AboutScreen> {
                 margin: const EdgeInsets.only(
                   left: 16,
                   right: 16,
-                  bottom: 8,
+                  bottom: 16,
                 ),
                 child: Text(
-                  '2023 Andrey Takhtamirov',
+                  kInfoFooter,
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey.shade700,
