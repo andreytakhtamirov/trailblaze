@@ -46,8 +46,10 @@ final CameraState kPostDetailsCameraState = CameraState(
     bearing: 0,
     pitch: 0);
 
+const kMapStyleUriPrefix = 'mapbox://styles/mapbox';
 const kMapStyleOutdoors = 'outdoors-v12';
 const kMapStyleSatellite = 'satellite-streets-v12';
+const kMapStyleDefaultUri = '$kMapStyleUriPrefix/$kMapStyleOutdoors';
 
 const List<String> kMapStyleOptions = [
   kMapStyleOutdoors,

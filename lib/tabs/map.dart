@@ -41,7 +41,6 @@ class _MapPageState extends State<MapPage>
   List<TrailblazeRoute> routesList = [];
   TrailblazeRoute? _selectedRoute;
   final List<mbm.PointAnnotationOptions> _pointAnnotations = [];
-  String _styleUri = 'mapbox://styles/mapbox/outdoors-v12';
 
   @override
   void initState() {
@@ -485,11 +484,8 @@ class _MapPageState extends State<MapPage>
   }
 
   void _onStyleChanged(String newStyleId) {
-    setState(() {
-      _styleUri = 'mapbox://styles/mapbox/$newStyleId';
-    });
-
-    _mapboxMap.style.setStyleURI(_styleUri);
+    String styleUri = '$kMapStyleUriPrefix/$newStyleId';
+    _mapboxMap.style.setStyleURI(styleUri);
   }
 
   @override
@@ -506,7 +502,7 @@ class _MapPageState extends State<MapPage>
           children: [
             Scaffold(
               body: mbm.MapWidget(
-                styleUri: _styleUri,
+                styleUri: kMapStyleDefaultUri,
                 onTapListener: _onMapTapListener,
                 resourceOptions: mbm.ResourceOptions(
                   accessToken: kMapboxAccessToken,

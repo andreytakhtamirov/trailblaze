@@ -37,9 +37,9 @@ class _MapStyleSelectorState extends State<MapStyleSelector> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             !_isExpanded
-                ? const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Icon(Icons.layers),
+                ? Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Icon(_getIconForStyle(_selectedStyle)),
                 )
                 : Expanded(
                     child: ListView(
@@ -83,11 +83,11 @@ class _MapStyleSelectorState extends State<MapStyleSelector> {
   IconData _getIconForStyle(String style) {
     switch (style) {
       case kMapStyleOutdoors:
-        return Icons.nature;
+        return Icons.layers_outlined;
       case kMapStyleSatellite:
-        return Icons.satellite;
+        return Icons.layers;
       default:
-        return Icons.nature;
+        return Icons.layers_outlined;
     }
   }
 }
