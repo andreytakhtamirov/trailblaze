@@ -152,7 +152,7 @@ class _PlacePickerState extends State<PlacePicker> {
                   ),
                 ),
                 SizedBox(
-                  height: 400,
+                  height: 250,
                   child: Column(
                     children: [
                       Expanded(

@@ -524,6 +524,22 @@ class _MapPageState extends State<MapPage>
               child: Stack(
                 children: [
                   Positioned(
+                    top: 65,
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                          child: MapStyleSelector(
+                            onStyleChanged: _onStyleChanged,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Positioned(
                     top: 0,
                     left: 0,
                     right: 0,
@@ -556,17 +572,6 @@ class _MapPageState extends State<MapPage>
               right: 0,
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: MapStyleSelector(
-                          onStyleChanged: _onStyleChanged,
-                        ),
-                      ),
-                    ],
-                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [

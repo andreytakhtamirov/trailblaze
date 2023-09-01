@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../constants/map_constants.dart';
+
 class MapStyleSelector extends StatefulWidget {
   const MapStyleSelector({super.key, required this.onStyleChanged});
 
@@ -10,13 +12,7 @@ class MapStyleSelector extends StatefulWidget {
 }
 
 class _MapStyleSelectorState extends State<MapStyleSelector> {
-  String _selectedStyle = 'outdoors-v12';
-  final List<String> _styleOptions = [
-    'outdoors-v12',
-    'streets-v12',
-    'satellite-streets-v12',
-    'dark-v10',
-  ];
+  String _selectedStyle = kMapStyleOptions[0];
 
   bool _isExpanded = false;
 
@@ -28,25 +24,28 @@ class _MapStyleSelectorState extends State<MapStyleSelector> {
           _isExpanded = !_isExpanded;
         });
       },
-      child: Container(
-        width: 60,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeInOut,
+        width: _isExpanded ? 70 : 40,
+        height: _isExpanded ? 140 : 40,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: Colors.white.withOpacity(0.4),
+          color: Colors.white.withOpacity(1),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             !_isExpanded
-                ? Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Icon(_getIconForStyle(_selectedStyle)),
+                ? const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Icon(Icons.layers),
                 )
                 : Expanded(
                     child: ListView(
                       shrinkWrap: true,
                       padding: EdgeInsets.zero,
-                      children: _styleOptions
+                      children: kMapStyleOptions
                           .map((style) => InkWell(
                                 onTap: () {
                                   setState(() {
@@ -56,13 +55,14 @@ class _MapStyleSelectorState extends State<MapStyleSelector> {
                                   widget.onStyleChanged(_selectedStyle);
                                 },
                                 child: Container(
+                                  height: 70,
                                   decoration: style == _selectedStyle
                                       ? BoxDecoration(
                                           border: Border.all(
                                               color: Colors.redAccent,
                                               width: 2.0),
                                           borderRadius:
-                                              BorderRadius.circular(4),
+                                              BorderRadius.circular(16),
                                         )
                                       : null,
                                   child: Padding(
@@ -82,14 +82,10 @@ class _MapStyleSelectorState extends State<MapStyleSelector> {
 
   IconData _getIconForStyle(String style) {
     switch (style) {
-      case 'outdoors-v12':
+      case kMapStyleOutdoors:
         return Icons.nature;
-      case 'streets-v12':
-        return Icons.location_city;
-      case 'satellite-streets-v12':
+      case kMapStyleSatellite:
         return Icons.satellite;
-      case 'dark-v10':
-        return Icons.nightlight_round;
       default:
         return Icons.nature;
     }
