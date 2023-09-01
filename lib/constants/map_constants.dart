@@ -11,8 +11,8 @@ const int kPolylinePrecision = 6;
 const String kRouteSourceId = "route-source-id";
 const String kRouteLayerId = "route-layer-id";
 const double kRouteLineWidth = 6.0;
-const double kRouteActiveLineOpacity = 1.0;
-const double kRouteInactiveLineOpacity = 0.8;
+const double kRouteActiveLineOpacity = 0.9;
+const double kRouteInactiveLineOpacity = 1.0;
 final double kDevicePixelRatio =
     WidgetsBinding.instance.window.devicePixelRatio;
 
@@ -46,8 +46,19 @@ final CameraState kPostDetailsCameraState = CameraState(
     bearing: 0,
     pitch: 0);
 
+const kMapStyleUriPrefix = 'mapbox://styles/mapbox';
+const kMapStyleOutdoors = 'outdoors-v12';
+const kMapStyleSatellite = 'satellite-streets-v12';
+const kMapStyleDefaultUri = '$kMapStyleUriPrefix/$kMapStyleOutdoors';
+
+const List<String> kMapStyleOptions = [
+  kMapStyleOutdoors,
+  kMapStyleSatellite,
+];
+
 final kAndroidTopOffset = Platform.isAndroid ? 80 : 0;
 final kMapUiPadding = kDevicePixelRatio * 6;
+final kMapUiPaddingRight = kDevicePixelRatio * 70;
 final kMapUiTopOffset =
     kDevicePixelRatio * 60 + kMapUiPadding + kAndroidTopOffset;
 
@@ -56,14 +67,14 @@ final CompassSettings kDefaultCompassSettings = CompassSettings(
     marginTop: kMapUiTopOffset,
     marginBottom: 0,
     marginLeft: 0,
-    marginRight: kMapUiPadding);
+    marginRight: kMapUiPaddingRight);
 
 final CompassSettings kPostDetailsCompassSettings = CompassSettings(
     position: OrnamentPosition.TOP_RIGHT,
     marginTop: 0,
     marginBottom: 0,
     marginLeft: 0,
-    marginRight: kMapUiPadding);
+    marginRight: kMapUiPaddingRight);
 
 final ScaleBarSettings kDefaultScaleBarSettings = ScaleBarSettings(
     isMetricUnits: true,

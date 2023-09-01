@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mapbox_search/mapbox_search.dart';
-import 'package:trailblaze/widgets/place_picker_widget.dart';
+import 'package:trailblaze/widgets/map/place_picker_widget.dart';
 
 
 class PlaceSearchBar extends StatefulWidget {

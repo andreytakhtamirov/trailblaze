@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:trailblaze/trailblaze_icons_icons.dart';
 
-import '../data/transportation_mode.dart';
+import '../../data/transportation_mode.dart';
 
 class TransportationModeWidget extends StatefulWidget {
   const TransportationModeWidget(

@@ -4,7 +4,7 @@ import 'package:trailblaze/data/trailblaze_route.dart';
 
 import '../constants/map_constants.dart';
 import '../data/list_item.dart';
-import '../widgets/route_info_widget.dart';
+import '../widgets/map/route_info_widget.dart';
 
 class PostDetailsScreen extends StatefulWidget {
   const PostDetailsScreen({super.key, required this.item});

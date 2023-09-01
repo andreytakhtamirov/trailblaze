@@ -6,7 +6,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:turf/turf.dart' as turf;
 
-import '../constants/map_constants.dart';
+import '../../constants/map_constants.dart';
 
 class PlacePicker extends StatefulWidget {
   const PlacePicker({Key? key, this.selectedPlace, required this.onSelected})
@@ -152,7 +152,7 @@ class _PlacePickerState extends State<PlacePicker> {
                   ),
                 ),
                 SizedBox(
-                  height: 400,
+                  height: 250,
                   child: Column(
                     children: [
                       Expanded(
