@@ -13,13 +13,14 @@ import 'package:trailblaze/extensions/mapbox_place_extension.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:trailblaze/screens/waypoint_edit_screen.dart';
 import 'package:trailblaze/util/ui_helper.dart';
-import 'package:trailblaze/widgets/picked_locations_widget.dart';
-import 'package:trailblaze/widgets/place_info_widget.dart';
-import 'package:trailblaze/widgets/route_info_widget.dart';
+import 'package:trailblaze/widgets/map/picked_locations_widget.dart';
+import 'package:trailblaze/widgets/map/place_info_widget.dart';
+import 'package:trailblaze/widgets/map/route_info_widget.dart';
 import 'package:trailblaze/widgets/search_bar_widget.dart';
 
 import '../data/transportation_mode.dart';
 import '../requests/create_route.dart';
+import '../widgets/map/map_style_selector_widget.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key, location});
@@ -40,6 +41,7 @@ class _MapPageState extends State<MapPage>
   List<TrailblazeRoute> routesList = [];
   TrailblazeRoute? _selectedRoute;
   final List<mbm.PointAnnotationOptions> _pointAnnotations = [];
+  String _styleUri = 'mapbox://styles/mapbox/outdoors-v12';
 
   @override
   void initState() {
@@ -183,7 +185,8 @@ class _MapPageState extends State<MapPage>
           isActive: isFirstRoute);
 
       await _mapboxMap.style.addSource(route.geoJsonSource);
-      await _mapboxMap.style.addLayer(route.lineLayer);
+      await _mapboxMap.style
+          .addLayerAt(route.lineLayer, mbm.LayerPosition(below: "road-label"));
       routesList.add(route);
     }
 
@@ -237,7 +240,8 @@ class _MapPageState extends State<MapPage>
     await _removeRouteLayer(route);
     route.setActive(isSelected);
     await _mapboxMap.style.addSource(route.geoJsonSource);
-    await _mapboxMap.style.addLayer(route.lineLayer);
+    await _mapboxMap.style
+        .addLayerAt(route.lineLayer, mbm.LayerPosition(below: "road-label"));
   }
 
   void _removeRouteLayers() async {
@@ -480,6 +484,14 @@ class _MapPageState extends State<MapPage>
     _displayRoute(_selectedMode, waypoints);
   }
 
+  void _onStyleChanged(String newStyleId) {
+    setState(() {
+      _styleUri = 'mapbox://styles/mapbox/$newStyleId';
+    });
+
+    _mapboxMap.style.setStyleURI(_styleUri);
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -494,6 +506,7 @@ class _MapPageState extends State<MapPage>
           children: [
             Scaffold(
               body: mbm.MapWidget(
+                styleUri: _styleUri,
                 onTapListener: _onMapTapListener,
                 resourceOptions: mbm.ResourceOptions(
                   accessToken: kMapboxAccessToken,
@@ -543,6 +556,17 @@ class _MapPageState extends State<MapPage>
               right: 0,
               child: Column(
                 children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: MapStyleSelector(
+                          onStyleChanged: _onStyleChanged,
+                        ),
+                      ),
+                    ],
+                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [

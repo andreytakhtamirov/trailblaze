@@ -11,8 +11,8 @@ const int kPolylinePrecision = 6;
 const String kRouteSourceId = "route-source-id";
 const String kRouteLayerId = "route-layer-id";
 const double kRouteLineWidth = 6.0;
-const double kRouteActiveLineOpacity = 1.0;
-const double kRouteInactiveLineOpacity = 0.8;
+const double kRouteActiveLineOpacity = 0.9;
+const double kRouteInactiveLineOpacity = 0.6;
 final double kDevicePixelRatio =
     WidgetsBinding.instance.window.devicePixelRatio;
 

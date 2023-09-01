@@ -10,7 +10,7 @@ import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:http/http.dart' as http;
 
-import '../requests/route_metrics.dart';
+import '../../requests/route_metrics.dart';
 
 class RouteInfo extends StatefulWidget {
   const RouteInfo({Key? key, required this.route}) : super(key: key);
