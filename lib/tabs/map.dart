@@ -151,8 +151,6 @@ class _MapPageState extends State<MapPage>
       _isRouteLoading = false;
     });
 
-    routesList.clear();
-
     Map<String, dynamic>? routeData;
 
     routeResponse.fold(
@@ -246,7 +244,9 @@ class _MapPageState extends State<MapPage>
   }
 
   void _removeRouteLayers() async {
-    for (var route in routesList) {
+    final copyList = [...routesList];
+    routesList.clear();
+    for (var route in copyList) {
       _removeRouteLayer(route);
     }
   }
