@@ -22,7 +22,7 @@ class _PlaceSearchBarState extends State<PlaceSearchBar> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Material(
         elevation: 2,
         borderRadius: BorderRadius.circular(20),

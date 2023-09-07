@@ -151,8 +151,6 @@ class _MapPageState extends State<MapPage>
       _isRouteLoading = false;
     });
 
-    routesList.clear();
-
     Map<String, dynamic>? routeData;
 
     routeResponse.fold(
@@ -183,9 +181,7 @@ class _MapPageState extends State<MapPage>
           kRouteLayerId + i.toString(), routeJson,
           isActive: isFirstRoute);
 
-      await _mapboxMap.style.addSource(route.geoJsonSource);
-      await _mapboxMap.style
-          .addLayerAt(route.lineLayer, mbm.LayerPosition(below: "road-label"));
+      _drawRoute(route);
       routesList.add(route);
     }
 
@@ -238,24 +234,38 @@ class _MapPageState extends State<MapPage>
     // Make sure route is removed before we add it again.
     await _removeRouteLayer(route);
     route.setActive(isSelected);
+    await _drawRoute(route);
+  }
+
+  Future<void> _drawRoute(TrailblazeRoute route) async {
     await _mapboxMap.style.addSource(route.geoJsonSource);
     await _mapboxMap.style
         .addLayerAt(route.lineLayer, mbm.LayerPosition(below: "road-label"));
   }
 
   void _removeRouteLayers() async {
-    for (var route in routesList) {
+    final copyList = [...routesList];
+    routesList.clear();
+    for (var route in copyList) {
       _removeRouteLayer(route);
     }
   }
 
   Future<void> _removeRouteLayer(TrailblazeRoute route) async {
-    if (await _mapboxMap.style.styleLayerExists(route.layerId)) {
-      await _mapboxMap.style.removeStyleLayer(route.layerId);
+    try {
+      if (await _mapboxMap.style.styleLayerExists(route.layerId)) {
+        await _mapboxMap.style.removeStyleLayer(route.layerId);
+      }
+    } catch (e) {
+      log('Exception removing route style layer: $e');
     }
 
-    if (await _mapboxMap.style.styleSourceExists(route.sourceId)) {
-      await _mapboxMap.style.removeStyleSource(route.sourceId);
+    try {
+      if (await _mapboxMap.style.styleSourceExists(route.sourceId)) {
+        await _mapboxMap.style.removeStyleSource(route.sourceId);
+      }
+    } catch (e) {
+      log('Exception removing route style source layer: $e');
     }
   }
 
@@ -483,9 +493,24 @@ class _MapPageState extends State<MapPage>
     _displayRoute(_selectedMode, waypoints);
   }
 
-  void _onStyleChanged(String newStyleId) {
+  void _onStyleChanged(String newStyleId) async {
     String styleUri = '$kMapStyleUriPrefix/$newStyleId';
-    _mapboxMap.style.setStyleURI(styleUri);
+    await _mapboxMap.style.setStyleURI(styleUri);
+
+    // Redraw routes to show them on top of the new style.
+    for (var route in routesList) {
+      if (route == _selectedRoute) {
+        continue;
+      }
+
+      await _removeRouteLayer(route);
+      _drawRoute(route);
+    }
+
+    if (_selectedRoute != null) {
+      await _removeRouteLayer(_selectedRoute!);
+      _drawRoute(_selectedRoute!);
+    }
   }
 
   @override
@@ -520,43 +545,42 @@ class _MapPageState extends State<MapPage>
               child: Stack(
                 children: [
                   Positioned(
-                    top: 65,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                          child: MapStyleSelector(
-                            onStyleChanged: _onStyleChanged,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Positioned(
                     top: 0,
                     left: 0,
                     right: 0,
-                    child: AnimatedCrossFade(
-                      duration: const Duration(milliseconds: 300),
-                      crossFadeState: _isDirectionsView
-                          ? CrossFadeState.showSecond
-                          : CrossFadeState.showFirst,
-                      firstChild: PlaceSearchBar(
-                          onSelected: _onSelectPlace,
-                          selectedPlace: _selectedPlace),
-                      secondChild: InkWell(
-                        onTap: _showEditDirectionsScreen,
-                        child: PickedLocationsWidget(
-                          onBackClicked: _onDirectionsBackClicked,
-                          onModeChanged: _onTransportationModeChanged,
-                          startingLocation: _startingLocation,
-                          endingLocation: _selectedPlace,
-                          waypoints: const [],
+                    child: Column(
+                      children: [
+                        AnimatedCrossFade(
+                          duration: const Duration(milliseconds: 300),
+                          crossFadeState: _isDirectionsView
+                              ? CrossFadeState.showSecond
+                              : CrossFadeState.showFirst,
+                          firstChild: PlaceSearchBar(
+                              onSelected: _onSelectPlace,
+                              selectedPlace: _selectedPlace),
+                          secondChild: InkWell(
+                            onTap: _showEditDirectionsScreen,
+                            child: PickedLocationsWidget(
+                              onBackClicked: _onDirectionsBackClicked,
+                              onModeChanged: _onTransportationModeChanged,
+                              startingLocation: _startingLocation,
+                              endingLocation: _selectedPlace,
+                              waypoints: const [],
+                            ),
+                          ),
                         ),
-                      ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                              child: MapStyleSelector(
+                                onStyleChanged: _onStyleChanged,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ],
