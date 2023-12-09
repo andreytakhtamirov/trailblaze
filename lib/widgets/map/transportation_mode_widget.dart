@@ -72,15 +72,29 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return Column(
       children: [
-        _buildTransportationModeWidget(
-            TransportationMode.walking, TrailblazeIcons.kDirectionsWalkParks, false),
-        _buildTransportationModeWidget(
-            TransportationMode.cycling, TrailblazeIcons.kDirectionsBikeParks, false),
-        _buildTransportationModeWidget(TransportationMode.gravelCycling,
-            TrailblazeIcons.kDirectionsBikeGravel, true),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildTransportationModeWidget(
+                TransportationMode.walking, Icons.directions_walk, false),
+                    _buildTransportationModeWidget(
+                TransportationMode.cycling, Icons.directions_bike, false),
+            _buildTransportationModeWidget(TransportationMode.gravelCycling,
+                TrailblazeIcons.kDirectionsBikeGravel, true),
+          ],
+        ),
+        // Don't show parks+ option for now. Need to design a better UI to select these modes.
+        // Row(
+        //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        //   children: [
+        //     _buildTransportationModeWidget(
+        //         TransportationMode.walkingPlus, TrailblazeIcons.kDirectionsWalkParks, false),
+        //     _buildTransportationModeWidget(
+        //         TransportationMode.cyclingPlus, TrailblazeIcons.kDirectionsBikeParks, false),
+        //   ],
+        // ),
       ],
     );
   }

@@ -19,7 +19,7 @@ final double kDevicePixelRatio =
 final CameraState kDefaultCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
     padding: MbxEdgeInsets(
-        top: kDevicePixelRatio * 50.0, left: 0.0, bottom: 0.0, right: 0.0),
+        top: 50.0, left: 0.0, bottom: 0.0, right: 0.0),
     zoom: 12,
     bearing: 0,
     pitch: 0);
@@ -27,10 +27,10 @@ final CameraState kDefaultCameraState = CameraState(
 final CameraState kRouteCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
     padding: MbxEdgeInsets(
-        top: kDevicePixelRatio * 240,
-        left: kDevicePixelRatio * 40,
-        bottom: kDevicePixelRatio * 220,
-        right: kDevicePixelRatio * 40),
+        top: 250,
+        left: 30,
+        bottom: 210,
+        right: 30),
     zoom: 12,
     bearing: 0,
     pitch: 0);
@@ -38,10 +38,10 @@ final CameraState kRouteCameraState = CameraState(
 final CameraState kPostDetailsCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
     padding: MbxEdgeInsets(
-        top: kDevicePixelRatio * 0,
-        left: kDevicePixelRatio * 40,
-        bottom: kDevicePixelRatio * 150,
-        right: kDevicePixelRatio * 40),
+        top: 40,
+        left: 30,
+        bottom: 240,
+        right: 30),
     zoom: 12,
     bearing: 0,
     pitch: 0);
@@ -56,25 +56,28 @@ const List<String> kMapStyleOptions = [
   kMapStyleSatellite,
 ];
 
-final kAndroidTopOffset = Platform.isAndroid ? 80 : 0;
-final kMapUiPadding = kDevicePixelRatio * 6;
-final kMapUiPaddingRight = kDevicePixelRatio * 70;
+final kMapTopOffset = Platform.isAndroid ? 8.0 : 0.0;
+final kAndroidTopOffset = Platform.isAndroid ? 32.0 : 0.0;
+const kMapUiPadding = 14.0;
+const kCompassTopOffset = 32.0;
 final kMapUiTopOffset =
-    kDevicePixelRatio * 60 + kMapUiPadding + kAndroidTopOffset;
+    48.0 + kMapUiPadding + kAndroidTopOffset;
+const kAttributionLeftOffset = kMapUiPadding + 80.0;
+const kAttributionBottomOffset = 8.0;
 
 final CompassSettings kDefaultCompassSettings = CompassSettings(
-    position: OrnamentPosition.TOP_RIGHT,
-    marginTop: kMapUiTopOffset,
+    position: OrnamentPosition.TOP_LEFT,
+    marginTop: kMapUiTopOffset + kCompassTopOffset,
     marginBottom: 0,
-    marginLeft: 0,
-    marginRight: kMapUiPaddingRight);
+    marginLeft: kMapUiPadding,
+    marginRight: 0);
 
 final CompassSettings kPostDetailsCompassSettings = CompassSettings(
-    position: OrnamentPosition.TOP_RIGHT,
-    marginTop: 0,
+    position: OrnamentPosition.TOP_LEFT,
+    marginTop: kMapUiPadding + kCompassTopOffset,
     marginBottom: 0,
-    marginLeft: 0,
-    marginRight: kMapUiPaddingRight);
+    marginLeft: kMapUiPadding,
+    marginRight: 0);
 
 final ScaleBarSettings kDefaultScaleBarSettings = ScaleBarSettings(
     isMetricUnits: true,
@@ -87,7 +90,7 @@ final ScaleBarSettings kDefaultScaleBarSettings = ScaleBarSettings(
 final ScaleBarSettings kPostDetailsScaleBarSettings = ScaleBarSettings(
     isMetricUnits: true,
     position: OrnamentPosition.TOP_LEFT,
-    marginTop: 0,
+    marginTop: kMapUiPadding,
     marginBottom: 0,
     marginLeft: kMapUiPadding,
     marginRight: 0);
@@ -95,6 +98,6 @@ final ScaleBarSettings kPostDetailsScaleBarSettings = ScaleBarSettings(
 final AttributionSettings kDefaultAttributionSettings = AttributionSettings(
     position: OrnamentPosition.BOTTOM_LEFT,
     marginTop: 0,
-    marginBottom: kMapUiPadding,
-    marginLeft: kDevicePixelRatio * 90 + kMapUiPadding,
+    marginBottom: kAttributionBottomOffset,
+    marginLeft: kAttributionLeftOffset,
     marginRight: 0);

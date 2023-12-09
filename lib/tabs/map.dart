@@ -41,6 +41,7 @@ class _MapPageState extends State<MapPage>
   List<TrailblazeRoute> routesList = [];
   TrailblazeRoute? _selectedRoute;
   final List<mbm.PointAnnotationOptions> _pointAnnotations = [];
+  bool _mapStyleTouchContext = false;
 
   @override
   void initState() {
@@ -494,6 +495,10 @@ class _MapPageState extends State<MapPage>
   }
 
   void _onStyleChanged(String newStyleId) async {
+    setState(() {
+      _mapStyleTouchContext = false;
+    });
+
     String styleUri = '$kMapStyleUriPrefix/$newStyleId';
     await _mapboxMap.style.setStyleURI(styleUri);
 
@@ -511,6 +516,18 @@ class _MapPageState extends State<MapPage>
       await _removeRouteLayer(_selectedRoute!);
       _drawRoute(_selectedRoute!);
     }
+  }
+
+  void onTapOutsideMapStyle(PointerDownEvent event) {
+    setState(() {
+      _mapStyleTouchContext = false;
+    });
+  }
+
+  void onTapInsideMapStyle(PointerDownEvent event) {
+    setState(() {
+      _mapStyleTouchContext = true;
+    });
   }
 
   @override
@@ -545,7 +562,7 @@ class _MapPageState extends State<MapPage>
               child: Stack(
                 children: [
                   Positioned(
-                    top: 0,
+                    top: kMapTopOffset,
                     left: 0,
                     right: 0,
                     child: Column(
@@ -574,8 +591,13 @@ class _MapPageState extends State<MapPage>
                           children: [
                             Padding(
                               padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                              child: MapStyleSelector(
-                                onStyleChanged: _onStyleChanged,
+                              child: TapRegion(
+                                onTapOutside: onTapOutsideMapStyle,
+                                onTapInside: onTapInsideMapStyle,
+                                child: MapStyleSelector(
+                                  onStyleChanged: _onStyleChanged,
+                                  hasTouchContext: _mapStyleTouchContext,
+                                ),
                               ),
                             ),
                           ],
