@@ -7,6 +7,8 @@ enum TransportationMode {
   none("none"),
   walking("walking"),
   cycling("cycling"),
+  walkinPlus("walking_plus"),
+  cyclingPlus("cycling_plus"),
   gravelCycling("gravel_cycling");
 
   final String value;
