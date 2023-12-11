@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trailblaze/constants/auth_constants.dart';
 import 'package:trailblaze/constants/validation_constants.dart';
 import 'package:trailblaze/data/profile.dart';
 import 'package:trailblaze/managers/profile_manager.dart';
@@ -186,6 +187,38 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
     }
   }
 
+  void _showDeleteConfirmationDialog() async {
+    bool? confirmed = await UiHelper.showConfirmationDialog(
+      context,
+      'Confirm Account Deletion',
+      'Are you sure you want to delete your Trailblaze account?',
+      'Delete',
+      'Cancel',
+      Colors.red[900] ?? Colors.red,
+      Colors.grey[400] ?? Colors.grey,
+    );
+
+    if (confirmed ?? false) {
+      _onDeleteAccount();
+    }
+  }
+
+  void _onDeleteAccount() async {
+    final response = await deleteProfile(
+      widget.credentials?.idToken ?? '',
+    );
+
+    response.fold(
+      (error) => {
+        UiHelper.showSnackBar(context, "An unknown error occurred"),
+      },
+      (userProfile) => {
+        UiHelper.showSnackBar(context, "Profile deleted"),
+        Navigator.pop(context, kFlagProfileDeleted)
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final profile = ref.watch(profileProvider);
@@ -201,7 +234,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: const Text('Complete Profile'),
+        title: const Text('Edit Profile'),
       ),
       body: Column(
         children: [
@@ -328,6 +361,24 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+          Visibility(
+            visible: MediaQuery.of(context).viewInsets.bottom == 0,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 48.0),
+              child: MaterialButton(
+                color: Colors.white,
+                textColor: Colors.red[900],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4.0),
+                  side: BorderSide(
+                    color: Colors.red[900] ?? Colors.red,
+                  ),
+                ),
+                onPressed: _showDeleteConfirmationDialog,
+                child: const Text('Delete Account'),
               ),
             ),
           ),
