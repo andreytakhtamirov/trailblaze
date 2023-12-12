@@ -116,6 +116,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
 
     if (data == null) {
       return;
+    } else if (data == kFlagProfileDeleted) {
+      // No need to log out from auth0 since our
+      //  server handles deletion from auth0's database.
+      _storeCredentials(null);
+      _mutateProfile(null);
+      _deleteCache();
+      return;
     }
 
     _mutateProfile(Profile(data));

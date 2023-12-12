@@ -64,6 +64,34 @@ Future<Either<int, Map<String, dynamic>?>> saveProfile(
   return Left(response.statusCode);
 }
 
+Future<Either<int, Map<String, dynamic>?>> deleteProfile(
+    String jwtToken) async {
+  const endpoint = '$kBaseUrl/users';
+  final kRequestHeaders = {
+    ...kRequestHeaderBasic,
+    'Authorization': 'Bearer $jwtToken',
+  };
+
+  final http.Response response;
+  try {
+    response = await http.delete(
+      Uri.parse(endpoint),
+      headers: kRequestHeaders,
+    );
+  } catch (e) {
+    log("Failed to delete for $endpoint. $e");
+    return const Left(-1);
+  }
+
+  if (response.statusCode == 200) {
+    return Right(jsonDecode(response.body));
+  } else {
+    log("Failed to delete user profile. Status code: ${response.statusCode}");
+  }
+
+  return Left(response.statusCode);
+}
+
 Future<Either<int, Map<String, dynamic>?>> checkUsernameAvailability(
     String username) async {
   final endpoint = '$kBaseUrl/users/check/$username';
