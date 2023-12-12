@@ -40,6 +40,14 @@ class _AboutScreenState extends State<AboutScreen> {
     UiHelper.openUri(kGithubUri);
   }
 
+  void _openPrivacyPolicy() async {
+    UiHelper.openUri(kPrivacyPolicyUri);
+  }
+
+  void _openTermsAndConditions() async {
+    UiHelper.openUri(kTermsAndConditionsUri);
+  }
+
   void _openEmailContact() async {
     await launchUrl(Uri.parse(Mailto(to: [kContactEmail]).toString()));
   }
@@ -141,6 +149,16 @@ class _AboutScreenState extends State<AboutScreen> {
                     _clickableLink(
                       'View on GitHub',
                       _openGitHubPage,
+                    ),
+                    const SizedBox(height: 12),
+                    _clickableLink(
+                      'Privacy Policy',
+                      _openPrivacyPolicy,
+                    ),
+                    const SizedBox(height: 12),
+                    _clickableLink(
+                      'Terms and Conditions',
+                      _openTermsAndConditions,
                     ),
                     const SizedBox(height: 12),
                     _clickableLink(
