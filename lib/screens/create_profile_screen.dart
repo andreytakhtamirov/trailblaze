@@ -345,7 +345,9 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                           const SizedBox(
                             height: 24,
                           ),
-                          ElevatedButton(
+                          MaterialButton(
+                            color: Theme.of(context).colorScheme.tertiary,
+                            disabledColor: Colors.grey[400],
                             onPressed: (_isAvailable &&
                                         _isAvailableFuture != null &&
                                         _isFormValid()) ||
@@ -354,7 +356,12 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                         _changedProfilePicture != null)
                                 ? _onSubmitForm
                                 : null,
-                            child: const Text('Submit'),
+                            child: const Text(
+                              style: TextStyle(
+                                color: Colors.white,
+                              ),
+                              'Submit',
+                            ),
                           ),
                         ],
                       ),
