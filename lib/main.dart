@@ -22,25 +22,45 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
-
     ]);
 
     return MaterialApp(
       theme: ThemeData(
-        primarySwatch: const MaterialColor(
-          0xFF255368,
-          <int, Color>{
-            50: Color(0xFF194356),
-            100: Color(0xFF255368),
-            200: Color(0xFF3D687E),
-            300: Color(0xFF376075),
-            400: Color(0xFF5A94B0),
-            500: Color(0xFF72A5BD),
-            600: Color(0xFF95B8C9),
-            700: Color(0xFF9BB1BB),
-            800: Color(0xFFC3D2DA),
-            900: Color(0xFFE4EAEF),
-          },
+        colorScheme: const ColorScheme(
+          primary: Color(0xFF255368),
+          brightness: Brightness.light,
+          onPrimary: Color(0xFFE4EAEF),
+          secondary: Color(0xFFFF9800),
+          onSecondary: Color(0xFF88B181),
+          tertiary: Color(0xFF75A56C),
+          onTertiary: Color(0xFFE8951B),
+          error: Color(0xFFCE1515),
+          onError: Color(0xFFC3D2DA),
+          background: Color(0xFFFFFFFF),
+          onBackground: Color(0xFF000000),
+          surface: Color(0xFFFFFFFF),
+          onSurface: Color(0xFF000000),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF255368),
+          foregroundColor: Color(0xFFFFFFFF),
+        ),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          backgroundColor: Color(0xFFFFFFFF),
+          selectedItemColor: Color(0xFF0487B9),
+          unselectedItemColor: Color(0xFF98989D),
+          showSelectedLabels: true,
+          showUnselectedLabels: true,
+          type: BottomNavigationBarType.fixed,
+        ),
+        iconTheme: const IconThemeData(
+          color: Colors.black87,
+        ),
+        tabBarTheme: const TabBarTheme(
+          labelColor: Color(0xFF75A56C),
+          unselectedLabelColor: Color(0xFF98989D),
+          indicatorColor: Color(0xFF75A56C),
+          indicatorSize: TabBarIndicatorSize.tab,
         ),
       ),
       home: const MainPage(),

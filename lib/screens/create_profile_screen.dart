@@ -131,7 +131,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
 
   void _onChangeProfilePicture() async {
     final helper = ImageHelper();
-    final toolBarColor = Theme.of(context).primaryColor;
+    final toolBarColor = Theme.of(context).colorScheme.primary;
 
     final File? image = await helper.pickImage(context);
 

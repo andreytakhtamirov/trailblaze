@@ -17,7 +17,7 @@ class ImageHelper {
         source: ImageSource.gallery,
       );
     } on PlatformException {
-      UiHelper.showSnackBar(context, "There was a problem getting your image.");
+      if (context.mounted)  UiHelper.showSnackBar(context, "There was a problem getting your image.");
       return null;
     }
 

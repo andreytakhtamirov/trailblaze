@@ -32,7 +32,7 @@ class _PlaceInfoState extends State<PlaceInfo> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.4),
               offset: const Offset(0, 3),
               blurRadius: 8,
             ),
@@ -42,9 +42,9 @@ class _PlaceInfoState extends State<PlaceInfo> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Row(
                     children: [
@@ -68,19 +68,33 @@ class _PlaceInfoState extends State<PlaceInfo> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  MaterialButton(
-                    onPressed: () {
-                      if (widget.selectedPlace != null) {
-                        widget.onDirectionsClicked(widget.selectedPlace!);
-                      }
-                    },
-                    color: Colors.indigo,
-                    child: const Text(
-                      "Directions",
-                      style: TextStyle(
-                        color: Colors.white,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            if (widget.selectedPlace != null) {
+                              widget.onDirectionsClicked(widget.selectedPlace!);
+                            }
+                          },
+                          style: ButtonStyle(
+                            backgroundColor: MaterialStateProperty.all<Color>(
+                              Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          icon: Icon(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            Icons.directions,
+                          ),
+                          label: Text(
+                            "Directions",
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onPrimary,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),

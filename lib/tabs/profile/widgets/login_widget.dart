@@ -22,7 +22,8 @@ class LoginView extends StatelessWidget {
                 ),
               ),
             ),
-            ElevatedButton(
+            MaterialButton(
+              color: Theme.of(context).colorScheme.tertiary,
               onPressed: onLoginPressed,
               child: const Text('Log in'),
             ),

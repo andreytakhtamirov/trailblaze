@@ -27,7 +27,7 @@ final CameraState kDefaultCameraState = CameraState(
 final CameraState kRouteCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
     padding: MbxEdgeInsets(
-        top: 250,
+        top: 270,
         left: 30,
         bottom: 210,
         right: 30),
