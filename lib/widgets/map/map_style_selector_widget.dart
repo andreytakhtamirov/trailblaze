@@ -40,6 +40,7 @@ class _MapStyleSelectorState extends State<MapStyleSelector> {
                 )
               : Expanded(
                   child: ListView(
+                    physics: const NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
                     padding: EdgeInsets.zero,
                     children: kMapStyleOptions

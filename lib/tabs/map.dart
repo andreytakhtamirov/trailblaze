@@ -500,6 +500,12 @@ class _MapPageState extends State<MapPage>
     });
 
     String styleUri = '$kMapStyleUriPrefix/$newStyleId';
+
+    if (await _mapboxMap.style.getStyleURI() == styleUri) {
+      // Don't update if nothing changed.
+      return;
+    }
+
     await _mapboxMap.style.setStyleURI(styleUri);
 
     // Redraw routes to show them on top of the new style.
@@ -621,7 +627,8 @@ class _MapPageState extends State<MapPage>
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                         child: FloatingActionButton(
                           heroTag: 'showMyLocationFab',
-                          backgroundColor: Colors.orange,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.secondary,
                           onPressed: _onGpsButtonPressed,
                           child: const Icon(
                             Icons.gps_fixed,

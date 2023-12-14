@@ -18,16 +18,16 @@ class ProfileTabsWidget extends StatelessWidget {
       length: 2,
       child: Column(
         children: [
-          TabBar(
+          const TabBar(
             tabs: [
               Tab(
-                icon: Icon(Icons.favorite_border,
-                    color: Theme.of(context).primaryColor),
+                icon: Icon(
+                  Icons.favorite_border,
+                ),
               ),
               Tab(
                 icon: Icon(
                   Icons.route_outlined,
-                  color: Theme.of(context).primaryColor,
                 ),
               ),
             ],

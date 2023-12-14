@@ -167,7 +167,7 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
             child: Padding(
               padding: EdgeInsets.all(16),
               child: Icon(
-                Icons.edit_note,
+                Icons.edit_location_alt_outlined,
                 size: 32,
               ),
             ),
