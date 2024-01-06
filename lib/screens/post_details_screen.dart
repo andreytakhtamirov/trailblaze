@@ -15,6 +15,7 @@ class PostDetailsScreen extends StatefulWidget {
   State<PostDetailsScreen> createState() => _PostDetailsScreenState();
 }
 
+// TODO refactor to use new map widget
 class _PostDetailsScreenState extends State<PostDetailsScreen> {
   MapboxMap? _mapboxMap;
   late PointAnnotationManager _annotationManager;

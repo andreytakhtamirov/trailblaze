@@ -78,9 +78,7 @@ class UiHelper {
                   // Since we expose options for button colours, we must
                   //  automatically adjust the font colour to be visible
                   //  against any background colour.
-                    color: negativeColor.computeLuminance() > 0.5
-                        ? Colors.black
-                        : Colors.white),
+                    color: textColorForBackgroundColor(negativeColor)),
               ),
             ),
             MaterialButton(
@@ -91,14 +89,18 @@ class UiHelper {
               child: Text(
                 positiveAction,
                 style: TextStyle(
-                    color: positiveColor.computeLuminance() > 0.5
-                        ? Colors.black
-                        : Colors.white),
+                    color: textColorForBackgroundColor(positiveColor)),
               ),
             ),
           ],
         );
       },
     );
+  }
+
+  static Color textColorForBackgroundColor(Color background) {
+    return background.computeLuminance() > 0.5
+        ? Colors.black
+        : Colors.white;
   }
 }

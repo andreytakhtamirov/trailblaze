@@ -117,7 +117,7 @@ class _PlacePickerState extends State<PlacePicker> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-      height: _isExpanded ? null : 50,
+      height: _isExpanded ? null : kSearchBarHeight,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),

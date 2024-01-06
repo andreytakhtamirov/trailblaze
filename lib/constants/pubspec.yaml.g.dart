@@ -14,7 +14,7 @@ library pubspec;
 
   MIT License
 
-  Copyright (c) 2023 Plague Fox
+  Copyright (c) 2024 Plague Fox
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -123,14 +123,14 @@ sealed class Pubspec {
 
   /// Build date and time (UTC)
   static final DateTime timestamp = DateTime.utc(
-    2023,
-    12,
-    14,
-    21,
-    49,
-    46,
-    655,
-    186,
+    2024,
+    1,
+    2,
+    7,
+    34,
+    51,
+    323,
+    620,
   );
 
   /// Name
@@ -346,7 +346,7 @@ sealed class Pubspec {
 
   /// Environment
   static const Map<String, String> environment = <String, String>{
-    'sdk': '>=3.0.6',
+    'sdk': '>=3.2.0',
   };
 
   /// Platforms
@@ -406,7 +406,7 @@ sealed class Pubspec {
   /// For more information,
   /// see [Package dependencies](https://dart.dev/tools/pub/dependencies).
   static const Map<String, Object> dependencies = <String, Object>{
-    'mapbox_maps_flutter': r'^0.5.0',
+    'mapbox_maps_flutter': r'^0.5.1',
     'auth0_flutter': r'^1.4.1',
     'mapbox_search': r'4.0.0-beta.1',
     'http': r'^0.13.5',
@@ -428,6 +428,7 @@ sealed class Pubspec {
     'package_info_plus': r'^4.0.2',
     'url_launcher': r'^6.1.12',
     'mailto': r'^2.0.0',
+    'sliding_up_panel': r'^2.0.0+1',
     'flutter': <String, Object>{
       'sdk': r'flutter',
     },

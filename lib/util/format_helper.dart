@@ -22,8 +22,8 @@ class FormatHelper {
     return formattedDuration;
   }
 
-  static String formatDistance(num? distance) {
-    return "${(distance != null ? distance / 1000 : 0).toStringAsFixed(2)} km";
+  static String formatDistance(num? distance, {bool noRemainder = false}) {
+    return "${(distance != null ? distance / 1000 : 0).toStringAsFixed(!noRemainder ? 2 : 0)} km";
   }
 
   static String formatLikesCount(int likes) {

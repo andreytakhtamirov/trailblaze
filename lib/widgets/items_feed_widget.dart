@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:trailblaze/constants/discover_constants.dart';
-import 'package:trailblaze/widgets/posts/post_widget.dart';
 
 import '../data/list_item.dart';
 import '../requests/fetch_items.dart';
-import 'posts/mini_post_widget.dart';
+import 'list_items/mini_post_widget.dart';
+import 'list_items/post_widget.dart';
 
 class ItemsFeed extends ConsumerStatefulWidget {
   const ItemsFeed(this.endpointService, this.itemType,
