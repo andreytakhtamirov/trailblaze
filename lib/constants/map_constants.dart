@@ -65,9 +65,9 @@ final CameraState kFeaturesCameraState = CameraState(
     center: kDefaultCameraState.center,
     padding: MbxEdgeInsets(
         top: 40,
-        left: kDefaultCameraState.padding.left,
+        left: 40,
         bottom: 60,
-        right: kDefaultCameraState.padding.right),
+        right: 40),
     zoom: kDefaultCameraState.zoom,
     bearing: kDefaultCameraState.bearing,
     pitch: kDefaultCameraState.pitch);

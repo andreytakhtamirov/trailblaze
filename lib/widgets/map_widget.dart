@@ -54,7 +54,7 @@ class _MapWidgetState extends State<MapWidget>
   String _selectedMode = kDefaultTransportationMode.value;
   List<TrailblazeRoute> routesList = [];
   TrailblazeRoute? _selectedRoute;
-  bool _isRouteLoading = false;
+  bool _isContentLoading = false;
   bool _mapStyleTouchContext = false;
   bool _manuallySelectedPlace = false;
   bool _pauseUiCallbacks = false;
@@ -300,6 +300,10 @@ class _MapWidgetState extends State<MapWidget>
       return;
     }
 
+    setState(() {
+      _isContentLoading = true;
+    });
+
     if (context.mounted) {
       final featuresPromise = FeatureManager.loadFeatures(
           context,
@@ -326,6 +330,10 @@ class _MapWidgetState extends State<MapWidget>
 
       await _updateFeatures();
     }
+
+    setState(() {
+      _isContentLoading = false;
+    });
   }
 
   void _setMapControlSettings() async {
@@ -494,7 +502,7 @@ class _MapWidgetState extends State<MapWidget>
     _removeRouteLayers();
 
     setState(() {
-      _isRouteLoading = true;
+      _isContentLoading = true;
     });
 
     final dartz.Either<int, Map<String, dynamic>?> routeResponse;
@@ -505,7 +513,7 @@ class _MapWidgetState extends State<MapWidget>
     }
 
     setState(() {
-      _isRouteLoading = false;
+      _isContentLoading = false;
     });
 
     Map<String, dynamic>? routeData;
@@ -950,6 +958,7 @@ class _MapWidgetState extends State<MapWidget>
   Future<void> _toggleParksMode() async {
     if (_viewMode == ViewMode.parks) {
       _setViewMode(ViewMode.search);
+      await annotationHelper?.deleteAllAnnotations();
       _onSelectPlace(null);
       return;
     } else {
@@ -1241,24 +1250,25 @@ class _MapWidgetState extends State<MapWidget>
                       ],
                     ),
                   ),
-                  if (_isRouteLoading)
-                    Overlay(
-                      initialEntries: [
-                        OverlayEntry(
-                          builder: (context) => Positioned(
-                            top: 0,
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              color: Colors.white60,
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            ),
+                  if (_isContentLoading)
+                    Positioned(
+                      top: 0,
+                      bottom: _getBottomOffset(),
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(),
                           ),
                         ),
-                      ],
+                      ),
                     ),
                 ],
               ),
