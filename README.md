@@ -11,18 +11,22 @@ Check out the latest release of Trailblaze for iOS & Android:
 
 
 ## Features
-- Walking, cycling navigation that aims to include nearby parks along the way.
-- **[BETA] Gravel-cycling-friendly routing prioritizing unpaved trails.** [See availability map here](https://github.com/andreytakhtamirov/trailblaze-pathsense#supported-regions)
-- Route metrics (road surfaces, classification).
+- Find new routes to your favorite places with directions for walking and cycling.
+- Explore nearby parks within your chosen travel distance.
+- See details about your trip, including distance, time, and surface information.
+- 🏔️🚴 **[BETA] Routing for gravel cycling, prioritizing unpaved trails** [See availability map here](https://github.com/andreytakhtamirov/trailblaze-pathsense#supported-regions).
+- Sign in and customize your profile.
+
+</br>
 
 - *[COMING SOON] Discover page with routes from other users.*
 - *[COMING SOON] Save and share your own routes.*
 
-
 ## Screenshots
-<img width="500" alt="screenshot1" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/245bb520-016d-44db-930c-8f48dced1489">
-<img width="500" alt="screenshot2" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/c6a3d4fc-a71e-477f-8e7d-5f876c3877e7">
-
+<img width="400" alt="route preview" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/91a2d70a-c1ab-48fe-ac2d-877f2ad9612c">
+<img width="400" alt="route info" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/2885f8c0-15c0-4864-bdfb-d1ece401a47e">
+<img width="400" alt="features view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/416f73eb-add5-48fe-aefe-6df4f8009013">
+<img width="400" alt="image" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/8bfe803b-ba0c-491c-93e0-66fce5512af3">
 
 ## Building
 
@@ -69,9 +73,3 @@ Both projects are now open-sourced and available here:
 - https://dev.azure.com/trailblaze/trailblaze/_git/trailblaze-server
 
 There you may also find the DevOps methods used throughout the process.
-
-
-## What Now?
-
-trailblaze-flutter aims to carry the torch from the original project by expanding to support both iOS and Android, as well as take advantage of future scheduled server improvements. This will involve expanding on the functionalities of the trailblaze-server project to give smarter results that take more map data into account, aiming to deliver a truly revolutionary scenic routing algorithm.
-
