@@ -837,7 +837,6 @@ class _MapWidgetState extends State<MapWidget>
     });
 
     _setMapControlSettings();
-    _updateFeatures();
   }
 
   void _onTransportationModeChanged(TransportationMode mode) {
@@ -1030,13 +1029,12 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   void _setViewMode(ViewMode newViewMode) async {
-    final previousViewMode = _viewMode;
     setState(() {
       _previousViewMode = _viewMode;
       _viewMode = newViewMode;
     });
 
-    if (previousViewMode == ViewMode.parks) {
+    if (_previousViewMode == ViewMode.parks) {
       annotationHelper?.deleteCircleAnnotations();
       setState(() {
         _pauseUiCallbacks = true;
@@ -1045,9 +1043,12 @@ class _MapWidgetState extends State<MapWidget>
       setState(() {
         _pauseUiCallbacks = false;
       });
-    } else if (previousViewMode == ViewMode.directions) {
+    } else if (_previousViewMode == ViewMode.directions) {
       _removeRouteLayers();
-      annotationHelper?.deleteAllAnnotations();
+    }
+
+    if (_viewMode == ViewMode.parks) {
+      _updateFeatures();
     }
 
     _setMapControlSettings();
