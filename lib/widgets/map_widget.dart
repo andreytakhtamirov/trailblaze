@@ -935,10 +935,9 @@ class _MapWidgetState extends State<MapWidget>
     final cameraState = await _mapboxMap.getCameraState();
     if (context.mounted) {
       final bottomOffset = _getBottomOffset();
-      final topOffset = await _getTopOffset();
 
       final padding = mbm.MbxEdgeInsets(
-        top: cameraState.padding.top + topOffset,
+        top: cameraState.padding.top,
         left: kDefaultCameraState.padding.left,
         bottom: kDefaultCameraState.padding.bottom + bottomOffset,
         right: kDefaultCameraState.padding.right,
