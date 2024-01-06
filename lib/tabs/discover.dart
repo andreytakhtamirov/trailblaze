@@ -17,11 +17,15 @@ class _DiscoverPageState extends State<DiscoverPage>
     super.build(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Posts'),
+        title: const Text('Discover Routes'),
       ),
-      body: ItemsFeed(
-        PostsApiService(),
-        PostListItem,
+      backgroundColor: Colors.grey[300],
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+        child: ItemsFeed(
+          PostsApiService(),
+          PostListItem,
+        ),
       ),
     );
   }

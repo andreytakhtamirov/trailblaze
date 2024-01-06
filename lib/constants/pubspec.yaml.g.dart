@@ -14,7 +14,7 @@ library pubspec;
 
   MIT License
 
-  Copyright (c) 2023 Plague Fox
+  Copyright (c) 2024 Plague Fox
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -93,13 +93,13 @@ sealed class Pubspec {
   static const PubspecVersion version = (
     /// Non-canonical string representation of the version as provided
     /// in the pubspec.yaml file.
-    representation: r'1.0.0',
+    representation: r'1.1.0',
 
     /// Returns a 'canonicalized' representation
     /// of the application version.
     /// This represents the version string in accordance with
     /// Semantic Versioning (SemVer) standards.
-    canonical: r'1.0.0',
+    canonical: r'1.1.0',
 
     /// MAJOR version when you make incompatible API changes.
     /// The major version number: 1 in "1.2.3".
@@ -108,7 +108,7 @@ sealed class Pubspec {
     /// MINOR version when you add functionality
     /// in a backward compatible manner.
     /// The minor version number: 2 in "1.2.3".
-    minor: 0,
+    minor: 1,
 
     /// PATCH version when you make backward compatible bug fixes.
     /// The patch version number: 3 in "1.2.3".
@@ -123,14 +123,14 @@ sealed class Pubspec {
 
   /// Build date and time (UTC)
   static final DateTime timestamp = DateTime.utc(
-    2023,
-    12,
-    14,
-    21,
-    49,
-    46,
-    655,
-    186,
+    2024,
+    1,
+    6,
+    6,
+    24,
+    30,
+    739,
+    486,
   );
 
   /// Name
@@ -346,7 +346,7 @@ sealed class Pubspec {
 
   /// Environment
   static const Map<String, String> environment = <String, String>{
-    'sdk': '>=3.0.6',
+    'sdk': '>=3.2.0',
   };
 
   /// Platforms
@@ -406,7 +406,7 @@ sealed class Pubspec {
   /// For more information,
   /// see [Package dependencies](https://dart.dev/tools/pub/dependencies).
   static const Map<String, Object> dependencies = <String, Object>{
-    'mapbox_maps_flutter': r'^0.5.0',
+    'mapbox_maps_flutter': r'^0.5.1',
     'auth0_flutter': r'^1.4.1',
     'mapbox_search': r'4.0.0-beta.1',
     'http': r'^0.13.5',
@@ -428,6 +428,7 @@ sealed class Pubspec {
     'package_info_plus': r'^4.0.2',
     'url_launcher': r'^6.1.12',
     'mailto': r'^2.0.0',
+    'sliding_up_panel': r'^2.0.0+1',
     'flutter': <String, Object>{
       'sdk': r'flutter',
     },

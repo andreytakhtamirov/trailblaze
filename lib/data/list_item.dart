@@ -60,6 +60,7 @@ class PostListItem implements Item {
         kRouteSourceId,
         kRouteLayerId,
         routeJson,
+        [],
         isActive: true,
       );
 
@@ -124,6 +125,7 @@ class RouteListItem implements Item {
         kRouteSourceId,
         kRouteLayerId,
         routeJson,
+        [],
         isActive: true,
       );
 

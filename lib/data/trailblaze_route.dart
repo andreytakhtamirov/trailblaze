@@ -17,8 +17,9 @@ class TrailblazeRoute {
   dynamic surfaceMetrics;
   dynamic highwayMetrics;
   dynamic routeJson;
+  List<dynamic> waypoints;
 
-  TrailblazeRoute(this.sourceId, this.layerId, this.routeJson, {bool isActive = false}) {
+  TrailblazeRoute(this.sourceId, this.layerId, this.routeJson, this.waypoints, {bool isActive = false}) {
     lineLayer = LineLayer(
         id: layerId,
         sourceId: sourceId,

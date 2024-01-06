@@ -6,45 +6,71 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 final String kMapboxAccessToken = dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
 
-const int kMapFlyToDuration = 100;
+final double kDevicePixelRatio =
+    WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
+final kScreenHeight =
+    WidgetsBinding.instance.platformDispatcher.views.first.display.size.height /
+        kDevicePixelRatio;
+final kSafeAreaPaddingBottom =
+    WidgetsBinding.instance.platformDispatcher.views.first.padding.bottom /
+        kDevicePixelRatio;
+
+const int kMapFlyToDuration = 400;
 const int kPolylinePrecision = 6;
 const String kRouteSourceId = "route-source-id";
 const String kRouteLayerId = "route-layer-id";
 const double kRouteLineWidth = 6.0;
 const double kRouteActiveLineOpacity = 0.9;
 const double kRouteInactiveLineOpacity = 1.0;
-final double kDevicePixelRatio =
-    WidgetsBinding.instance.window.devicePixelRatio;
+
+const double kSearchBarHeight = 50;
+final double kLocationPinSize = kDevicePixelRatio / 3;
+const double kFeaturePinSize = 5.0;
+
+const kPointSelectedCameraZoomOffset = 2;
+final double kPanelMaxHeight = kScreenHeight / 3 - kSafeAreaPaddingBottom;
+final double kPanelFeaturesMaxHeight =
+    kScreenHeight / 2.6 - kSafeAreaPaddingBottom;
+const double kPanelMinContentHeight = 70;
+const double kPanelRouteInfoMinHeight = 120;
+final double kPanelRouteInfoMaxHeight =
+    kScreenHeight / 2 - kSafeAreaPaddingBottom;
+const double kBottomNavbarHeight = 110;
+const double kPanelFabHeight = kPanelMinContentHeight + 8;
+
+final double kFeatureItemHeight = kScreenHeight / 6;
 
 final CameraState kDefaultCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
-    padding: MbxEdgeInsets(
-        top: 50.0, left: 0.0, bottom: 0.0, right: 0.0),
+    padding: MbxEdgeInsets(top: 100.0, left: 0.0, bottom: 100.0, right: 0.0),
     zoom: 12,
     bearing: 0,
     pitch: 0);
 
 final CameraState kRouteCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
-    padding: MbxEdgeInsets(
-        top: 270,
-        left: 30,
-        bottom: 210,
-        right: 30),
+    padding: MbxEdgeInsets(top: 300, left: 60, bottom: 0, right: 60),
     zoom: 12,
     bearing: 0,
     pitch: 0);
 
 final CameraState kPostDetailsCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
-    padding: MbxEdgeInsets(
-        top: 40,
-        left: 30,
-        bottom: 240,
-        right: 30),
+    padding: MbxEdgeInsets(top: 40, left: 80, bottom: 240, right: 80),
     zoom: 12,
     bearing: 0,
     pitch: 0);
+
+final CameraState kFeaturesCameraState = CameraState(
+    center: kDefaultCameraState.center,
+    padding: MbxEdgeInsets(
+        top: 40,
+        left: 40,
+        bottom: 60,
+        right: 40),
+    zoom: kDefaultCameraState.zoom,
+    bearing: kDefaultCameraState.bearing,
+    pitch: kDefaultCameraState.pitch);
 
 const kMapStyleUriPrefix = 'mapbox://styles/mapbox';
 const kMapStyleOutdoors = 'outdoors-v12';
@@ -60,10 +86,12 @@ final kMapTopOffset = Platform.isAndroid ? 8.0 : 0.0;
 final kAndroidTopOffset = Platform.isAndroid ? 32.0 : 0.0;
 const kMapUiPadding = 14.0;
 const kCompassTopOffset = 32.0;
-final kMapUiTopOffset =
-    48.0 + kMapUiPadding + kAndroidTopOffset;
-const kAttributionLeftOffset = kMapUiPadding + 80.0;
-const kAttributionBottomOffset = 8.0;
+final kMapUiTopOffset = 48.0 + kMapUiPadding + kAndroidTopOffset;
+const kAttributionLeftOffset = kMapUiPadding + 72.0;
+const kAttributionBottomOffset = 62.0;
+const kLogoLeftOffset = 4.0;
+const kDirectionsWidgetOffset = 150.0;
+final kFeaturesPaneOffset = kPanelMaxHeight;
 
 final CompassSettings kDefaultCompassSettings = CompassSettings(
     position: OrnamentPosition.TOP_LEFT,
@@ -75,6 +103,13 @@ final CompassSettings kDefaultCompassSettings = CompassSettings(
 final CompassSettings kPostDetailsCompassSettings = CompassSettings(
     position: OrnamentPosition.TOP_LEFT,
     marginTop: kMapUiPadding + kCompassTopOffset,
+    marginBottom: 0,
+    marginLeft: kMapUiPadding,
+    marginRight: 0);
+
+final CompassSettings kDirectionsCompassSettings = CompassSettings(
+    position: OrnamentPosition.TOP_LEFT,
+    marginTop: kMapUiPadding + kCompassTopOffset + kDirectionsWidgetOffset,
     marginBottom: 0,
     marginLeft: kMapUiPadding,
     marginRight: 0);
@@ -95,9 +130,30 @@ final ScaleBarSettings kPostDetailsScaleBarSettings = ScaleBarSettings(
     marginLeft: kMapUiPadding,
     marginRight: 0);
 
+final ScaleBarSettings kDirectionsScaleBarSettings = ScaleBarSettings(
+    isMetricUnits: true,
+    position: OrnamentPosition.TOP_LEFT,
+    marginTop: kMapUiPadding + kDirectionsWidgetOffset,
+    marginBottom: 0,
+    marginLeft: kMapUiPadding,
+    marginRight: 0);
+
 final AttributionSettings kDefaultAttributionSettings = AttributionSettings(
     position: OrnamentPosition.BOTTOM_LEFT,
     marginTop: 0,
     marginBottom: kAttributionBottomOffset,
     marginLeft: kAttributionLeftOffset,
     marginRight: 0);
+
+final LogoSettings kDefaultLogoSettings = LogoSettings(
+    position: OrnamentPosition.BOTTOM_LEFT,
+    marginTop: 0,
+    marginBottom: kAttributionBottomOffset,
+    marginLeft: kLogoLeftOffset,
+    marginRight: 0);
+
+enum ViewMode {
+  search,
+  directions,
+  parks,
+}
