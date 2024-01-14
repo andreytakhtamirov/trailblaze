@@ -506,10 +506,13 @@ class _MapWidgetState extends State<MapWidget>
     });
 
     final dartz.Either<int, Map<String, dynamic>?> routeResponse;
+    bool isGraphhopperRoute = false;
     if (profile != TransportationMode.gravelCycling.value) {
+      isGraphhopperRoute = false;
       routeResponse = await createRoute(profile, waypoints);
     } else {
-      routeResponse = await createPathsenseRoute(waypoints);
+      isGraphhopperRoute = true;
+      routeResponse = await createGraphhopperRoute(waypoints);
     }
 
     setState(() {
@@ -533,18 +536,29 @@ class _MapWidgetState extends State<MapWidget>
       (data) => {routeData = data},
     );
 
-    if (routeData == null || routeData?['routes'] == null) {
+    List<dynamic> routesJson = [];
+    if ((routeData == null || routeData?['routes'] == null) &&
+        routeData?['paths'] == null) {
       return;
+    } else if (routeData?['routes'] != null) {
+      routesJson = routeData!['routes'];
+    } else {
+      routesJson = routeData!['paths'];
     }
 
-    for (var i = routeData!['routes'].length - 1; i >= 0; i--) {
-      final routeJson = routeData!['routes'][i];
+    for (var i = routesJson.length - 1; i >= 0; i--) {
+      final routeJson = routesJson[i];
 
       bool isFirstRoute = i == 0;
 
-      TrailblazeRoute route = TrailblazeRoute(kRouteSourceId + i.toString(),
-          kRouteLayerId + i.toString(), routeJson, waypoints,
-          isActive: isFirstRoute);
+      TrailblazeRoute route = TrailblazeRoute(
+        kRouteSourceId + i.toString(),
+        kRouteLayerId + i.toString(),
+        routeJson,
+        waypoints,
+        isActive: isFirstRoute,
+        isGraphhopperRoute: isGraphhopperRoute,
+      );
 
       _drawRoute(route);
       routesList.add(route);

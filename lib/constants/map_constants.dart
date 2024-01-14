@@ -16,7 +16,6 @@ final kSafeAreaPaddingBottom =
         kDevicePixelRatio;
 
 const int kMapFlyToDuration = 400;
-const int kPolylinePrecision = 6;
 const String kRouteSourceId = "route-source-id";
 const String kRouteLayerId = "route-layer-id";
 const double kRouteLineWidth = 6.0;
