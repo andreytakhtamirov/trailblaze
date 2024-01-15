@@ -16,9 +16,9 @@ class TrailblazeRoute {
   late final Map<String?, Object?> geometryJson;
   late final num distance;
   late final num duration;
-  dynamic surfaceMetrics;
-  dynamic highwayMetrics;
-  dynamic elevationMetrics;
+  List<num>? elevationMetrics;
+  Map<String, num>? surfaceMetrics;
+  Map<String, num>? highwayMetrics;
   dynamic routeJson;
   List<dynamic> waypoints;
 
@@ -59,19 +59,16 @@ class TrailblazeRoute {
           .map((c) => [c[1], c[0]])
           .toList();
 
-      elevationMetrics = coordinatesWithElevation.coordinates;
+      elevationMetrics = coordinatesWithElevation.elevation;
+      surfaceMetrics =
+          _getMetrics(routeJson['details']['surface'], coordinates);
+      highwayMetrics =
+          _getMetrics(routeJson['details']['road_class'], coordinates);
     } else {
       coordinates =
           PolylineCodec.decode(geometry, precision: kMapboxRoutePrecision)
               .map((c) => [c[1], c[0]])
               .toList();
-
-      try {
-        surfaceMetrics = routeJson['metrics']['surfaceMetrics'];
-        highwayMetrics = routeJson['metrics']['highwayMetrics'];
-      } catch (e) {
-        // Old style route object, will get metrics in a separate request later.
-      }
     }
 
     geometryJson = {"type": "LineString", "coordinates": coordinates};
@@ -89,6 +86,30 @@ class TrailblazeRoute {
     };
 
     geoJsonSource = GeoJsonSource(id: sourceId, data: json.encode(fills));
+  }
+
+  Map<String, num> _getMetrics(
+    List<dynamic> surfaceData,
+    List<List<dynamic>> coordinates,
+  ) {
+    Map<String, num> metrics = {};
+
+    for (int i = 0; i < surfaceData.length; i++) {
+      int start = surfaceData[i][0] as int;
+      int end = surfaceData[i][1] as int;
+      String key = surfaceData[i][2] as String;
+      metrics.putIfAbsent(key, () => 0);
+
+      final distance = this.distance / (coordinates.length - 1) * end -
+          this.distance / (coordinates.length - 1) * start;
+      metrics.update(key, (value) => value + distance);
+    }
+
+    // Sort in decreasing distance order.
+    metrics = Map.fromEntries(
+        metrics.entries.toList()..sort((a, b) => b.value.compareTo(a.value)));
+
+    return metrics;
   }
 
   void setActive(bool isActive) {

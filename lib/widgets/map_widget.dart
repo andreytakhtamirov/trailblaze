@@ -749,7 +749,9 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   Future<void> _onMapTapListener(mbm.ScreenCoordinate coordinate) async {
-    await annotationHelper?.deletePointAnnotations();
+    if (_viewMode != ViewMode.directions) {
+      await annotationHelper?.deletePointAnnotations();
+    }
 
     if (_viewMode == ViewMode.directions) {
       mbm.ScreenCoordinate pixelCoordinates =

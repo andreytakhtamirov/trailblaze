@@ -59,6 +59,8 @@ extension PolylineCodecExtension on PolylineCodec {
           ((result & 1) != 0 ? ~(Int32(result) >> 1) : (Int32(result) >> 1))
               .toInt();
 
+      shift = result = 0;
+
       do {
         byte = str.codeUnitAt(index++) - 63;
         result |= ((Int32(byte) & Int32(0x1f)) << shift).toInt();
@@ -74,7 +76,7 @@ extension PolylineCodecExtension on PolylineCodec {
       elevation += elevationChange;
 
       coordinatesWithElevation
-          .addPoint([lat / factor, lng / factor], elevation);
+          .addPoint([lat / factor, lng / factor], elevation/100);
     }
 
     return coordinatesWithElevation;
