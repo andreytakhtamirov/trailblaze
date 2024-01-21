@@ -373,9 +373,6 @@ class _MapWidgetState extends State<MapWidget>
           marginRight: kPostDetailsScaleBarSettings.marginRight);
     }
 
-    _mapboxMap.compass.updateSettings(compassSettings);
-    _mapboxMap.scaleBar.updateSettings(scaleBarSettings);
-
     final num bottomOffset = _getMinPanelHeight();
 
     final mbm.AttributionSettings kDefaultAttributionSettings =
@@ -393,6 +390,8 @@ class _MapWidgetState extends State<MapWidget>
         marginLeft: kLogoLeftOffset,
         marginRight: 0);
 
+    _mapboxMap.compass.updateSettings(compassSettings);
+    _mapboxMap.scaleBar.updateSettings(scaleBarSettings);
     _mapboxMap.attribution.updateSettings(kDefaultAttributionSettings);
     _mapboxMap.logo.updateSettings(kDefaultLogoSettings);
   }

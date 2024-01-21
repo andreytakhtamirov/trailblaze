@@ -34,7 +34,6 @@ const double kPanelMinContentHeight = 70;
 const double kPanelRouteInfoMinHeight = 120;
 final double kPanelRouteInfoMaxHeight =
     kScreenHeight / 2 - kSafeAreaPaddingBottom;
-const double kBottomNavbarHeight = 110;
 const double kPanelFabHeight = kPanelMinContentHeight + 8;
 
 final double kFeatureItemHeight = kScreenHeight / 6;

@@ -19,12 +19,14 @@ class RouteInfoPanel extends StatefulWidget {
 }
 
 class _RouteInfoPanelState extends State<RouteInfoPanel> {
+  late TrackballBehavior _elevationTrackball;
   http.Client _client = http.Client();
   bool _isFetchingMetrics = false;
 
   @override
   initState() {
     super.initState();
+    _elevationTrackball = TrackballBehavior(enable: true);
     setState(() {
       _isFetchingMetrics = false;
     });
@@ -64,10 +66,11 @@ class _RouteInfoPanelState extends State<RouteInfoPanel> {
         metrics.reduce((value, value2) => value < value2 ? value : value2);
 
     // Add padding below/above for visibility.
-    minElevation -= minElevation * 0.01;
-    maxElevation += maxElevation * 0.01;
+    minElevation -= minElevation * 0.05;
+    maxElevation += maxElevation * 0.05;
 
     return SfCartesianChart(
+      trackballBehavior: _elevationTrackball,
       primaryXAxis: NumericAxis(
         minimum: 0,
         maximum: distance.toDouble(),
