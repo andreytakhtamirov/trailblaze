@@ -493,6 +493,14 @@ class _MapWidgetState extends State<MapWidget>
         pitch: kDefaultCameraState.pitch);
   }
 
+  void _updateDirectionsFabHeight(double pos) {
+    setState(() {
+      _fabHeight =
+          pos * (_getMaxPanelHeight() - _getMinPanelHeight()) +
+              kPanelFabHeight;
+    });
+  }
+
   void _onGpsButtonPressed() {
     _goToUserLocation();
   }
@@ -1066,6 +1074,7 @@ class _MapWidgetState extends State<MapWidget>
       _updateFeatures();
     }
 
+    _updateDirectionsFabHeight(_panelController.panelPosition);
     _setMapControlSettings();
   }
 
@@ -1098,11 +1107,7 @@ class _MapWidgetState extends State<MapWidget>
                   _setCameraPaddingForPanel(pos);
                 }
 
-                setState(() {
-                  _fabHeight =
-                      pos * (kPanelFeaturesMaxHeight - kPanelMinContentHeight) +
-                          kPanelFabHeight;
-                });
+                _updateDirectionsFabHeight(pos);
               },
               onPanelOpened: () {
                 if (_pauseUiCallbacks ||
