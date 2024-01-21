@@ -373,9 +373,6 @@ class _MapWidgetState extends State<MapWidget>
           marginRight: kPostDetailsScaleBarSettings.marginRight);
     }
 
-    _mapboxMap.compass.updateSettings(compassSettings);
-    _mapboxMap.scaleBar.updateSettings(scaleBarSettings);
-
     final num bottomOffset = _getMinPanelHeight();
 
     final mbm.AttributionSettings kDefaultAttributionSettings =
@@ -393,6 +390,8 @@ class _MapWidgetState extends State<MapWidget>
         marginLeft: kLogoLeftOffset,
         marginRight: 0);
 
+    _mapboxMap.compass.updateSettings(compassSettings);
+    _mapboxMap.scaleBar.updateSettings(scaleBarSettings);
     _mapboxMap.attribution.updateSettings(kDefaultAttributionSettings);
     _mapboxMap.logo.updateSettings(kDefaultLogoSettings);
   }
@@ -494,6 +493,14 @@ class _MapWidgetState extends State<MapWidget>
         pitch: kDefaultCameraState.pitch);
   }
 
+  void _updateDirectionsFabHeight(double pos) {
+    setState(() {
+      _fabHeight =
+          pos * (_getMaxPanelHeight() - _getMinPanelHeight()) +
+              kPanelFabHeight;
+    });
+  }
+
   void _onGpsButtonPressed() {
     _goToUserLocation();
   }
@@ -506,10 +513,13 @@ class _MapWidgetState extends State<MapWidget>
     });
 
     final dartz.Either<int, Map<String, dynamic>?> routeResponse;
+    bool isGraphhopperRoute = false;
     if (profile != TransportationMode.gravelCycling.value) {
+      isGraphhopperRoute = false;
       routeResponse = await createRoute(profile, waypoints);
     } else {
-      routeResponse = await createPathsenseRoute(waypoints);
+      isGraphhopperRoute = true;
+      routeResponse = await createGraphhopperRoute(waypoints);
     }
 
     setState(() {
@@ -533,18 +543,29 @@ class _MapWidgetState extends State<MapWidget>
       (data) => {routeData = data},
     );
 
-    if (routeData == null || routeData?['routes'] == null) {
+    List<dynamic> routesJson = [];
+    if ((routeData == null || routeData?['routes'] == null) &&
+        routeData?['paths'] == null) {
       return;
+    } else if (routeData?['routes'] != null) {
+      routesJson = routeData!['routes'];
+    } else {
+      routesJson = routeData!['paths'];
     }
 
-    for (var i = routeData!['routes'].length - 1; i >= 0; i--) {
-      final routeJson = routeData!['routes'][i];
+    for (var i = routesJson.length - 1; i >= 0; i--) {
+      final routeJson = routesJson[i];
 
       bool isFirstRoute = i == 0;
 
-      TrailblazeRoute route = TrailblazeRoute(kRouteSourceId + i.toString(),
-          kRouteLayerId + i.toString(), routeJson, waypoints,
-          isActive: isFirstRoute);
+      TrailblazeRoute route = TrailblazeRoute(
+        kRouteSourceId + i.toString(),
+        kRouteLayerId + i.toString(),
+        routeJson,
+        waypoints,
+        isActive: isFirstRoute,
+        isGraphhopperRoute: isGraphhopperRoute,
+      );
 
       _drawRoute(route);
       routesList.add(route);
@@ -735,7 +756,9 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   Future<void> _onMapTapListener(mbm.ScreenCoordinate coordinate) async {
-    await annotationHelper?.deletePointAnnotations();
+    if (_viewMode != ViewMode.directions) {
+      await annotationHelper?.deletePointAnnotations();
+    }
 
     if (_viewMode == ViewMode.directions) {
       mbm.ScreenCoordinate pixelCoordinates =
@@ -1051,6 +1074,7 @@ class _MapWidgetState extends State<MapWidget>
       _updateFeatures();
     }
 
+    _updateDirectionsFabHeight(_panelController.panelPosition);
     _setMapControlSettings();
   }
 
@@ -1083,11 +1107,7 @@ class _MapWidgetState extends State<MapWidget>
                   _setCameraPaddingForPanel(pos);
                 }
 
-                setState(() {
-                  _fabHeight =
-                      pos * (kPanelFeaturesMaxHeight - kPanelMinContentHeight) +
-                          kPanelFabHeight;
-                });
+                _updateDirectionsFabHeight(pos);
               },
               onPanelOpened: () {
                 if (_pauseUiCallbacks ||

@@ -16,7 +16,6 @@ final kSafeAreaPaddingBottom =
         kDevicePixelRatio;
 
 const int kMapFlyToDuration = 400;
-const int kPolylinePrecision = 6;
 const String kRouteSourceId = "route-source-id";
 const String kRouteLayerId = "route-layer-id";
 const double kRouteLineWidth = 6.0;
@@ -35,7 +34,6 @@ const double kPanelMinContentHeight = 70;
 const double kPanelRouteInfoMinHeight = 120;
 final double kPanelRouteInfoMaxHeight =
     kScreenHeight / 2 - kSafeAreaPaddingBottom;
-const double kBottomNavbarHeight = 110;
 const double kPanelFabHeight = kPanelMinContentHeight + 8;
 
 final double kFeatureItemHeight = kScreenHeight / 6;

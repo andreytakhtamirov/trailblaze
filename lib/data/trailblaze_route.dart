@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:polyline_codec/polyline_codec.dart';
+import 'package:trailblaze/constants/request_api_constants.dart';
+import 'package:trailblaze/extensions/polyline_codec_extension.dart';
 
 import '../constants/map_constants.dart';
 
@@ -14,36 +16,60 @@ class TrailblazeRoute {
   late final Map<String?, Object?> geometryJson;
   late final num distance;
   late final num duration;
-  dynamic surfaceMetrics;
-  dynamic highwayMetrics;
+  List<num>? elevationMetrics;
+  Map<String, num>? surfaceMetrics;
+  Map<String, num>? highwayMetrics;
   dynamic routeJson;
   List<dynamic> waypoints;
 
-  TrailblazeRoute(this.sourceId, this.layerId, this.routeJson, this.waypoints, {bool isActive = false}) {
+  TrailblazeRoute(
+    this.sourceId,
+    this.layerId,
+    this.routeJson,
+    this.waypoints, {
+    bool isActive = false,
+    bool isGraphhopperRoute = false,
+  }) {
     lineLayer = LineLayer(
         id: layerId,
         sourceId: sourceId,
         lineJoin: LineJoin.ROUND,
         lineCap: LineCap.ROUND,
         lineColor: isActive ? Colors.red.value : Colors.grey.value,
-        lineOpacity: isActive ? kRouteActiveLineOpacity : kRouteInactiveLineOpacity,
+        lineOpacity:
+            isActive ? kRouteActiveLineOpacity : kRouteInactiveLineOpacity,
         lineWidth: kRouteLineWidth);
 
-    final geometry = routeJson['geometry'];
+    final geometry = routeJson[kMapboxRouteGeometryKey] ??
+        routeJson[kGraphhopperRouteGeometryKey];
     distance = routeJson['distance'];
-    duration = routeJson['duration'];
+    duration = routeJson['duration'] ??
+        routeJson['time'] / 1000; // Graphhopper time is in ms.
 
-    try {
-      surfaceMetrics = routeJson['metrics']['surfaceMetrics'];
-      highwayMetrics = routeJson['metrics']['highwayMetrics'];
-    } catch (e) {
-      // Old style route object, will get metrics in a separate request later.
+    List<List<dynamic>> coordinates;
+
+    if (isGraphhopperRoute) {
+      final coordinatesWithElevation =
+          PolylineCodecExtension.decodeWithElevation(geometry,
+              precision: isGraphhopperRoute
+                  ? kGraphhopperRoutePrecision
+                  : kGraphhopperRoutePrecision);
+
+      coordinates = coordinatesWithElevation.coordinates
+          .map((c) => [c[1], c[0]])
+          .toList();
+
+      elevationMetrics = coordinatesWithElevation.elevation;
+      surfaceMetrics =
+          _getMetrics(routeJson['details']['surface'], coordinates);
+      highwayMetrics =
+          _getMetrics(routeJson['details']['road_class'], coordinates);
+    } else {
+      coordinates =
+          PolylineCodec.decode(geometry, precision: kMapboxRoutePrecision)
+              .map((c) => [c[1], c[0]])
+              .toList();
     }
-
-    List<List<dynamic>> coordinates =
-    PolylineCodec.decode(geometry, precision: kPolylinePrecision)
-        .map((c) => [c[1], c[0]])
-        .toList();
 
     geometryJson = {"type": "LineString", "coordinates": coordinates};
 
@@ -62,11 +88,34 @@ class TrailblazeRoute {
     geoJsonSource = GeoJsonSource(id: sourceId, data: json.encode(fills));
   }
 
+  Map<String, num> _getMetrics(
+    List<dynamic> surfaceData,
+    List<List<dynamic>> coordinates,
+  ) {
+    Map<String, num> metrics = {};
+
+    for (int i = 0; i < surfaceData.length; i++) {
+      int start = surfaceData[i][0] as int;
+      int end = surfaceData[i][1] as int;
+      String key = surfaceData[i][2] as String;
+      metrics.putIfAbsent(key, () => 0);
+
+      final distance = this.distance / (coordinates.length - 1) * end -
+          this.distance / (coordinates.length - 1) * start;
+      metrics.update(key, (value) => value + distance);
+    }
+
+    // Sort in decreasing distance order.
+    metrics = Map.fromEntries(
+        metrics.entries.toList()..sort((a, b) => b.value.compareTo(a.value)));
+
+    return metrics;
+  }
+
   void setActive(bool isActive) {
     if (isActive) {
       lineLayer.lineColor = Colors.red.value;
       lineLayer.lineOpacity = kRouteActiveLineOpacity;
-
     } else {
       lineLayer.lineColor = Colors.grey.value;
       lineLayer.lineOpacity = kRouteInactiveLineOpacity;

@@ -54,7 +54,7 @@ class _RouteInfoState extends State<RouteInfo> {
 
   List<StackedBarSeries<dynamic, String>> _getStackedBarSurfaces() {
     final surfaceMetrics = widget.route!.surfaceMetrics;
-    final List<dynamic> dataPoints = surfaceMetrics.entries.toList();
+    final List<dynamic> dataPoints = surfaceMetrics?.entries.toList() ?? [];
 
     List<StackedBarSeries<dynamic, String>> series =
         <StackedBarSeries<dynamic, String>>[];
@@ -75,7 +75,7 @@ class _RouteInfoState extends State<RouteInfo> {
 
   List<StackedBarSeries<dynamic, String>> _getStackedBarHighway() {
     final highwayMetrics = widget.route!.highwayMetrics;
-    final List<dynamic> dataPoints = highwayMetrics.entries.toList();
+    final List<dynamic> dataPoints = highwayMetrics?.entries.toList() ?? [];
 
     List<StackedBarSeries<dynamic, String>> series =
         <StackedBarSeries<dynamic, String>>[];
@@ -168,11 +168,11 @@ class _RouteInfoState extends State<RouteInfo> {
     Map<String, dynamic>? surfaceMetrics = metrics['surfaceMetrics'];
     if (mounted) {
       setState(() {
-        widget.route?.surfaceMetrics = surfaceMetrics;
+        widget.route?.surfaceMetrics = surfaceMetrics?.cast<String, num>();
       });
     } else {
       // If the widget isn't mounted, update the metrics silently.
-      widget.route?.surfaceMetrics = surfaceMetrics;
+      widget.route?.surfaceMetrics = surfaceMetrics?.cast<String, num>();
     }
   }
 
