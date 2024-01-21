@@ -14,7 +14,7 @@ Check out the latest release of Trailblaze for iOS & Android:
 - Find new routes to your favorite places with directions for walking and cycling.
 - Explore nearby parks within your chosen travel distance.
 - See details about your trip, including distance, time, and surface information.
-- 🏔️🚴 **[BETA] Routing for gravel cycling, prioritizing unpaved trails** [See availability map here](https://github.com/andreytakhtamirov/trailblaze-pathsense#supported-regions).
+- 🏔️🚴 **[BETA] Routing for gravel cycling, prioritizing unpaved trails (available only in North America)**.
 - Sign in and customize your profile.
 
 </br>
