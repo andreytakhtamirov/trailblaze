@@ -26,7 +26,7 @@ Check out the latest release of Trailblaze for iOS & Android:
 <img width="400" alt="route preview" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/91a2d70a-c1ab-48fe-ac2d-877f2ad9612c">
 <img width="400" alt="route info" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/2885f8c0-15c0-4864-bdfb-d1ece401a47e">
 <img width="400" alt="features view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/416f73eb-add5-48fe-aefe-6df4f8009013">
-<img width="400" alt="image" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/8bfe803b-ba0c-491c-93e0-66fce5512af3">
+<img width="400" alt="pin view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/c09c51a1-a023-44aa-b3fe-2f45fd9f52c1">
 
 ## Building
 
