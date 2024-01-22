@@ -21,6 +21,7 @@ class TrailblazeRoute {
   Map<String, num>? highwayMetrics;
   dynamic routeJson;
   List<dynamic> waypoints;
+  List<List<dynamic>>? coordinates;
 
   TrailblazeRoute(
     this.sourceId,
@@ -46,8 +47,6 @@ class TrailblazeRoute {
     duration = routeJson['duration'] ??
         routeJson['time'] / 1000; // Graphhopper time is in ms.
 
-    List<List<dynamic>> coordinates;
-
     if (isGraphhopperRoute) {
       final coordinatesWithElevation =
           PolylineCodecExtension.decodeWithElevation(geometry,
@@ -61,9 +60,9 @@ class TrailblazeRoute {
 
       elevationMetrics = coordinatesWithElevation.elevation;
       surfaceMetrics =
-          _getMetrics(routeJson['details']['surface'], coordinates);
+          _getMetrics(routeJson['details']['surface'], coordinates!);
       highwayMetrics =
-          _getMetrics(routeJson['details']['road_class'], coordinates);
+          _getMetrics(routeJson['details']['road_class'], coordinates!);
     } else {
       coordinates =
           PolylineCodec.decode(geometry, precision: kMapboxRoutePrecision)

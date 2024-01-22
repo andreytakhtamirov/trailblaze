@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:dartz/dartz.dart' as dartz;
@@ -611,10 +610,6 @@ class _MapWidgetState extends State<MapWidget>
       await _updateRouteSelected(_selectedRoute!, true);
       _flyToRoute(_selectedRoute!);
     }
-
-    annotationHelper?.deleteCircleAnnotations();
-    annotationHelper?.drawAllAnnotations(
-        _mapboxMap.annotations.createPointAnnotationManager());
   }
 
   Future<void> _updateRouteSelected(
@@ -669,15 +664,6 @@ class _MapWidgetState extends State<MapWidget>
     } catch (e) {
       log('Exception removing route style source layer: $e');
     }
-  }
-
-  TrailblazeRoute? _getRouteBySourceId(String sourceId) {
-    for (var route in routesList) {
-      if (route.sourceId == sourceId) {
-        return route;
-      }
-    }
-    return null;
   }
 
   void _goToUserLocation({bool isAnimated = true}) async {
@@ -761,37 +747,21 @@ class _MapWidgetState extends State<MapWidget>
     }
 
     if (_viewMode == ViewMode.directions) {
-      mbm.ScreenCoordinate pixelCoordinates =
-          await _mapboxMap.pixelForCoordinate({
-        "coordinates": [coordinate.y, coordinate.x]
-      });
+      TrailblazeRoute? selectedRoute;
+      final cameraState = await _mapboxMap.getCameraState();
 
-      final mbm.RenderedQueryGeometry queryGeometry = mbm.RenderedQueryGeometry(
-          value: json.encode(pixelCoordinates.encode()),
-          type: mbm.Type.SCREEN_COORDINATE);
-
-      List<String> routeLayers = [];
-      for (var route in routesList) {
-        routeLayers.add(route.layerId);
-      }
-
-      final mbm.RenderedQueryOptions queryOptions = mbm.RenderedQueryOptions(
-        layerIds: routeLayers,
+      selectedRoute = await AnnotationHelper.getRouteByClickProximity(
+        routesList,
+        coordinate.y,
+        coordinate.x,
+        cameraState.zoom,
       );
 
-      final List<mbm.QueriedFeature?> queriedFeatures =
-          await _mapboxMap.queryRenderedFeatures(queryGeometry, queryOptions);
-
-      if (queriedFeatures.isNotEmpty) {
-        // A feature has been clicked.
-        final selectedRoute =
-            _getRouteBySourceId(queriedFeatures.first!.source);
-        if (selectedRoute != null) {
-          _setSelectedRoute(selectedRoute);
-        }
-
-        // We've handled the click event for a route
-        //  so we can ignore all other things.
+      // A route layer has been clicked.
+      if (selectedRoute != null && selectedRoute != _selectedRoute) {
+        _setSelectedRoute(selectedRoute);
+        // We've handled the click event so
+        //  we can ignore all other things.
         return;
       }
 
