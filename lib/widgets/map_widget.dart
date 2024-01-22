@@ -5,6 +5,7 @@ import 'dart:developer';
 import 'package:dartz/dartz.dart' as dartz;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
@@ -496,8 +497,7 @@ class _MapWidgetState extends State<MapWidget>
   void _updateDirectionsFabHeight(double pos) {
     setState(() {
       _fabHeight =
-          pos * (_getMaxPanelHeight() - _getMinPanelHeight()) +
-              kPanelFabHeight;
+          pos * (_getMaxPanelHeight() - _getMinPanelHeight()) + kPanelFabHeight;
     });
   }
 
@@ -514,7 +514,7 @@ class _MapWidgetState extends State<MapWidget>
 
     final dartz.Either<int, Map<String, dynamic>?> routeResponse;
     bool isGraphhopperRoute = false;
-    if (profile != TransportationMode.gravelCycling.value) {
+    if (profile != TransportationMode.gravel_cycling.value) {
       isGraphhopperRoute = false;
       routeResponse = await createRoute(profile, waypoints);
     } else {
@@ -1271,24 +1271,32 @@ class _MapWidgetState extends State<MapWidget>
                     ),
                   ),
                   if (_isContentLoading)
-                    Positioned(
-                      top: 0,
-                      bottom: _getBottomOffset(),
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: Container(
-                          width: 150,
-                          height: 150,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
+                    FutureBuilder(
+                      future: _getTopOffset(),
+                      builder: (context, snapshot) {
+                        return Positioned(
+                          bottom: _getBottomOffset() + 100,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Container(
+                              width: 200,
+                              height: 70,
+                              padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Center(
+                                child: LoadingAnimationWidget.staggeredDotsWave(
+                                  color: Theme.of(context).colorScheme.tertiary,
+                                  size: 50,
+                                ),
+                              ),
+                            ),
                           ),
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                 ],
               ),

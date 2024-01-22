@@ -53,6 +53,7 @@ dependencies:
   url_launcher: ^6.1.12
   mailto: ^2.0.0
   sliding_up_panel: ^2.0.0+1
+  loading_animation_widget: ^1.2.0+4
   flutter:
     sdk: flutter
 
