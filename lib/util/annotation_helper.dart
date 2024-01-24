@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/data/feature.dart' as tb;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
+import 'package:trailblaze/data/trailblaze_route.dart';
 import 'dart:math' as math;
 import 'package:turf/turf.dart' as turf;
 
@@ -22,22 +23,18 @@ class AnnotationHelper {
     tb.Feature? closestFeature;
     num? closestDistance;
 
+    final touchCoordinates = mbm.Point(
+      coordinates: mbm.Position(touchLon, touchLat),
+    );
+
     for (tb.Feature feature in features) {
-      final point1Coordinates = mbm.Point(
+      final featureCoordinates = mbm.Point(
         coordinates: mbm.Position(feature.center['lon'], feature.center['lat']),
-      );
-      final point2Coordinates = mbm.Point(
-        coordinates: mbm.Position(touchLon, touchLat),
       );
 
       final distance = turf.distance(
-          point1Coordinates, point2Coordinates, turf.Unit.kilometers);
-
-      // Click proximity should become larger the more zoomed out the camera is
-      //  (the smaller the zoom value) to account for reduced touch accuracy.
-      final threshHold = 1000000 / math.pow(currentZoom, 6);
-
-      if (distance < threshHold) {
+          featureCoordinates, touchCoordinates, turf.Unit.kilometers);
+      if (distance < _getCurrentThreshold(currentZoom)) {
         if (closestDistance == null || distance < closestDistance) {
           closestDistance = distance;
           closestFeature = feature;
@@ -46,6 +43,48 @@ class AnnotationHelper {
     }
 
     return closestFeature;
+  }
+
+  static Future<TrailblazeRoute?> getRouteByClickProximity(
+      List<TrailblazeRoute> routes,
+      num touchLon,
+      num touchLat,
+      double currentZoom) async {
+    TrailblazeRoute? closestRoute;
+    num? closestDistance;
+
+    final touchCoordinates = mbm.Point(
+      coordinates: mbm.Position(touchLon, touchLat),
+    );
+
+    for (TrailblazeRoute route in routes) {
+      if (route.coordinates == null) {
+        continue;
+      }
+      for (List<dynamic> coordinate in route.coordinates!) {
+        final featureCoordinates = mbm.Point(
+          coordinates: mbm.Position(coordinate[0], coordinate[1]),
+        );
+
+        final distance = turf.distance(
+            featureCoordinates, touchCoordinates, turf.Unit.kilometers);
+        if (distance < _getCurrentThreshold(currentZoom)) {
+          if (closestDistance == null || distance < closestDistance) {
+            closestDistance = distance;
+            closestRoute = route;
+          }
+        }
+      }
+    }
+
+    return closestRoute;
+  }
+
+  static double _getCurrentThreshold(double zoom) {
+
+    // Click proximity should become larger the more zoomed out the camera is
+    //  (the smaller the zoom value) to account for reduced touch accuracy.
+    return 1000000 / math.pow(zoom, 6);
   }
 
   void drawSingleAnnotation(Map<String?, Object?>? geometry) async {

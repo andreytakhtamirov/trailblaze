@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:dartz/dartz.dart' as dartz;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
@@ -496,8 +496,7 @@ class _MapWidgetState extends State<MapWidget>
   void _updateDirectionsFabHeight(double pos) {
     setState(() {
       _fabHeight =
-          pos * (_getMaxPanelHeight() - _getMinPanelHeight()) +
-              kPanelFabHeight;
+          pos * (_getMaxPanelHeight() - _getMinPanelHeight()) + kPanelFabHeight;
     });
   }
 
@@ -514,7 +513,7 @@ class _MapWidgetState extends State<MapWidget>
 
     final dartz.Either<int, Map<String, dynamic>?> routeResponse;
     bool isGraphhopperRoute = false;
-    if (profile != TransportationMode.gravelCycling.value) {
+    if (profile != TransportationMode.gravel_cycling.value) {
       isGraphhopperRoute = false;
       routeResponse = await createRoute(profile, waypoints);
     } else {
@@ -611,10 +610,6 @@ class _MapWidgetState extends State<MapWidget>
       await _updateRouteSelected(_selectedRoute!, true);
       _flyToRoute(_selectedRoute!);
     }
-
-    annotationHelper?.deleteCircleAnnotations();
-    annotationHelper?.drawAllAnnotations(
-        _mapboxMap.annotations.createPointAnnotationManager());
   }
 
   Future<void> _updateRouteSelected(
@@ -669,15 +664,6 @@ class _MapWidgetState extends State<MapWidget>
     } catch (e) {
       log('Exception removing route style source layer: $e');
     }
-  }
-
-  TrailblazeRoute? _getRouteBySourceId(String sourceId) {
-    for (var route in routesList) {
-      if (route.sourceId == sourceId) {
-        return route;
-      }
-    }
-    return null;
   }
 
   void _goToUserLocation({bool isAnimated = true}) async {
@@ -761,37 +747,21 @@ class _MapWidgetState extends State<MapWidget>
     }
 
     if (_viewMode == ViewMode.directions) {
-      mbm.ScreenCoordinate pixelCoordinates =
-          await _mapboxMap.pixelForCoordinate({
-        "coordinates": [coordinate.y, coordinate.x]
-      });
+      TrailblazeRoute? selectedRoute;
+      final cameraState = await _mapboxMap.getCameraState();
 
-      final mbm.RenderedQueryGeometry queryGeometry = mbm.RenderedQueryGeometry(
-          value: json.encode(pixelCoordinates.encode()),
-          type: mbm.Type.SCREEN_COORDINATE);
-
-      List<String> routeLayers = [];
-      for (var route in routesList) {
-        routeLayers.add(route.layerId);
-      }
-
-      final mbm.RenderedQueryOptions queryOptions = mbm.RenderedQueryOptions(
-        layerIds: routeLayers,
+      selectedRoute = await AnnotationHelper.getRouteByClickProximity(
+        routesList,
+        coordinate.y,
+        coordinate.x,
+        cameraState.zoom,
       );
 
-      final List<mbm.QueriedFeature?> queriedFeatures =
-          await _mapboxMap.queryRenderedFeatures(queryGeometry, queryOptions);
-
-      if (queriedFeatures.isNotEmpty) {
-        // A feature has been clicked.
-        final selectedRoute =
-            _getRouteBySourceId(queriedFeatures.first!.source);
-        if (selectedRoute != null) {
-          _setSelectedRoute(selectedRoute);
-        }
-
-        // We've handled the click event for a route
-        //  so we can ignore all other things.
+      // A route layer has been clicked.
+      if (selectedRoute != null && selectedRoute != _selectedRoute) {
+        _setSelectedRoute(selectedRoute);
+        // We've handled the click event so
+        //  we can ignore all other things.
         return;
       }
 
@@ -1271,24 +1241,32 @@ class _MapWidgetState extends State<MapWidget>
                     ),
                   ),
                   if (_isContentLoading)
-                    Positioned(
-                      top: 0,
-                      bottom: _getBottomOffset(),
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: Container(
-                          width: 150,
-                          height: 150,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
+                    FutureBuilder(
+                      future: _getTopOffset(),
+                      builder: (context, snapshot) {
+                        return Positioned(
+                          bottom: _getBottomOffset() + 100,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Container(
+                              width: 200,
+                              height: 70,
+                              padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Center(
+                                child: LoadingAnimationWidget.staggeredDotsWave(
+                                  color: Theme.of(context).colorScheme.tertiary,
+                                  size: 50,
+                                ),
+                              ),
+                            ),
                           ),
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                 ],
               ),

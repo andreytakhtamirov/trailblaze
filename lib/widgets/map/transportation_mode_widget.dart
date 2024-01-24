@@ -79,9 +79,9 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
           children: [
             _buildTransportationModeWidget(
                 TransportationMode.walking, Icons.directions_walk, false),
-                    _buildTransportationModeWidget(
+            _buildTransportationModeWidget(
                 TransportationMode.cycling, Icons.directions_bike, false),
-            _buildTransportationModeWidget(TransportationMode.gravelCycling,
+            _buildTransportationModeWidget(TransportationMode.gravel_cycling,
                 TrailblazeIcons.kDirectionsBikeGravel, true),
           ],
         ),
@@ -90,9 +90,17 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
         //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         //   children: [
         //     _buildTransportationModeWidget(
-        //         TransportationMode.walkingPlus, TrailblazeIcons.kDirectionsWalkParks, false),
+        //       TransportationMode.walking_plus,
+        //       TrailblazeIcons.kDirectionsWalkParks,
+        //       false,
+        //       minIconHeight: 36,
+        //     ),
         //     _buildTransportationModeWidget(
-        //         TransportationMode.cyclingPlus, TrailblazeIcons.kDirectionsBikeParks, false),
+        //       TransportationMode.cycling_plus,
+        //       TrailblazeIcons.kDirectionsBikeParks,
+        //       false,
+        //       minIconHeight: 36,
+        //     ),
         //   ],
         // ),
       ],
@@ -100,10 +108,8 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
   }
 
   Widget _buildTransportationModeWidget(
-    TransportationMode mode,
-    IconData icon,
-    bool isBetaFeature,
-  ) {
+      TransportationMode mode, IconData icon, bool isBetaFeature,
+      {double minIconHeight = 24}) {
     final isSelected = _selectedMode == mode;
 
     return GestureDetector(
@@ -126,7 +132,7 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
             duration: const Duration(milliseconds: 300),
             child: Column(
               children: [
-                Icon(icon, size: widget.isMinifiedView ? 42 : 24),
+                Icon(icon, size: widget.isMinifiedView ? 42 : minIconHeight),
               ],
             ),
           ),

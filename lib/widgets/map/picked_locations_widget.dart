@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mapbox_search/mapbox_search.dart';
-import 'package:trailblaze/constants/request_api_constants.dart';
 import 'package:trailblaze/widgets/map/transportation_mode_widget.dart';
 
 import '../../data/transportation_mode.dart';
@@ -9,7 +8,7 @@ class PickedLocationsWidget extends StatelessWidget {
   final MapBoxPlace? startingLocation;
   final MapBoxPlace? endingLocation;
   final List<String> waypoints;
-  final TransportationMode? selectedMode;
+  final TransportationMode selectedMode;
   final void Function() onBackClicked;
   final void Function(TransportationMode) onModeChanged;
 
@@ -17,7 +16,7 @@ class PickedLocationsWidget extends StatelessWidget {
       {super.key,
       this.startingLocation,
       this.endingLocation,
-      this.selectedMode,
+      required this.selectedMode,
       required this.waypoints,
       required this.onBackClicked,
       required this.onModeChanged});
@@ -44,8 +43,7 @@ class PickedLocationsWidget extends StatelessWidget {
             children: [
               AnimatedCrossFade(
                 duration: const Duration(milliseconds: 300),
-                crossFadeState: selectedMode == null ||
-                        selectedMode == TransportationMode.none
+                crossFadeState: selectedMode == TransportationMode.none
                     ? CrossFadeState.showSecond
                     : CrossFadeState.showFirst,
                 firstChild: Column(
@@ -135,11 +133,8 @@ class PickedLocationsWidget extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
                 child: TransportationModeWidget(
                     onSelected: onModeChanged,
-                    initialMode: selectedMode == null
-                        ? kDefaultTransportationMode
-                        : selectedMode!,
-                    isMinifiedView: selectedMode == null ||
-                        selectedMode == TransportationMode.none),
+                    initialMode: selectedMode,
+                    isMinifiedView: selectedMode == TransportationMode.none),
               ),
             ],
           ),
@@ -176,8 +171,7 @@ class PickedLocationsWidget extends StatelessWidget {
         visualDensity: VisualDensity.comfortable,
         title: Text(
           title,
-          maxLines: selectedMode == null ||
-              selectedMode == TransportationMode.none
+          maxLines: selectedMode == TransportationMode.none
               ? 5
               : 2,
           overflow: TextOverflow.ellipsis,
@@ -191,8 +185,7 @@ class PickedLocationsWidget extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
                 child: Text(
                   subtitle,
-                  maxLines: selectedMode == null ||
-                          selectedMode == TransportationMode.none
+                  maxLines: selectedMode == TransportationMode.none
                       ? 5
                       : 2,
                   overflow: TextOverflow.ellipsis,
