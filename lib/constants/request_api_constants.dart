@@ -12,3 +12,7 @@ const kDefaultTransportationMode = TransportationMode.none;
 const double kMinFeatureDistanceMeters = 1000;
 const double kMaxFeatureDistanceMeters = 20000;
 const double kDefaultFeatureDistanceMeters = 2000;
+
+const String staticMapStyle = 'streets-v12';
+const int kStaticMapWidth = 1200;
+const int kStaticMapHeight = 700;

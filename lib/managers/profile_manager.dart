@@ -50,13 +50,13 @@ class ProfileManager {
           if (error == 204) {
             // Return profile with null properties.
             // This signals that it requires setup.
-            return Profile(null);
+            return Profile.fromJson(null);
           } else {
             return null;
           }
         },
         (data) {
-          return Profile(data);
+          return Profile.fromJson(data);
         },
       );
     }
@@ -72,10 +72,10 @@ class ProfileManager {
   }
 
   Future<Profile?> _loadProfileFromStorage() async {
-    final profileJson = await _storage.read(key: kUserProfileKey);
-    if (profileJson != null) {
-      final profileMap = jsonDecode(profileJson) as Map<String, dynamic>;
-      return Profile(profileMap);
+    final profileJsonRaw = await _storage.read(key: kUserProfileKey);
+    if (profileJsonRaw != null) {
+      final profileJson = jsonDecode(profileJsonRaw) as Map<String, dynamic>;
+      return Profile.fromJson(profileJson);
     }
 
     return null;
@@ -86,6 +86,6 @@ class ProfileManager {
       return;
     }
 
-    _storage.write(key: kUserProfileKey, value: jsonEncode(profile.toMap()));
+    _storage.write(key: kUserProfileKey, value: jsonEncode(profile.toJson()));
   }
 }

@@ -518,7 +518,7 @@ class _MapWidgetState extends State<MapWidget>
       routeResponse = await createRoute(profile, waypoints);
     } else {
       isGraphhopperRoute = true;
-      routeResponse = await createGraphhopperRoute(waypoints);
+      routeResponse = await createGraphhopperRoute(profile, waypoints);
     }
 
     setState(() {
@@ -562,6 +562,7 @@ class _MapWidgetState extends State<MapWidget>
         kRouteLayerId + i.toString(),
         routeJson,
         waypoints,
+        routeData?['routeOptions'],
         isActive: isFirstRoute,
         isGraphhopperRoute: isGraphhopperRoute,
       );

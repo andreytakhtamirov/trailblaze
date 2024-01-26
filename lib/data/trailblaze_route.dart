@@ -16,18 +16,20 @@ class TrailblazeRoute {
   late final Map<String?, Object?> geometryJson;
   late final num distance;
   late final num duration;
+  late final Map<String?, dynamic> routeOptions;
   List<num>? elevationMetrics;
   Map<String, num>? surfaceMetrics;
   Map<String, num>? highwayMetrics;
   dynamic routeJson;
   List<dynamic> waypoints;
-  List<List<dynamic>>? coordinates;
+  List<List<num>>? coordinates;
 
   TrailblazeRoute(
     this.sourceId,
     this.layerId,
     this.routeJson,
-    this.waypoints, {
+    this.waypoints,
+    Map<String?, dynamic> options, {
     bool isActive = false,
     bool isGraphhopperRoute = false,
   }) {
@@ -46,6 +48,7 @@ class TrailblazeRoute {
     distance = routeJson['distance'];
     duration = routeJson['duration'] ??
         routeJson['time'] / 1000; // Graphhopper time is in ms.
+    routeOptions = options;
 
     if (isGraphhopperRoute) {
       final coordinatesWithElevation =

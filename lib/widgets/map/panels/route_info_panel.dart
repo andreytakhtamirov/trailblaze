@@ -1,27 +1,42 @@
+import 'dart:convert';
 import 'dart:developer';
 
+import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:mapbox_search/mapbox_search.dart';
+import 'package:polyline_codec/polyline_codec.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/constants/route_info_constants.dart';
+import 'package:trailblaze/data/profile.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
+import 'package:trailblaze/managers/credential_manager.dart';
+import 'package:trailblaze/managers/profile_manager.dart';
 import 'package:trailblaze/requests/route_metrics.dart';
+import 'package:trailblaze/requests/user_profile.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:http/http.dart' as http;
+import 'package:trailblaze/util/static_image_helper.dart';
+import 'package:trailblaze/util/ui_helper.dart';
+import 'package:trailblaze/widgets/map/icon_button_small.dart';
 
-class RouteInfoPanel extends StatefulWidget {
+class RouteInfoPanel extends ConsumerStatefulWidget {
   const RouteInfoPanel({Key? key, required this.route}) : super(key: key);
   final TrailblazeRoute? route;
 
   @override
-  State<RouteInfoPanel> createState() => _RouteInfoPanelState();
+  ConsumerState<RouteInfoPanel> createState() => _RouteInfoPanelState();
 }
 
-class _RouteInfoPanelState extends State<RouteInfoPanel> {
+class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
   late TrackballBehavior _elevationTrackball;
   http.Client _client = http.Client();
   bool _isFetchingMetrics = false;
+  String? _savedRouteId;
+  bool _isLoadingRouteUpdate = false;
 
   @override
   initState() {
@@ -40,6 +55,10 @@ class _RouteInfoPanelState extends State<RouteInfoPanel> {
       _client.close();
       _client = http.Client();
       _fetchMetricsIfNeeded();
+      setState(() {
+        _savedRouteId = null;
+        _isLoadingRouteUpdate = false;
+      });
     }
   }
 
@@ -54,6 +73,81 @@ class _RouteInfoPanelState extends State<RouteInfoPanel> {
         widget.route?.elevationMetrics == null) {
       _fetchRouteMetrics();
     }
+  }
+
+  void _onSaveRoute(
+      Credentials? credentials, Profile? profile, String routeName) async {
+    setState(() {
+      _isLoadingRouteUpdate = true;
+    });
+
+    final waypoints = widget.route?.routeOptions['waypoints'];
+    final List<MapBoxPlace> waypointsList = [];
+
+    for (dynamic placeJson in waypoints) {
+      waypointsList.add(MapBoxPlace.fromJson(json.decode(placeJson)));
+    }
+
+    final coordinates =
+        widget.route!.coordinates!.map((c) => [c[1], c[0]]).toList();
+
+    String polyline = PolylineCodec.encode(coordinates, precision: 5);
+    Uri staticImageUri = StaticImageHelper.staticImageFromPolyline(
+      kMapboxAccessToken,
+      waypointsList.first.center?[0] ?? 0,
+      waypointsList.first.center?[1] ?? 0,
+      waypointsList.last.center?[0] ?? 0,
+      waypointsList.last.center?[1] ?? 0,
+      polyline,
+    );
+
+    final response = await saveRoute(
+      credentials?.idToken ?? '',
+      profile?.id ?? '',
+      widget.route,
+      staticImageUri.toString(),
+      routeName,
+    );
+
+    setState(() {
+      _isLoadingRouteUpdate = false;
+    });
+
+    response.fold(
+      (error) => {
+        UiHelper.showSnackBar(context, 'Failed to save route.'),
+      },
+      (data) => {
+        setState(() {
+          _savedRouteId = data;
+        }),
+      },
+    );
+  }
+
+  void _onDeleteRoute(Credentials? credentials, Profile? profile) async {
+    setState(() {
+      _isLoadingRouteUpdate = true;
+    });
+
+    final response = await deleteRoute(
+        credentials?.idToken ?? '', profile?.id ?? '', _savedRouteId ?? '');
+
+    setState(() {
+      _isLoadingRouteUpdate = false;
+    });
+
+    response.fold(
+      (error) => {
+        UiHelper.showSnackBar(context, 'Failed to save route.'),
+      },
+      (data) => {
+        // Route deleted successfully.
+        setState(() {
+          _savedRouteId = null;
+        }),
+      },
+    );
   }
 
   SfCartesianChart _buildElevationChart(List<Color> palette) {
@@ -107,7 +201,7 @@ class _RouteInfoPanelState extends State<RouteInfoPanel> {
       series.add(StackedBarSeries<num, String>(
         dataSource: [point.value],
         name: point.key,
-        xValueMapper: (p, _) => "",
+        xValueMapper: (p, _) => '',
         yValueMapper: (p, _) => p,
         legendItemText: point.key,
         legendIconType: LegendIconType.circle,
@@ -127,7 +221,7 @@ class _RouteInfoPanelState extends State<RouteInfoPanel> {
       series.add(StackedBarSeries<num, String>(
         dataSource: [point.value],
         name: point.key,
-        xValueMapper: (p, _) => "",
+        xValueMapper: (p, _) => '',
         yValueMapper: (p, _) => p,
         legendItemText: point.key,
         legendIconType: LegendIconType.circle,
@@ -220,7 +314,7 @@ class _RouteInfoPanelState extends State<RouteInfoPanel> {
     }
 
     if (metrics == null) {
-      log("Could not fetch metrics for route.");
+      log('Could not fetch metrics for route.');
       return;
     }
 
@@ -239,18 +333,102 @@ class _RouteInfoPanelState extends State<RouteInfoPanel> {
     }
   }
 
+  String _saveRouteButtonText() {
+    if (_isLoadingRouteUpdate && _savedRouteId == null) {
+      return 'Saving...';
+    } else if (_isLoadingRouteUpdate && _savedRouteId != null) {
+      return 'Deleting...';
+    } else if (!_isLoadingRouteUpdate && _savedRouteId == null) {
+      return 'Save Route';
+    } else {
+      return 'Saved';
+    }
+  }
+
+  IconData _saveRouteButtonIcon() {
+    if (!_isLoadingRouteUpdate && _savedRouteId == null) {
+      return Icons.add_circle_outline_rounded;
+    } else if (!_isLoadingRouteUpdate && _savedRouteId != null) {
+      return Icons.add_circle_rounded;
+    } else {
+      return Icons.access_time_rounded;
+    }
+  }
+
+  Color _saveRouteButtonForeground() {
+    if (!_isLoadingRouteUpdate && _savedRouteId == null) {
+      return Theme.of(context).colorScheme.primary;
+    } else if (!_isLoadingRouteUpdate && _savedRouteId != null) {
+      return Theme.of(context).colorScheme.tertiary;
+    } else {
+      return Colors.black;
+    }
+  }
+
+  void _onSaveRouteClick(Credentials? credentials, Profile? profile) async {
+    if (_isLoadingRouteUpdate) {
+      return;
+    }
+    if (_savedRouteId == null) {
+      final routeName = await UiHelper.showStringInputDialog(
+        context,
+        'Route Name',
+        'Enter a name for your route',
+      );
+
+      if (routeName != null) {
+        _onSaveRoute(credentials, profile, routeName);
+      }
+    } else {
+      bool? confirmed = await UiHelper.showConfirmationDialog(
+        context,
+        'Delete Route?',
+        'Are you sure you want to delete this route?',
+        'Delete',
+        'Cancel',
+        Colors.red,
+        Colors.white,
+      );
+
+      if (confirmed ?? false) {
+        _onDeleteRoute(credentials, profile);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final profile = ref.watch(profileProvider);
+    final credentials = ref.watch(credentialsProvider);
+
     return Expanded(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
         child: Column(
           children: [
-            const Text(
-              "Route Info",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Route Info',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: IconButtonSmall(
+                      text: _saveRouteButtonText(),
+                      icon: _saveRouteButtonIcon(),
+                      foregroundColor: _saveRouteButtonForeground(),
+                      onTap: () => {_onSaveRouteClick(credentials, profile)},
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(
@@ -262,7 +440,7 @@ class _RouteInfoPanelState extends State<RouteInfoPanel> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Duration",
+                        'Duration',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -270,7 +448,7 @@ class _RouteInfoPanelState extends State<RouteInfoPanel> {
                         ),
                       ),
                       Text(
-                        "Distance",
+                        'Distance',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -311,19 +489,19 @@ class _RouteInfoPanelState extends State<RouteInfoPanel> {
                 ? Column(
                     children: [
                       _buildExpandablePanel(
-                        "Elevation",
+                        'Elevation',
                         _buildElevationChart(kChartPalette1),
                         true,
                       ),
                       _buildExpandablePanel(
-                        "Surface Types",
+                        'Surface Types',
                         _buildChart(_getStackedBarSurfaces(), kChartPalette1),
                         false,
                       ),
                       // Not supported in every mode
                       widget.route!.highwayMetrics != null
                           ? _buildExpandablePanel(
-                              "Highway Types",
+                              'Highway Types',
                               _buildChart(
                                   _getStackedBarHighway(), kChartPalette2),
                               false,
@@ -337,7 +515,7 @@ class _RouteInfoPanelState extends State<RouteInfoPanel> {
                     ? const Center(
                         child: Column(
                           children: [
-                            Text("Fetching route metrics"),
+                            Text('Fetching route metrics'),
                             SizedBox(
                               height: 24,
                             ),
@@ -346,7 +524,7 @@ class _RouteInfoPanelState extends State<RouteInfoPanel> {
                         ),
                       )
                     : const Center(
-                        child: Text("Could not fetch route metrics"),
+                        child: Text('Could not fetch route metrics'),
                       ),
           ],
         ),
