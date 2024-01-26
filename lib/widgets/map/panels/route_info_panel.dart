@@ -414,25 +414,29 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                   const Expanded(
                     child: Text(
                       'Route Info',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: IconButtonSmall(
-                      text: _saveRouteButtonText(),
-                      icon: _saveRouteButtonIcon(),
-                      foregroundColor: _saveRouteButtonForeground(),
-                      onTap: () => {_onSaveRouteClick(credentials, profile)},
-                    ),
-                  ),
+                  if (credentials != null)
+                    Expanded(
+                      child: IconButtonSmall(
+                        text: _saveRouteButtonText(),
+                        icon: _saveRouteButtonIcon(),
+                        foregroundColor: _saveRouteButtonForeground(),
+                        onTap: () => {_onSaveRouteClick(credentials, profile)},
+                      ),
+                    )
+                  else
+                    const SizedBox(),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
+              padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
