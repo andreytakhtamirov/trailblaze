@@ -529,11 +529,13 @@ class _MapWidgetState extends State<MapWidget>
 
     routeResponse.fold(
       (error) => {
-        if (error == 400)
+        if (error == 406)
           {
             UiHelper.showSnackBar(
                 context, "Sorry, this region is not supported yet.")
           }
+        else if (error == 422)
+          {UiHelper.showSnackBar(context, "Requested points are too far away.")}
         else if (error == 404)
           {UiHelper.showSnackBar(context, "Failed to connect to the server.")}
         else

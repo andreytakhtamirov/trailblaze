@@ -32,14 +32,18 @@ Future<Either<int, Map<String, dynamic>?>> createGraphhopperRoute(
 
   final body = jsonEncode({'profile': profile, 'waypoints': waypoints});
 
-  final response = await http.post(Uri.parse(endpoint),
-      headers: kRequestHeaderBasic, body: body);
+  try {
+    final response = await http.post(Uri.parse(endpoint),
+        headers: kRequestHeaderBasic, body: body);
 
-  if (response.statusCode == 200) {
-    return Right(jsonDecode(response.body));
-  } else {
-    log("fail status: ${response.statusCode}");
+    if (response.statusCode == 200) {
+      return Right(jsonDecode(response.body));
+    } else {
+      log("fail status: ${response.statusCode}");
+      return Left(response.statusCode);
+    }
+  } catch (e) {
+    log("Exception when fetching Graphhopper route: $e");
+    return const Left(-1);
   }
-
-  return Left(response.statusCode);
 }
