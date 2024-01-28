@@ -631,6 +631,7 @@ class _MapWidgetState extends State<MapWidget>
       _mapboxMap,
       route,
       camera,
+      extraPadding: widget.forceTopBottomPadding,
     );
 
     if (isAnimated) {

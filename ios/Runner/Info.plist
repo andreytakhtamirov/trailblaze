@@ -8,6 +8,17 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>Trailblaze</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>MKDirectionsRequest</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.apple.maps.directionsrequest</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -39,6 +50,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>MKDirectionsApplicationSupportedModes</key>
+	<array>
+		<string>MKDirectionsModeBike</string>
+		<string>MKDirectionsModeOther</string>
+		<string>MKDirectionsModePedestrian</string>
+	</array>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Location permissions are needed to show your location on the map.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
