@@ -65,7 +65,7 @@ class PostListItem implements Item {
   });
 
   factory PostListItem.fromJson(dynamic itemJson) {
-    final id = itemJson[kJsonKeyType];
+    final id = itemJson[kJsonKeyId];
     final title = itemJson[kJsonKeyPostTitle];
     final description = itemJson[kJsonKeyPostDescription];
     final likes = itemJson[kJsonKeyPostLikes];
@@ -75,18 +75,20 @@ class PostListItem implements Item {
     final imageUrl = itemJson[kJsonKeyPostRouteId][kJsonKeyPostImageUrl];
     final routeJson = itemJson[kJsonKeyPostRouteId][kJsonKeyPostRoute];
     final routeType = itemJson[kJsonKeyRouteType];
+    final waypoints = routeOptions[kJsonKeyWaypoints];
 
     if (id != null &&
         title != null &&
         description != null &&
         routeOptions != null &&
         modeString != null &&
-        imageUrl != null) {
+        imageUrl != null &&
+        waypoints != null) {
       TrailblazeRoute route = TrailblazeRoute(
         kRouteSourceId,
         kRouteLayerId,
         routeJson,
-        [],
+        waypoints,
         routeOptions,
         isActive: true,
         isGraphhopperRoute: routeType == kRouteTypeGraphhopper,
@@ -159,7 +161,7 @@ class RouteListItem implements Item {
   });
 
   factory RouteListItem.fromJson(dynamic itemJson) {
-    final id = itemJson[kJsonKeyType];
+    final id = itemJson[kJsonKeyId];
     final title = itemJson[kJsonKeyPostTitle];
     final distance = itemJson[kJsonKeyPostRoute][kJsonKeyPostDistance];
     final routeOptions = itemJson[kJsonKeyPostRouteOptions];
@@ -167,18 +169,20 @@ class RouteListItem implements Item {
     final imageUrl = itemJson[kJsonKeyPostImageUrl];
     final routeJson = itemJson[kJsonKeyPostRoute];
     final routeType = itemJson[kJsonKeyRouteType];
+    final waypoints = routeOptions[kJsonKeyWaypoints];
 
     if (id != null &&
         title != null &&
         distance != null &&
         routeOptions != null &&
         modeString != null &&
-        imageUrl != null) {
+        imageUrl != null &&
+        waypoints != null) {
       TrailblazeRoute route = TrailblazeRoute(
         kRouteSourceId,
         kRouteLayerId,
         routeJson,
-        [],
+        waypoints,
         routeOptions,
         isActive: true,
         isGraphhopperRoute: routeType == kRouteTypeGraphhopper,

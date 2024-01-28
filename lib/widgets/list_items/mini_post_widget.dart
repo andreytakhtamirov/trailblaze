@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trailblaze/managers/credential_manager.dart';
 import 'package:trailblaze/managers/profile_manager.dart';
+import 'package:trailblaze/screens/route_details.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
 
 import '../../data/list_item.dart';
-import '../../screens/post_details_screen.dart';
 
 class MiniPostView extends ConsumerWidget {
   final Item item;
@@ -58,7 +58,7 @@ class MiniPostView extends ConsumerWidget {
             Padding(
               padding: EdgeInsets.all(36),
               child: Icon(
-                Icons.add_rounded,
+                Icons.public_rounded,
                 size: 32,
               ),
             ),
@@ -91,7 +91,7 @@ class MiniPostView extends ConsumerWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PostDetailsScreen(item: item),
+              builder: (context) => RouteDetails(item: item),
             ),
           );
         },

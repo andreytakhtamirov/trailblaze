@@ -1,10 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:trailblaze/screens/route_details.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
 
 import '../../data/list_item.dart';
-import '../../screens/post_details_screen.dart';
 import 'likes_widget.dart';
 
 class PostView extends StatelessWidget {
@@ -19,7 +19,7 @@ class PostView extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PostDetailsScreen(item: item),
+            builder: (context) => RouteDetails(item: item),
           ),
         );
       },

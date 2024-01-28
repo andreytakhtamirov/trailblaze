@@ -25,8 +25,13 @@ import 'package:trailblaze/util/ui_helper.dart';
 import 'package:trailblaze/widgets/map/icon_button_small.dart';
 
 class RouteInfoPanel extends ConsumerStatefulWidget {
-  const RouteInfoPanel({Key? key, required this.route}) : super(key: key);
+  const RouteInfoPanel({
+    Key? key,
+    required this.route,
+    this.hideSaveRoute = false,
+  }) : super(key: key);
   final TrailblazeRoute? route;
+  final bool hideSaveRoute;
 
   @override
   ConsumerState<RouteInfoPanel> createState() => _RouteInfoPanelState();
@@ -428,7 +433,7 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                       ),
                     ),
                   ),
-                  if (credentials != null)
+                  if (!widget.hideSaveRoute && credentials != null)
                     Expanded(
                       child: IconButtonSmall(
                         text: _saveRouteButtonText(),
