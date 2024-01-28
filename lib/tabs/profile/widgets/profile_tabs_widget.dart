@@ -34,6 +34,7 @@ class ProfileTabsWidget extends StatelessWidget {
           ),
           Expanded(
             child: TabBarView(
+              physics: const NeverScrollableScrollPhysics(),
               children: [
                 ItemsFeed(
                   UserRoutesApiService(),

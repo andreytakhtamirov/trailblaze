@@ -1,6 +1,7 @@
 import 'package:mapbox_search/colors/color.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/constants/map_constants.dart';
+import 'package:trailblaze/extensions/iterable_extension.dart';
 import 'package:trailblaze/extensions/mapbox_static_image_extension.dart';
 
 class StaticImageHelper {
@@ -27,5 +28,15 @@ class StaticImageHelper {
       path: path,
       style: kMapStyleOutdoors,
     );
+  }
+
+  static List<List<num>> sampleCoordinates(List<List<dynamic>> coordinates) {
+    int x = (coordinates.length / 500).ceil();
+    final List<List<num>> sampledCoordinates = coordinates
+        .whereIndexed((index, c) => index % x == 0)
+        .map((c) => [c[1] as num, c[0] as num])
+        .toList();
+
+    return sampledCoordinates;
   }
 }

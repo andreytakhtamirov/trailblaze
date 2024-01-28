@@ -1,6 +1,9 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:trailblaze/data/transportation_mode.dart';
+import 'package:trailblaze/trailblaze_icons_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class UiHelper {
@@ -102,6 +105,7 @@ class UiHelper {
     BuildContext context,
     String title,
     String prompt,
+    int maxTextLength,
   ) async {
     TextEditingController controller = TextEditingController();
     String? errorMessage;
@@ -114,7 +118,10 @@ class UiHelper {
             return AlertDialog(
               title: Text(title),
               content: TextField(
+                autofocus: true,
                 controller: controller,
+                maxLength: maxTextLength,
+                maxLengthEnforcement: MaxLengthEnforcement.enforced,
                 decoration: InputDecoration(
                   hintText: prompt,
                   errorText: errorMessage,
@@ -166,5 +173,22 @@ class UiHelper {
 
   static Color textColorForBackgroundColor(Color background) {
     return background.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+  }
+
+  static IconData iconForTransportationMode(TransportationMode mode) {
+    switch (mode) {
+      case TransportationMode.walking:
+        return Icons.directions_walk_rounded;
+      case TransportationMode.walking_plus:
+        return TrailblazeIcons.kDirectionsWalkParks;
+      case TransportationMode.cycling:
+        return Icons.directions_bike_rounded;
+      case TransportationMode.cycling_plus:
+        return TrailblazeIcons.kDirectionsBikeParks;
+      case TransportationMode.gravel_cycling:
+        return TrailblazeIcons.kDirectionsBikeGravel;
+      default:
+        return Icons.directions_walk_rounded;
+    }
   }
 }

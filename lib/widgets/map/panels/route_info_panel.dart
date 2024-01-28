@@ -10,6 +10,7 @@ import 'package:mapbox_search/mapbox_search.dart';
 import 'package:polyline_codec/polyline_codec.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:trailblaze/constants/map_constants.dart';
+import 'package:trailblaze/constants/request_api_constants.dart';
 import 'package:trailblaze/constants/route_info_constants.dart';
 import 'package:trailblaze/data/profile.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
@@ -88,8 +89,13 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
       waypointsList.add(MapBoxPlace.fromJson(json.decode(placeJson)));
     }
 
-    final coordinates =
-        widget.route!.coordinates!.map((c) => [c[1], c[0]]).toList();
+    final List<List<num>> coordinates;
+    if (widget.route?.coordinates != null) {
+      coordinates =
+          StaticImageHelper.sampleCoordinates(widget.route!.coordinates!);
+    } else {
+      coordinates = [];
+    }
 
     String polyline = PolylineCodec.encode(coordinates, precision: 5);
     Uri staticImageUri = StaticImageHelper.staticImageFromPolyline(
@@ -139,7 +145,7 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
 
     response.fold(
       (error) => {
-        UiHelper.showSnackBar(context, 'Failed to save route.'),
+        UiHelper.showSnackBar(context, 'Failed to delete route.'),
       },
       (data) => {
         // Route deleted successfully.
@@ -374,6 +380,7 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
         context,
         'Route Name',
         'Enter a name for your route',
+        kMaxTitleLength,
       );
 
       if (routeName != null) {

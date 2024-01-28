@@ -1,9 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:trailblaze/util/format_helper.dart';
+import 'package:trailblaze/util/ui_helper.dart';
 
 import '../../data/list_item.dart';
-import '../../data/transportation_mode.dart';
 import '../../screens/post_details_screen.dart';
 import 'likes_widget.dart';
 
@@ -59,9 +59,7 @@ class PostView extends StatelessWidget {
                         alignment: Alignment.center,
                         transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
                         child: Icon(
-                          item.transportationMode == TransportationMode.walking
-                              ? Icons.directions_walk_rounded
-                              : Icons.directions_bike_rounded,
+                          UiHelper.iconForTransportationMode(item.transportationMode),
                           color: Colors.green.shade800,
                         ),
                       ),

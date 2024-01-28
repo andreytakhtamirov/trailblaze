@@ -16,3 +16,8 @@ const double kDefaultFeatureDistanceMeters = 2000;
 const String staticMapStyle = 'streets-v12';
 const int kStaticMapWidth = 1200;
 const int kStaticMapHeight = 700;
+
+const String kRouteTypeGraphhopper = 'gh';
+const String kRouteTypeMapbox = 'mb';
+
+const int kMaxTitleLength = 50;
