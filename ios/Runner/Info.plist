@@ -39,6 +39,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Location permissions are needed to show your location on the map.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Location permissions are needed to show your location on the map.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
