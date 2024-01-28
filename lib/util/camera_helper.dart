@@ -42,9 +42,9 @@ class CameraHelper {
   static Future<CameraOptions> cameraOptionsForRoute(
       MapboxMap mapboxMap, TrailblazeRoute route, CameraOptions camera) {
     final padding = MbxEdgeInsets(
-      top: camera.padding?.top ?? 0,
+      top: (camera.padding?.top ?? 0) + kRouteCameraState.padding.top,
       left: (camera.padding?.left ?? 0) + kRouteCameraState.padding.left,
-      bottom: camera.padding?.bottom ?? 0,
+      bottom: (camera.padding?.bottom ?? 0) + kRouteCameraState.padding.bottom,
       right: (camera.padding?.right ?? 0) + kRouteCameraState.padding.right,
     );
     return mapboxMap.cameraForGeometry(

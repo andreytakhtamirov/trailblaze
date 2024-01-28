@@ -68,7 +68,7 @@ class _ItemsFeedState extends ConsumerState<ItemsFeed>
         return null;
       }).whereType<Item>();
 
-      final isLastPage = newItems.length < pageKey * kItemsPerPage;
+      final isLastPage = newItems.length < kItemsPerPage;
       if (isLastPage) {
         _pagingController.appendLastPage(newItems.toList());
       } else {
@@ -82,6 +82,18 @@ class _ItemsFeedState extends ConsumerState<ItemsFeed>
 
   Future<void> _refreshItems() async {
     _pagingController.refresh();
+  }
+
+  void _onItemDeleted(String itemId) {
+    if (_pagingController.itemList == null) {
+      return;
+    }
+
+    final items = _pagingController.itemList!;
+    items.removeWhere((element) => element.id == itemId);
+    setState(() {
+      _pagingController.itemList = items;
+    });
   }
 
   @override
@@ -118,7 +130,10 @@ class _ItemsFeedState extends ConsumerState<ItemsFeed>
               },
               itemBuilder: (context, item, index) {
                 if (widget.isMinified) {
-                  return MiniPostView(item: item);
+                  return MiniPostView(
+                    item: item,
+                    onItemDeleted: _onItemDeleted,
+                  );
                 } else {
                   return PostView(item: item);
                 }

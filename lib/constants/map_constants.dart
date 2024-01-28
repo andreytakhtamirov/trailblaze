@@ -49,7 +49,7 @@ final CameraState kDefaultCameraState = CameraState(
 
 final CameraState kRouteCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
-    padding: MbxEdgeInsets(top: 300, left: 60, bottom: 0, right: 60),
+    padding: MbxEdgeInsets(top: 100, left: 60, bottom: 100, right: 60),
     zoom: kDefaultMapZoom,
     bearing: 0,
     pitch: 0);
@@ -86,7 +86,7 @@ final kMapTopOffset = Platform.isAndroid ? 8.0 : 0.0;
 final kAndroidTopOffset = Platform.isAndroid ? 32.0 : 0.0;
 const kMapUiPadding = 14.0;
 const kCompassTopOffset = 32.0;
-final kMapUiTopOffset = 48.0 + kMapUiPadding + kAndroidTopOffset;
+const kMapUiTopOffset = 8.0 + kMapUiPadding;
 const kAttributionLeftOffset = kMapUiPadding + 72.0;
 const kAttributionBottomOffset = 62.0;
 const kLogoLeftOffset = 4.0;

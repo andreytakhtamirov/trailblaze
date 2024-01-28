@@ -34,12 +34,16 @@ import '../widgets/map/map_style_selector_widget.dart';
 
 class MapWidget extends StatefulWidget {
   final bool forceTopBottomPadding;
+  final bool isInteractiveMap;
+  final TrailblazeRoute? routeToDisplay;
 
   const MapWidget({
     super.key,
     // If this widget is hosted in a scaffold with a bottom navigation bar
     //  (and without a top app bar), we don't need to pad the top and bottom.
     this.forceTopBottomPadding = false,
+    this.isInteractiveMap = true,
+    this.routeToDisplay,
   });
 
   @override
@@ -97,11 +101,44 @@ class _MapWidgetState extends State<MapWidget>
       }
       _onScrollChanged(_pageController.page!);
     });
+
+    if (widget.routeToDisplay != null) {
+      _mapInitializedCompleter.future.then(
+        (value) => {
+          _loadRouteToDisplay(),
+        },
+      );
+    }
+  }
+
+  void _loadRouteToDisplay() async {
+    _setViewMode(ViewMode.directions);
+
+    final route = widget.routeToDisplay!;
+    await _drawRoute(route);
+    routesList.add(route);
+
+    setState(() {
+      _selectedRoute = route;
+    });
+
+    Future.delayed(const Duration(milliseconds: 20), () {
+      if (_selectedRoute != null) {
+        _flyToRoute(_selectedRoute!, isAnimated: false);
+      }
+    });
+
+    _setMapControlSettings();
   }
 
   _onMapCreated(mbm.MapboxMap mapboxMap) async {
-    _mapboxMap = mapboxMap;
-    _goToUserLocation(isAnimated: false);
+    setState(() {
+      _mapboxMap = mapboxMap;
+    });
+    if (widget.isInteractiveMap) {
+      // Only fly to user location if interactive
+      _goToUserLocation(isAnimated: false);
+    }
     _showUserLocationPuck();
     _setMapControlSettings();
 
@@ -414,7 +451,10 @@ class _MapWidgetState extends State<MapWidget>
         topOffset = height;
       }
 
-      topOffset += kAndroidTopOffset;
+      if (!widget.forceTopBottomPadding) {
+        // Need to compensate for Android status bar.
+        topOffset += kAndroidTopOffset;
+      }
       completer.complete(topOffset.toDouble());
     });
 
@@ -479,7 +519,8 @@ class _MapWidgetState extends State<MapWidget>
     final bottomOffset = _getBottomOffset();
 
     final padding = mbm.MbxEdgeInsets(
-      top: kDefaultCameraState.padding.top + topOffset,
+      top: (widget.isInteractiveMap ? kDefaultCameraState.padding.top : 0) +
+          topOffset,
       left: kDefaultCameraState.padding.left,
       bottom: kDefaultCameraState.padding.bottom + bottomOffset,
       right: kDefaultCameraState.padding.right,
@@ -584,15 +625,20 @@ class _MapWidgetState extends State<MapWidget>
     _setMapControlSettings();
   }
 
-  void _flyToRoute(TrailblazeRoute route) async {
+  void _flyToRoute(TrailblazeRoute route, {bool isAnimated = true}) async {
     final camera = await _getCameraOptions();
     final cameraOptions = await CameraHelper.cameraOptionsForRoute(
       _mapboxMap,
       route,
       camera,
     );
-    _mapboxMap.flyTo(cameraOptions,
-        mbm.MapAnimationOptions(duration: kMapFlyToDuration, startDelay: 0));
+
+    if (isAnimated) {
+      _mapboxMap.flyTo(cameraOptions,
+          mbm.MapAnimationOptions(duration: kMapFlyToDuration, startDelay: 0));
+    } else {
+      _mapboxMap.setCamera(cameraOptions);
+    }
   }
 
   void _setSelectedRoute(TrailblazeRoute route) async {
@@ -1018,7 +1064,8 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   bool _showTopWidget() {
-    return (_viewMode == ViewMode.search ||
+    return widget.isInteractiveMap &&
+        (_viewMode == ViewMode.search ||
             _manuallySelectedPlace ||
             _viewMode == ViewMode.directions) &&
         _viewMode != ViewMode.parks;
@@ -1186,7 +1233,7 @@ class _MapWidgetState extends State<MapWidget>
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Visibility(
-                                        visible:
+                                        visible: widget.isInteractiveMap &&
                                             _viewMode != ViewMode.directions,
                                         child: Padding(
                                           padding: const EdgeInsets.fromLTRB(
@@ -1313,6 +1360,7 @@ class _MapWidgetState extends State<MapWidget>
           : _selectedRoute != null
               ? RouteInfoPanel(
                   route: _selectedRoute,
+                  hideSaveRoute: !widget.isInteractiveMap,
                 )
               : _selectedPlace != null
                   ? PlaceInfoPanel(

@@ -125,10 +125,26 @@ class LoginView extends StatelessWidget {
                   child: SizedBox(
                     width: 200,
                     child: Text(
-                      "Log in to view your profile",
+                      "Log in to unlock your profile",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 24,
+                        height: 1.25,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: SizedBox(
+                    width: 250,
+                    child: Text(
+                      "You'll be able to save your favorite routes and more!",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
                         height: 1.25,
                         fontWeight: FontWeight.w600,
                         color: Theme.of(context).colorScheme.primary,

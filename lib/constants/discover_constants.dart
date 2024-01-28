@@ -9,3 +9,6 @@ const String kJsonKeyPostDistance = 'distance';
 const String kJsonKeyPostRouteOptions = 'routeOptions';
 const String kJsonKeyPostProfile = 'profile';
 const String kJsonKeyPostImageUrl = 'imageUrl';
+const String kJsonKeyRouteType = 'type';
+const String kJsonKeyId = '_id';
+const String kJsonKeyWaypoints = 'waypoints';
