@@ -22,12 +22,12 @@ class ProfileTabsWidget extends StatelessWidget {
             tabs: [
               Tab(
                 icon: Icon(
-                  Icons.favorite_border,
+                  Icons.route_outlined,
                 ),
               ),
               Tab(
                 icon: Icon(
-                  Icons.route_outlined,
+                  Icons.favorite_border,
                 ),
               ),
             ],
@@ -36,18 +36,18 @@ class ProfileTabsWidget extends StatelessWidget {
             child: TabBarView(
               children: [
                 ItemsFeed(
-                  LikedPostsApiService(),
-                  PostListItem,
-                  isMinified: true,
-                  jwtToken: credentials?.idToken ?? '',
-                  feedInfoText: "Posts you've liked will appear here.",
-                ),
-                ItemsFeed(
                   UserRoutesApiService(),
                   RouteListItem,
                   isMinified: true,
                   jwtToken: credentials?.idToken ?? '',
                   feedInfoText: "Routes you've created will appear here.",
+                ),
+                ItemsFeed(
+                  LikedPostsApiService(),
+                  PostListItem,
+                  isMinified: true,
+                  jwtToken: credentials?.idToken ?? '',
+                  feedInfoText: "Posts you've liked will appear here.",
                 ),
               ],
             ),

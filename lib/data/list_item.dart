@@ -1,4 +1,3 @@
-import 'package:trailblaze/constants/request_api_constants.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/data/transportation_mode.dart';
 
@@ -48,27 +47,30 @@ class PostListItem implements Item {
     final title = itemJson[kJsonKeyPostTitle];
     final description = itemJson[kJsonKeyPostDescription];
     final likes = itemJson[kJsonKeyPostLikes];
-    final modeStr = itemJson[kJsonKeyPostRouteId][kJsonKeyPostRouteOptions]
-        [kJsonKeyPostProfile];
+    final routeOptions =
+        itemJson[kJsonKeyPostRouteId][kJsonKeyPostRouteOptions];
+    final modeString = routeOptions[kJsonKeyPostProfile];
     final imageUrl = itemJson[kJsonKeyPostRouteId][kJsonKeyPostImageUrl];
     final routeJson = itemJson[kJsonKeyPostRouteId][kJsonKeyPostRoute];
 
     if (title != null &&
         description != null &&
-        modeStr != null &&
+        routeOptions != null &&
+        modeString != null &&
         imageUrl != null) {
       TrailblazeRoute route = TrailblazeRoute(
         kRouteSourceId,
         kRouteLayerId,
         routeJson,
         [],
+        routeOptions,
         isActive: true,
       );
 
       return PostListItem(
         title: title,
         description: description,
-        transportationMode: getTransportationModeFromString(modeStr),
+        transportationMode: getTransportationModeFromString(modeString),
         likes: likes,
         imageUrl: imageUrl,
         route: route,
@@ -114,25 +116,28 @@ class RouteListItem implements Item {
   factory RouteListItem.fromJson(dynamic itemJson) {
     final title = itemJson[kJsonKeyPostTitle];
     final distance = itemJson[kJsonKeyPostRoute][kJsonKeyPostDistance];
-    final modeStr = itemJson[kJsonKeyPostRouteOptions][kJsonKeyPostProfile];
+    final routeOptions = itemJson[kJsonKeyPostRouteOptions];
+    final modeString = routeOptions[kJsonKeyPostProfile];
     final imageUrl = itemJson[kJsonKeyPostImageUrl];
     final routeJson = itemJson[kJsonKeyPostRoute];
 
     if (title != null &&
         distance != null &&
-        modeStr != null &&
+        routeOptions != null &&
+        modeString != null &&
         imageUrl != null) {
       TrailblazeRoute route = TrailblazeRoute(
         kRouteSourceId,
         kRouteLayerId,
         routeJson,
         [],
+        routeOptions,
         isActive: true,
       );
 
       return RouteListItem(
         title: title,
-        transportationMode: getTransportationModeFromString(modeStr),
+        transportationMode: getTransportationModeFromString(modeString),
         imageUrl: imageUrl,
         route: route,
       );

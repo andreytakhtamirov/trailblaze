@@ -40,7 +40,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       (error) => {
         if (error == 204)
           {
-            _mutateProfile(Profile(null)),
+            _mutateProfile(Profile.fromJson(null)),
           }
         else
           {
@@ -48,7 +48,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           }
       },
       (data) => {
-        _mutateProfile(Profile(data)),
+        _mutateProfile(Profile.fromJson(data)),
       },
     );
   }
@@ -125,7 +125,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       return;
     }
 
-    _mutateProfile(Profile(data));
+    _mutateProfile(Profile.fromJson(data));
   }
 
   void _onAboutPressed() {
