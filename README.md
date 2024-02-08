@@ -5,8 +5,9 @@ A route-planning app that finds the scenic way to get to places.
 
 
 ## Releases
-Check out the latest release of Trailblaze for iOS & Android:
+Available on the [App Store](https://apps.apple.com/ca/app/trailblaze/id6450859439) for iOS
 
+Android release and development builds:
 [![Latest Release](https://img.shields.io/github/v/release/andreytakhtamirov/trailblaze-flutter?include_prereleases&style=flat)](https://github.com/andreytakhtamirov/trailblaze-flutter/releases/latest)
 
 
