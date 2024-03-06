@@ -6,12 +6,17 @@ import 'package:trailblaze/tabs/discover.dart';
 import 'package:trailblaze/tabs/map.dart';
 import 'package:trailblaze/tabs/profile/profile.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 import 'managers/credential_manager.dart';
 import 'managers/profile_manager.dart';
 
 Future<void> main() async {
   await dotenv.load();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -25,6 +30,8 @@ class MyApp extends StatelessWidget {
     ]);
 
     return MaterialApp(
+      // Uncomment when taking screenshots for app store.
+      // debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: const ColorScheme(
           primary: Color(0xFF255368),
