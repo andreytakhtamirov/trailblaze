@@ -27,13 +27,16 @@ final double kLocationPinSize = kDevicePixelRatio / 3;
 const double kFeaturePinSize = 5.0;
 
 const kPointSelectedCameraZoomOffset = 2;
-final double kPanelMaxHeight = kScreenHeight / 3 - kSafeAreaPaddingBottom;
-final double kPanelFeaturesMaxHeight =
-    kScreenHeight / 2.6 - kSafeAreaPaddingBottom;
 const double kPanelMinContentHeight = 70;
 const double kPanelRouteInfoMinHeight = 120;
 final double kPanelRouteInfoMaxHeight =
     kScreenHeight / 2 - kSafeAreaPaddingBottom;
+final double kPanelMaxHeight = kScreenHeight / 3 - kSafeAreaPaddingBottom;
+final double kPanelFeaturesMaxHeight =
+    kScreenHeight / 3 - kSafeAreaPaddingBottom;
+final double kPanelShuffleMaxHeight =
+    kScreenHeight / 3 - kSafeAreaPaddingBottom;
+
 const double kPanelFabHeight = kPanelMinContentHeight + 8;
 
 final double kFeatureItemHeight = kScreenHeight / 6;
@@ -63,11 +66,7 @@ final CameraState kPostDetailsCameraState = CameraState(
 
 final CameraState kFeaturesCameraState = CameraState(
     center: kDefaultCameraState.center,
-    padding: MbxEdgeInsets(
-        top: 40,
-        left: 40,
-        bottom: 60,
-        right: 40),
+    padding: MbxEdgeInsets(top: 40, left: 40, bottom: 60, right: 40),
     zoom: kDefaultCameraState.zoom,
     bearing: kDefaultCameraState.bearing,
     pitch: kDefaultCameraState.pitch);
@@ -86,7 +85,7 @@ final kMapTopOffset = Platform.isAndroid ? 8.0 : 0.0;
 final kAndroidTopOffset = Platform.isAndroid ? 32.0 : 0.0;
 const kMapUiPadding = 14.0;
 const kCompassTopOffset = 32.0;
-const kMapUiTopOffset = 8.0 + kMapUiPadding;
+const kMapUiTopOffset = 8.0 + kMapUiPadding + 40;
 const kAttributionLeftOffset = kMapUiPadding + 72.0;
 const kAttributionBottomOffset = 62.0;
 const kLogoLeftOffset = 4.0;
@@ -114,14 +113,6 @@ final CompassSettings kDirectionsCompassSettings = CompassSettings(
     marginLeft: kMapUiPadding,
     marginRight: 0);
 
-final ScaleBarSettings kDefaultScaleBarSettings = ScaleBarSettings(
-    isMetricUnits: true,
-    position: OrnamentPosition.TOP_LEFT,
-    marginTop: kMapUiTopOffset,
-    marginBottom: 0,
-    marginLeft: kMapUiPadding,
-    marginRight: 0);
-
 final ScaleBarSettings kPostDetailsScaleBarSettings = ScaleBarSettings(
     isMetricUnits: true,
     position: OrnamentPosition.TOP_LEFT,
@@ -130,10 +121,10 @@ final ScaleBarSettings kPostDetailsScaleBarSettings = ScaleBarSettings(
     marginLeft: kMapUiPadding,
     marginRight: 0);
 
-final ScaleBarSettings kDirectionsScaleBarSettings = ScaleBarSettings(
+final ScaleBarSettings kDefaultScaleBarSettings = ScaleBarSettings(
     isMetricUnits: true,
     position: OrnamentPosition.TOP_LEFT,
-    marginTop: kMapUiPadding + kDirectionsWidgetOffset,
+    marginTop: kMapUiTopOffset,
     marginBottom: 0,
     marginLeft: kMapUiPadding,
     marginRight: 0);
@@ -156,4 +147,5 @@ enum ViewMode {
   search,
   directions,
   parks,
+  shuffle,
 }

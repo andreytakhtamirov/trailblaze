@@ -124,13 +124,13 @@ sealed class Pubspec {
   /// Build date and time (UTC)
   static final DateTime timestamp = DateTime.utc(
     2024,
-    1,
-    28,
-    17,
-    18,
+    2,
+    19,
+    20,
     24,
-    801,
-    9,
+    50,
+    858,
+    546,
   );
 
   /// Name
@@ -435,6 +435,7 @@ sealed class Pubspec {
     },
     'cupertino_icons': r'^1.0.2',
     'dartz': r'^0.10.1',
+    'firebase_core': r'^2.25.4',
   };
 
   /// Developer dependencies

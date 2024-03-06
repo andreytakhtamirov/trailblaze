@@ -1,4 +1,8 @@
+import 'dart:math';
+
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 
@@ -32,7 +36,8 @@ class CameraHelper {
     final padding = MbxEdgeInsets(
       top: (camera.padding?.top ?? 0) + kFeaturesCameraState.padding.top,
       left: (camera.padding?.left ?? 0) + kFeaturesCameraState.padding.left,
-      bottom: (camera.padding?.bottom ?? 0) + kFeaturesCameraState.padding.bottom,
+      bottom:
+          (camera.padding?.bottom ?? 0) + kFeaturesCameraState.padding.bottom,
       right: (camera.padding?.right ?? 0) + kFeaturesCameraState.padding.right,
     );
     return mapboxMap.cameraForCoordinates(
@@ -44,21 +49,48 @@ class CameraHelper {
     TrailblazeRoute route,
     CameraOptions camera, {
     bool extraPadding = false,
+    double extraBottomPadding = 0,
   }) {
-    final num topBottomPadding;
+    num topBottomPadding;
     if (extraPadding) {
       topBottomPadding = kDefaultCameraState.padding.top;
     } else {
       topBottomPadding = 0;
     }
 
+    topBottomPadding += extraBottomPadding;
+
     final padding = MbxEdgeInsets(
-      top: (camera.padding?.top ?? 0) + kRouteCameraState.padding.top + topBottomPadding,
+      top: (camera.padding?.top ?? 0) +
+          kRouteCameraState.padding.top +
+          topBottomPadding,
       left: (camera.padding?.left ?? 0) + kRouteCameraState.padding.left,
-      bottom: (camera.padding?.bottom ?? 0) + kRouteCameraState.padding.bottom + topBottomPadding,
+      bottom: (camera.padding?.bottom ?? 0) +
+          kRouteCameraState.padding.bottom +
+          topBottomPadding,
       right: (camera.padding?.right ?? 0) + kRouteCameraState.padding.right,
     );
     return mapboxMap.cameraForGeometry(
         route.geometryJson, padding, camera.bearing, camera.pitch);
+  }
+
+  static MapBoxPlace getMapBoxPlaceFromLonLat(List<double>? coordinates) {
+    return MapBoxPlace(placeName: "Camera Bounds", center: coordinates);
+  }
+
+  static List<double>? centerToCoordinatesLonLat(Map<String?, Object?> center) {
+    return (center['coordinates'] is List<dynamic>)
+        ? List<double>.from(center['coordinates'] as List<dynamic>)
+        : null;
+  }
+
+  static Future<double> distanceFromMap(
+      MapboxMap map, double screenSize) async {
+    final camera = await map.getCameraState();
+    final zoom = camera.zoom;
+    final distance = await map.projection.getMetersPerPixelAtLatitude(
+            centerToCoordinatesLonLat(camera.center)![1], zoom) *
+        screenSize;
+    return distance;
   }
 }

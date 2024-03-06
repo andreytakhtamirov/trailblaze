@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:trailblaze/constants/map_constants.dart';
-import 'package:trailblaze/constants/request_api_constants.dart';
+import 'package:trailblaze/constants/ui_control_constants.dart';
 import 'package:trailblaze/data/feature.dart';
+import 'package:trailblaze/screens/distance_selector_screen.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/widgets/list_items/feature_item.dart';
+import 'package:trailblaze/widgets/map/icon_button_small.dart';
 
 class FeaturesPanel extends StatefulWidget {
   const FeaturesPanel({
@@ -116,59 +118,44 @@ class _FeaturesPanelState extends State<FeaturesPanel> {
                       ),
           ),
         ),
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  "Distance Filter",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: IconButtonSmall(
+            text:
+                "Target Distance ${FormatHelper.formatDistance(widget.selectedDistanceMeters, noRemainder: true)}",
+            textFontSize: 20,
+            icon: Icons.edit,
+            backgroundColor: Theme.of(context).colorScheme.tertiary,
+            foregroundColor: Colors.white,
+            onTap: () async {
+              final distanceKm = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DistanceSelectorScreen(
+                    center: [
+                      widget.userLocation!.longitude,
+                      widget.userLocation!.latitude
+                    ],
+                    initialDistanceMeters: widget.selectedDistanceMeters ??
+                        kDefaultFeatureDistanceMeters,
+                    minDistanceKm: kMinFeatureDistanceMeters/1000,
+                    maxDistanceKm: kMaxFeatureDistanceMeters/1000,
+                    minZoom: kMinFeatureFilterCameraZoom,
+                    maxZoom: kMaxFeatureFilterCameraZoom,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 0),
-          child: Row(
-            children: [
-              _sliderDistanceValueLabel(kMinFeatureDistanceMeters),
-              Expanded(
-                child: Slider(
-                  min: kMinFeatureDistanceMeters / 1000,
-                  max: kMaxFeatureDistanceMeters / 1000,
-                  value: _valueKm,
-                  onChangeEnd: widget.onDistanceChanged,
-                  divisions: 19,
-                  label: FormatHelper.formatDistance(_valueKm * 1000),
-                  onChanged: (double value) {
-                    setState(() {
-                      _valueKm = value;
-                    });
-                  },
-                ),
-              ),
-              _sliderDistanceValueLabel(kMaxFeatureDistanceMeters),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+              );
 
-  Text _sliderDistanceValueLabel(double distanceMeters) {
-    return Text(
-      FormatHelper.formatDistance(distanceMeters, noRemainder: true),
-      textAlign: TextAlign.center,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: Colors.black87,
-      ),
+              if (distanceKm == null) {
+                return;
+              }
+
+              widget.onDistanceChanged(distanceKm * 1000);
+            },
+            // onTap: _onSelectDistanceTap,
+          ),
+        )
+      ],
     );
   }
 }

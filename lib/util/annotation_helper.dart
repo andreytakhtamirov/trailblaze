@@ -120,6 +120,43 @@ class AnnotationHelper {
     }
   }
 
+  void drawCircleAnnotation(
+      Map<String?, Object?> geometry) async {
+    await _circleAnnotationManager?.deleteAll();
+
+    var options = mbm.CircleAnnotationOptions(
+        geometry: geometry,
+        circleRadius: 10,
+        circleStrokeColor: Colors.purpleAccent.value,
+        circleColor: Colors.white.value,
+        circleStrokeWidth: 8);
+
+    final annotation =
+    await _circleAnnotationManager?.create(options);
+
+    if (annotation != null) {
+      circleAnnotations.add(annotation);
+    }
+  }
+
+  void drawStartAnnotation(Map<String?, Object?> geometry) async {
+    await _circleAnnotationManager?.deleteAll();
+
+    var options = mbm.CircleAnnotationOptions(
+        geometry: geometry,
+        circleRadius: 8,
+        circleStrokeColor: Colors.white.value,
+        circleColor: Colors.deepOrangeAccent.value,
+        circleStrokeWidth: 4);
+
+    final annotation =
+    await _circleAnnotationManager?.create(options);
+
+    if (annotation != null) {
+      circleAnnotations.add(annotation);
+    }
+  }
+
   void drawAllAnnotations(
       Future<mbm.PointAnnotationManager> annotationManager) async {
     await _annotationManager?.deleteAll();
