@@ -23,6 +23,7 @@ const double kRouteActiveLineOpacity = 0.9;
 const double kRouteInactiveLineOpacity = 1.0;
 
 const double kSearchBarHeight = 50;
+const double kOptionsPillHeight = 40;
 final double kLocationPinSize = kDevicePixelRatio / 3;
 const double kFeaturePinSize = 5.0;
 
@@ -52,7 +53,7 @@ final CameraState kDefaultCameraState = CameraState(
 
 final CameraState kRouteCameraState = CameraState(
     center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
-    padding: MbxEdgeInsets(top: 10, left: 60, bottom: 10, right: 60),
+    padding: MbxEdgeInsets(top: 150, left: 40, bottom: 150, right: 40),
     zoom: kDefaultMapZoom,
     bearing: 0,
     pitch: 0);
@@ -66,7 +67,7 @@ final CameraState kPostDetailsCameraState = CameraState(
 
 final CameraState kFeaturesCameraState = CameraState(
     center: kDefaultCameraState.center,
-    padding: MbxEdgeInsets(top: 40, left: 40, bottom: 60, right: 40),
+    padding: MbxEdgeInsets(top: 140, left: 40, bottom: 160, right: 40),
     zoom: kDefaultCameraState.zoom,
     bearing: kDefaultCameraState.bearing,
     pitch: kDefaultCameraState.pitch);
@@ -85,7 +86,7 @@ final kMapTopOffset = Platform.isAndroid ? 8.0 : 0.0;
 final kAndroidTopOffset = Platform.isAndroid ? 32.0 : 0.0;
 const kMapUiPadding = 14.0;
 const kCompassTopOffset = 32.0;
-const kMapUiTopOffset = 8.0 + kMapUiPadding + 40;
+const kMapUiTopOffset = 8.0 + kMapUiPadding;
 const kAttributionLeftOffset = kMapUiPadding + 72.0;
 const kAttributionBottomOffset = 62.0;
 const kLogoLeftOffset = 4.0;

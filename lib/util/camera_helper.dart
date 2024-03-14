@@ -1,6 +1,3 @@
-import 'dart:math';
-
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/constants/map_constants.dart';
@@ -32,25 +29,24 @@ class CameraHelper {
   }
 
   static Future<CameraOptions> cameraOptionsForCoordinates(MapboxMap mapboxMap,
-      List<Map<String?, Object?>> coordinatesList, CameraOptions camera) {
-    final padding = MbxEdgeInsets(
-      top: (camera.padding?.top ?? 0) + kFeaturesCameraState.padding.top,
-      left: (camera.padding?.left ?? 0) + kFeaturesCameraState.padding.left,
+      List<Map<String?, Object?>> coordinatesList, MbxEdgeInsets? padding) {
+    final customPadding = MbxEdgeInsets(
+      top: (padding?.top ?? 0) + kFeaturesCameraState.padding.top,
+      left: (padding?.left ?? 0) + kFeaturesCameraState.padding.left,
       bottom:
-          (camera.padding?.bottom ?? 0) + kFeaturesCameraState.padding.bottom,
-      right: (camera.padding?.right ?? 0) + kFeaturesCameraState.padding.right,
+          (padding?.bottom ?? 0) + kFeaturesCameraState.padding.bottom,
+      right: (padding?.right ?? 0) + kFeaturesCameraState.padding.right,
     );
     return mapboxMap.cameraForCoordinates(
-        coordinatesList, padding, camera.bearing, camera.pitch);
+        coordinatesList, customPadding, null, null);
   }
 
   static Future<CameraOptions> cameraOptionsForRoute(
     MapboxMap mapboxMap,
     TrailblazeRoute route,
-    CameraOptions camera, {
+    MbxEdgeInsets? padding, {
     bool extraPadding = false,
-    double extraBottomPadding = 0,
-  }) {
+  }) async {
     num topBottomPadding;
     if (extraPadding) {
       topBottomPadding = kDefaultCameraState.padding.top;
@@ -58,20 +54,32 @@ class CameraHelper {
       topBottomPadding = 0;
     }
 
-    topBottomPadding += extraBottomPadding;
-
-    final padding = MbxEdgeInsets(
-      top: (camera.padding?.top ?? 0) +
+    final customPadding = MbxEdgeInsets(
+      top: (padding?.top ?? 0) +
           kRouteCameraState.padding.top +
           topBottomPadding,
-      left: (camera.padding?.left ?? 0) + kRouteCameraState.padding.left,
-      bottom: (camera.padding?.bottom ?? 0) +
+      left: (padding?.left ?? 0) + kRouteCameraState.padding.left,
+      bottom: (padding?.bottom ?? 0) +
           kRouteCameraState.padding.bottom +
           topBottomPadding,
-      right: (camera.padding?.right ?? 0) + kRouteCameraState.padding.right,
+      right: (padding?.right ?? 0) + kRouteCameraState.padding.right,
     );
-    return mapboxMap.cameraForGeometry(
-        route.geometryJson, padding, camera.bearing, camera.pitch);
+
+    final cameraForRoute = await mapboxMap.cameraForGeometry(
+      route.geometryJson,
+      customPadding,
+      null,
+      null,
+    );
+
+    return CameraOptions(
+      center: cameraForRoute.center,
+      pitch: cameraForRoute.pitch,
+      zoom: cameraForRoute.zoom,
+      anchor: cameraForRoute.anchor,
+      padding: cameraForRoute.padding,
+      bearing: cameraForRoute.bearing,
+    );
   }
 
   static MapBoxPlace getMapBoxPlaceFromLonLat(List<double>? coordinates) {

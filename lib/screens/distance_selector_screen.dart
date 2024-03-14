@@ -205,9 +205,6 @@ class _DistanceSelectorScreenState extends State<DistanceSelectorScreen> {
                           children: [
                             MapWidget(
                               onMapCreated: _onMapCreated,
-                              resourceOptions: ResourceOptions(
-                                accessToken: kMapboxAccessToken,
-                              ),
                             ),
                           ],
                         ),

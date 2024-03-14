@@ -124,13 +124,13 @@ sealed class Pubspec {
   /// Build date and time (UTC)
   static final DateTime timestamp = DateTime.utc(
     2024,
-    2,
+    3,
+    6,
     19,
-    20,
-    24,
-    50,
-    858,
-    546,
+    22,
+    59,
+    763,
+    697,
   );
 
   /// Name
@@ -406,7 +406,7 @@ sealed class Pubspec {
   /// For more information,
   /// see [Package dependencies](https://dart.dev/tools/pub/dependencies).
   static const Map<String, Object> dependencies = <String, Object>{
-    'mapbox_maps_flutter': r'^0.5.1',
+    'mapbox_maps_flutter': r'^1.0.0',
     'auth0_flutter': r'^1.4.1',
     'mapbox_search': r'4.0.0-beta.1',
     'http': r'^0.13.5',
@@ -435,7 +435,6 @@ sealed class Pubspec {
     },
     'cupertino_icons': r'^1.0.2',
     'dartz': r'^0.10.1',
-    'firebase_core': r'^2.25.4',
   };
 
   /// Developer dependencies

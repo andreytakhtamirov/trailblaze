@@ -120,7 +120,7 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
         children: [
           AnimatedContainer(
             padding:
-                const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                const EdgeInsets.symmetric(vertical: 8.0, horizontal: 24.0),
             decoration: BoxDecoration(
               border: isSelected
                   ? Border.all(color: Colors.redAccent)
@@ -147,10 +147,10 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text(
-                  'Beta',
+                  'BETA',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

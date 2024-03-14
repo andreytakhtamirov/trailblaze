@@ -146,14 +146,14 @@ class _MapWidgetState extends State<MapWidget>
     });
     if (widget.isInteractiveMap) {
       // Only fly to user location if interactive
-      _goToUserLocation(isAnimated: false);
+      await _goToUserLocation(isAnimated: false);
     }
     _showUserLocationPuck();
     _setMapControlSettings();
 
     final camera = await _mapboxMap.getCameraState();
     setState(() {
-      _nextOriginCoordinates =
+      _currentOriginCoordinates =
           CameraHelper.centerToCoordinatesLonLat(camera.center);
     });
 
@@ -300,11 +300,10 @@ class _MapWidgetState extends State<MapWidget>
       }
     }
 
-    final camera = await _getCameraOptions();
     final cameraForCoordinates = await CameraHelper.cameraOptionsForCoordinates(
       _mapboxMap,
       coordinatesList,
-      camera,
+      _getCameraPadding(),
     );
 
     // Get SafeArea top padding (if any), for notched devices.
@@ -395,18 +394,21 @@ class _MapWidgetState extends State<MapWidget>
         _selectedDistanceMeters = distanceMeters;
       }
     });
-    final cameraCenter =
-        CameraHelper.getMapBoxPlaceFromLonLat(_currentOriginCoordinates);
-    _getDirectionsFromSettings(
-        overrideWaypoints: [cameraCenter], distance: _selectedDistanceMeters);
+    _getDirectionsFromSettings();
   }
 
   void _setMapControlSettings() async {
-    // Run logic after frame is painted, ensuring we have the latest widget height.
-    final topOffset = await _getTopOffset();
+    double topOffset = _getTopOffset();
 
     final mbm.CompassSettings compassSettings;
     final mbm.ScaleBarSettings scaleBarSettings;
+
+    if ((widget.isInteractiveMap &&
+            _viewMode != ViewMode.shuffle &&
+            _viewMode != ViewMode.directions) ||
+        _viewMode == ViewMode.parks) {
+      topOffset += kOptionsPillHeight;
+    }
 
     if (!widget.forceTopBottomPadding) {
       compassSettings = mbm.CompassSettings(
@@ -461,33 +463,27 @@ class _MapWidgetState extends State<MapWidget>
     _mapboxMap.logo.updateSettings(kDefaultLogoSettings);
   }
 
-  Future<double> _getTopOffset() {
-    final completer = Completer<double>();
+  double _getTopOffset() {
+    double topOffset = 0;
+    final double height = _topWidgetKey.currentContext != null
+        ? (_topWidgetKey.currentContext!.findRenderObject() as RenderBox)
+            .size
+            .height
+        : 0;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      num topOffset = 0;
+    if (_shouldShowDirectionsWidget() && _viewMode == ViewMode.search) {
+      topOffset = kSearchBarHeight + 8;
+    } else if (_viewMode == ViewMode.directions ||
+        _viewMode == ViewMode.shuffle) {
+      topOffset = height;
+    }
 
-      final num height = _topWidgetKey.currentContext != null
-          ? (_topWidgetKey.currentContext!.findRenderObject() as RenderBox)
-              .size
-              .height
-          : 0;
+    if (!widget.forceTopBottomPadding) {
+      // Need to compensate for Android status bar.
+      topOffset += kAndroidTopOffset;
+    }
 
-      if (_shouldShowDirectionsWidget() && _viewMode == ViewMode.search) {
-        topOffset = kSearchBarHeight + 8;
-      } else if (_viewMode == ViewMode.directions ||
-          _viewMode == ViewMode.shuffle) {
-        topOffset = height;
-      }
-
-      if (!widget.forceTopBottomPadding) {
-        // Need to compensate for Android status bar.
-        topOffset += kAndroidTopOffset;
-      }
-      completer.complete(topOffset.toDouble());
-    });
-
-    return completer.future;
+    return topOffset;
   }
 
   double _getBottomOffset({bool wantStatic = true}) {
@@ -530,7 +526,7 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   Future<mbm.CameraOptions> _getCameraOptions(
-      {Map<String?, Object?>? overrideCenter, double? overrideZoom}) async {
+      {Map<String?, Object?>? overrideCenter}) async {
     geo.Position? position = await _getCurrentPosition();
 
     Map<String?, Object?>? center;
@@ -550,23 +546,24 @@ class _MapWidgetState extends State<MapWidget>
       center = overrideCenter;
     }
 
-    final topOffset = await _getTopOffset();
-    final bottomOffset = _getBottomOffset();
-
-    final padding = mbm.MbxEdgeInsets(
-      top: (widget.isInteractiveMap ? kDefaultCameraState.padding.top : 0) +
-          topOffset,
-      left: kDefaultCameraState.padding.left,
-      bottom: kDefaultCameraState.padding.bottom + bottomOffset,
-      right: kDefaultCameraState.padding.right,
-    );
-
     return mbm.CameraOptions(
-        zoom: overrideZoom ?? kDefaultCameraState.zoom,
+        zoom: kDefaultCameraState.zoom,
         center: center,
         bearing: kDefaultCameraState.bearing,
-        padding: padding,
+        padding: _getCameraPadding(),
         pitch: kDefaultCameraState.pitch);
+  }
+
+  mbm.MbxEdgeInsets _getCameraPadding() {
+    final topOffset = _getTopOffset();
+    final bottomOffset = _getBottomOffset();
+
+    return mbm.MbxEdgeInsets(
+      top: (widget.isInteractiveMap ? 8 : 0) + topOffset,
+      left: 0,
+      bottom: bottomOffset,
+      right: 0,
+    );
   }
 
   void _updateDirectionsFabHeight(double pos) {
@@ -580,9 +577,9 @@ class _MapWidgetState extends State<MapWidget>
     _goToUserLocation();
   }
 
-  void _displayRoute(String profile, List<dynamic> waypoints,
-      {double? distance}) async {
+  void _displayRoute(String profile, List<dynamic> waypoints) async {
     bool isRoundTrip = waypoints.length == 1;
+    final double? distance = isRoundTrip ? _selectedDistanceMeters : null;
 
     _removeRouteLayers();
 
@@ -653,8 +650,6 @@ class _MapWidgetState extends State<MapWidget>
         isGraphhopperRoute: isGraphhopperRoute,
       );
 
-      log("RESPONSE distance: ${route.distance}");
-
       _drawRoute(route);
       routesList.add(route);
     }
@@ -671,19 +666,13 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   void _flyToRoute(TrailblazeRoute route, {bool isAnimated = true}) async {
-    final camera = await _getCameraOptions();
-    final bottomPadding = _getMinPanelHeight();
-    log("EXTRA PADDING: $bottomPadding");
-
-    final cameraOptions = await CameraHelper.cameraOptionsForRoute(
+    final cameraForRoute = await CameraHelper.cameraOptionsForRoute(
       _mapboxMap,
       route,
-      camera,
+      _getCameraPadding(),
       extraPadding: widget.forceTopBottomPadding,
-      extraBottomPadding: 50,
     );
-
-    await _mapFlyToOptions(cameraOptions, isAnimated: isAnimated);
+    await _mapFlyToOptions(cameraForRoute, isAnimated: isAnimated);
   }
 
   Future<void> _mapFlyToOptions(mbm.CameraOptions options,
@@ -775,17 +764,42 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
-  void _goToUserLocation({bool isAnimated = true}) async {
-    mbm.CameraOptions options = await _getCameraOptions();
+  Future<void> _goToUserLocation({bool isAnimated = true}) async {
+    geo.Position? position = await _getCurrentPosition();
+    mbm.CameraOptions options = _cameraForUserPosition(position);
+    _setNextOriginCoordinates(options);
+    await _mapFlyToOptions(options, isAnimated: isAnimated);
+  }
 
+  mbm.CameraOptions _cameraForUserPosition(geo.Position? position) {
+    Map<String?, Object?>? center;
+
+    if (position != null && position.latitude != 0 && position.longitude != 0) {
+      center = mbm.Point(
+              coordinates: mbm.Position(position.longitude, position.latitude))
+          .toJson();
+    } else {
+      center = kDefaultCameraState.center;
+    }
+    return mbm.CameraOptions(
+      center: center,
+      padding: mbm.MbxEdgeInsets(
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+      ),
+      zoom: kDefaultCameraState.zoom,
+    );
+  }
+
+  void _setNextOriginCoordinates(mbm.CameraOptions options) {
     if (options.center != null) {
       setState(() {
         _nextOriginCoordinates =
             CameraHelper.centerToCoordinatesLonLat(options.center!);
       });
     }
-
-    _mapFlyToOptions(options, isAnimated: isAnimated);
   }
 
   void _showUserLocationPuck() async {
@@ -816,7 +830,6 @@ class _MapWidgetState extends State<MapWidget>
     }
 
     if (place != null) {
-      final camera = await _getCameraOptions();
       if (place.center != null) {
         setState(() {
           _nextOriginCoordinates = place.center?.cast<double>();
@@ -829,7 +842,7 @@ class _MapWidgetState extends State<MapWidget>
 
       _mapFlyToOptions(mbm.CameraOptions(
           center: coordinates,
-          padding: camera.padding,
+          padding: _getCameraPadding(),
           zoom: kDefaultCameraState.zoom + kPointSelectedCameraZoomOffset,
           bearing: kDefaultCameraState.bearing,
           pitch: kDefaultCameraState.pitch));
@@ -839,26 +852,25 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
-  void _getDirectionsFromSettings(
-      {List<MapBoxPlace>? overrideWaypoints, double? distance}) {
+  void _getDirectionsFromSettings() {
     List<MapBoxPlace> waypoints = [];
 
-    if (overrideWaypoints == null) {
+    if (_viewMode != ViewMode.shuffle) {
       waypoints.insert(0, _startingLocation);
       if (_selectedPlace != null) {
         waypoints.add(_selectedPlace!);
       }
     } else {
-      waypoints.addAll(overrideWaypoints);
+      waypoints.add(
+          CameraHelper.getMapBoxPlaceFromLonLat(_currentOriginCoordinates));
     }
 
     List<dynamic> waypointsJson = [];
-
     for (MapBoxPlace place in waypoints) {
       waypointsJson.add(place.toRawJsonWithNullCheck());
     }
 
-    _displayRoute(_selectedMode, waypointsJson, distance: distance);
+    _displayRoute(_selectedMode, waypointsJson);
   }
 
   Future<void> _onMapTapListener(mbm.ScreenCoordinate coordinate) async {
@@ -966,6 +978,7 @@ class _MapWidgetState extends State<MapWidget>
       _removeRouteLayers();
     });
 
+    annotationHelper?.deleteCircleAnnotations();
     _setMapControlSettings();
   }
 
@@ -1117,8 +1130,10 @@ class _MapWidgetState extends State<MapWidget>
       _setViewMode(ViewMode.shuffle);
       setState(() {
         _pauseUiCallbacks = true;
+        _currentOriginCoordinates = _selectedPlace?.center;
       });
 
+      _onSelectPlace(null);
       await _togglePanel(false);
       setState(() {
         _pauseUiCallbacks = false;
@@ -1216,13 +1231,21 @@ class _MapWidgetState extends State<MapWidget>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    bool isParksButtonVisible =
-        (widget.isInteractiveMap) || _viewMode == ViewMode.parks;
-    bool isShuffleButtonVisible =
-        (widget.isInteractiveMap) || _viewMode == ViewMode.shuffle;
+    bool isParksButtonVisible = (widget.isInteractiveMap &&
+            _viewMode != ViewMode.shuffle &&
+            _viewMode != ViewMode.directions) ||
+        _viewMode == ViewMode.parks;
+    bool isShuffleButtonVisible = (widget.isInteractiveMap &&
+        _viewMode != ViewMode.shuffle &&
+        _viewMode != ViewMode.directions);
     bool isDirectionsButtonVisible = _viewMode != ViewMode.directions &&
         _viewMode != ViewMode.shuffle &&
-        _selectedPlace != null && !_isOriginChanged;
+        _selectedPlace != null &&
+        !_isOriginChanged;
+
+    if (_mapInitializedCompleter.isCompleted) {
+      _setMapControlSettings();
+    }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
@@ -1287,9 +1310,6 @@ class _MapWidgetState extends State<MapWidget>
                     body: mbm.MapWidget(
                       styleUri: kMapStyleDefaultUri,
                       onTapListener: _onMapTapListener,
-                      resourceOptions: mbm.ResourceOptions(
-                        accessToken: kMapboxAccessToken,
-                      ),
                       cameraOptions: mbm.CameraOptions(
                           zoom: kDefaultCameraState.zoom,
                           center: kDefaultCameraState.center,
@@ -1308,75 +1328,69 @@ class _MapWidgetState extends State<MapWidget>
                   SafeArea(
                     child: Stack(
                       children: [
-                        FutureBuilder(
-                          future: _getTopOffset(),
-                          builder: (BuildContext context,
-                              AsyncSnapshot<dynamic> snapshot) {
-                            return Positioned(
-                              top: snapshot.data,
-                              left: 0,
-                              right: 0,
-                              child: SingleChildScrollView(
-                                padding: EdgeInsets.zero,
-                                clipBehavior: Clip.none,
-                                scrollDirection: Axis.horizontal,
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                child: ClipRRect(
-                                  child: Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                        24, 0, 24, 24),
-                                    child: Row(
-                                      children: <Widget>[
-                                        Visibility(
-                                          visible: isParksButtonVisible,
-                                          child: IconButtonSmall(
-                                            icon: _viewMode == ViewMode.parks
-                                                ? Icons.close_rounded
-                                                : Icons.forest_rounded,
-                                            onTap: _toggleParksMode,
-                                            text: 'Nearby Parks',
-                                            backgroundColor:
-                                                _viewMode == ViewMode.parks
-                                                    ? Theme.of(context)
-                                                        .colorScheme
-                                                        .secondary
-                                                    : Colors.white,
-                                            foregroundColor:
-                                                _viewMode == ViewMode.parks
-                                                    ? Colors.white
-                                                    : Theme.of(context)
-                                                        .colorScheme
-                                                        .tertiary,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Visibility(
-                                          visible: isShuffleButtonVisible,
-                                          child: IconButtonSmall(
-                                            icon: _viewMode == ViewMode.shuffle
-                                                ? Icons.close_rounded
-                                                : Icons.route_outlined,
-                                            onTap: _toggleShuffleMode,
-                                            text: 'Routes in this Area',
-                                            backgroundColor:
-                                                _viewMode == ViewMode.shuffle
-                                                    ? Theme.of(context)
-                                                        .colorScheme
-                                                        .secondary
-                                                    : Colors.white,
-                                            foregroundColor:
-                                                _viewMode == ViewMode.shuffle
-                                                    ? Colors.white
-                                                    : Colors.brown,
-                                          ),
-                                        ),
-                                      ],
+                        Positioned(
+                          top: _getTopOffset(),
+                          left: 0,
+                          right: 0,
+                          child: SingleChildScrollView(
+                            padding: EdgeInsets.zero,
+                            clipBehavior: Clip.none,
+                            scrollDirection: Axis.horizontal,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: ClipRRect(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                                child: Row(
+                                  children: <Widget>[
+                                    Visibility(
+                                      visible: isParksButtonVisible,
+                                      child: IconButtonSmall(
+                                        icon: _viewMode == ViewMode.parks
+                                            ? Icons.close_rounded
+                                            : Icons.forest_rounded,
+                                        onTap: _toggleParksMode,
+                                        text: 'Nearby Parks',
+                                        backgroundColor:
+                                            _viewMode == ViewMode.parks
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .secondary
+                                                : Colors.white,
+                                        foregroundColor:
+                                            _viewMode == ViewMode.parks
+                                                ? Colors.white
+                                                : Theme.of(context)
+                                                    .colorScheme
+                                                    .tertiary,
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(width: 8),
+                                    Visibility(
+                                      visible: isShuffleButtonVisible,
+                                      child: IconButtonSmall(
+                                        icon: _viewMode == ViewMode.shuffle
+                                            ? Icons.close_rounded
+                                            : Icons.route_outlined,
+                                        onTap: _toggleShuffleMode,
+                                        text: 'Routes in this Area',
+                                        backgroundColor:
+                                            _viewMode == ViewMode.shuffle
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .secondary
+                                                : Colors.white,
+                                        foregroundColor:
+                                            _viewMode == ViewMode.shuffle
+                                                ? Colors.white
+                                                : Colors.brown,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            );
-                          },
+                            ),
+                          ),
                         ),
                         Positioned(
                           top: (widget.forceTopBottomPadding == true)
@@ -1392,7 +1406,11 @@ class _MapWidgetState extends State<MapWidget>
                                 _showShuffleWidget()
                               else
                                 const SizedBox(),
-                              const SizedBox(height: 54),
+                              SizedBox(
+                                  height: isParksButtonVisible &&
+                                          isShuffleButtonVisible
+                                      ? 54
+                                      : 0),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
@@ -1458,7 +1476,7 @@ class _MapWidgetState extends State<MapWidget>
                   if (_isOriginChanged && !_isContentLoading)
                     Positioned(
                       bottom: _getBottomOffset(wantStatic: false) +
-                          (isShuffleButtonVisible ? 120 : 20),
+                          (_viewMode == ViewMode.shuffle ? 120 : 20),
                       left: 0,
                       right: 0,
                       child: Center(
