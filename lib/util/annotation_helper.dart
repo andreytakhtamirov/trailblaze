@@ -8,10 +8,11 @@ import 'dart:math' as math;
 import 'package:turf/turf.dart' as turf;
 
 class AnnotationHelper {
-  mbm.PointAnnotationManager? _annotationManager;
-  final mbm.CircleAnnotationManager? _circleAnnotationManager;
+  final mbm.PointAnnotationManager _annotationManager;
+  final mbm.CircleAnnotationManager _circleAnnotationManager;
   final List<mbm.PointAnnotationOptions> pointAnnotations = [];
   final List<mbm.CircleAnnotation> circleAnnotations = [];
+  mbm.CircleAnnotation? selectOriginAnnotation;
 
   AnnotationHelper(this._annotationManager, this._circleAnnotationManager);
 
@@ -81,7 +82,6 @@ class AnnotationHelper {
   }
 
   static double _getCurrentThreshold(double zoom) {
-
     // Click proximity should become larger the more zoomed out the camera is
     //  (the smaller the zoom value) to account for reduced touch accuracy.
     return 1000000 / math.pow(zoom, 6);
@@ -91,7 +91,8 @@ class AnnotationHelper {
     final ByteData bytes = await rootBundle.load('assets/location-pin.png');
     final Uint8List list = bytes.buffer.asUint8List();
 
-    var options = mbm.PointAnnotationOptions(geometry: geometry, image: list, iconSize: kLocationPinSize);
+    var options = mbm.PointAnnotationOptions(
+        geometry: geometry, image: list, iconSize: kLocationPinSize);
     final annotation = await showAnnotation(options);
     if (annotation != null) {
       pointAnnotations.add(options);
@@ -101,7 +102,7 @@ class AnnotationHelper {
   void drawCircleAnnotationMulti(
       List<Map<String?, Object?>?> geometryList) async {
     List<mbm.CircleAnnotationOptions> optionsList = [];
-    await _circleAnnotationManager?.deleteAll();
+    await _circleAnnotationManager.deleteAll();
 
     for (var i = 0; i < geometryList.length; i++) {
       var options = mbm.CircleAnnotationOptions(
@@ -112,18 +113,19 @@ class AnnotationHelper {
       optionsList.add(options);
     }
 
-    final annotations =
-        await _circleAnnotationManager?.createMulti(optionsList);
-
-    if (annotations != null) {
-      circleAnnotations.addAll(annotations.whereType<mbm.CircleAnnotation>());
-    }
+    final annotations = await _circleAnnotationManager.createMulti(optionsList);
+    circleAnnotations.addAll(annotations.whereType<mbm.CircleAnnotation>());
   }
 
-  void drawCircleAnnotation(
-      Map<String?, Object?> geometry) async {
-    await _circleAnnotationManager?.deleteAll();
-
+  void drawOriginAnnotation(Map<String?, Object?> geometry) async {
+    if (selectOriginAnnotation != null) {
+      try {
+        await _circleAnnotationManager.delete(selectOriginAnnotation!);
+      } catch (e) {
+        // Already deleted by manager.deleteAll()
+      }
+      selectOriginAnnotation = null;
+    }
     var options = mbm.CircleAnnotationOptions(
         geometry: geometry,
         circleRadius: 10,
@@ -131,16 +133,11 @@ class AnnotationHelper {
         circleColor: Colors.white.value,
         circleStrokeWidth: 8);
 
-    final annotation =
-    await _circleAnnotationManager?.create(options);
-
-    if (annotation != null) {
-      circleAnnotations.add(annotation);
-    }
+    selectOriginAnnotation = await _circleAnnotationManager.create(options);
   }
 
   void drawStartAnnotation(Map<String?, Object?> geometry) async {
-    await _circleAnnotationManager?.deleteAll();
+    await _circleAnnotationManager.deleteAll();
 
     var options = mbm.CircleAnnotationOptions(
         geometry: geometry,
@@ -149,32 +146,14 @@ class AnnotationHelper {
         circleColor: Colors.deepOrangeAccent.value,
         circleStrokeWidth: 4);
 
-    final annotation =
-    await _circleAnnotationManager?.create(options);
-
-    if (annotation != null) {
-      circleAnnotations.add(annotation);
+    final annotation = await _circleAnnotationManager.create(options);
+    circleAnnotations.add(annotation);
     }
-  }
-
-  void drawAllAnnotations(
-      Future<mbm.PointAnnotationManager> annotationManager) async {
-    await _annotationManager?.deleteAll();
-    _annotationManager = await annotationManager;
-
-    for (mbm.PointAnnotationOptions options in pointAnnotations) {
-      showAnnotation(options);
-    }
-  }
 
   Future<mbm.PointAnnotation?> showAnnotation(
       mbm.PointAnnotationOptions options) async {
-    if (_annotationManager != null) {
-      return _annotationManager!.create(options);
-    } else {
-      return null;
+    return _annotationManager.create(options);
     }
-  }
 
   Future<void> deleteAllAnnotations() async {
     await deletePointAnnotations();
@@ -183,16 +162,11 @@ class AnnotationHelper {
 
   Future<void> deletePointAnnotations() async {
     pointAnnotations.clear();
-
-    if (_annotationManager != null) {
-      await _annotationManager!.deleteAll();
+    await _annotationManager.deleteAll();
     }
-  }
 
   Future<void> deleteCircleAnnotations() async {
     circleAnnotations.clear();
-    if (_circleAnnotationManager != null) {
-      await _circleAnnotationManager.deleteAll();
+    await _circleAnnotationManager.deleteAll();
     }
-  }
 }

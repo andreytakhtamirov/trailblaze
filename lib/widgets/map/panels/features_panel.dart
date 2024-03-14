@@ -9,7 +9,7 @@ import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/widgets/list_items/feature_item.dart';
 import 'package:trailblaze/widgets/map/icon_button_small.dart';
 
-class FeaturesPanel extends StatefulWidget {
+class FeaturesPanel extends StatelessWidget {
   const FeaturesPanel({
     Key? key,
     required this.panelController,
@@ -29,23 +29,6 @@ class FeaturesPanel extends StatefulWidget {
   final Function(double distance) onDistanceChanged;
 
   @override
-  State<FeaturesPanel> createState() => _FeaturesPanelState();
-}
-
-class _FeaturesPanelState extends State<FeaturesPanel> {
-  double _valueKm = (kDefaultFeatureDistanceMeters / 1000);
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.selectedDistanceMeters != null) {
-      setState(() {
-        _valueKm = widget.selectedDistanceMeters! / 1000;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
@@ -56,7 +39,7 @@ class _FeaturesPanelState extends State<FeaturesPanel> {
               Expanded(
                 child: Text(
                   textAlign: TextAlign.center,
-                  "Nearby Parks – ${FormatHelper.formatDistance(widget.selectedDistanceMeters)}",
+                  "Nearby Parks – ${FormatHelper.formatDistance(selectedDistanceMeters)}",
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -67,23 +50,23 @@ class _FeaturesPanelState extends State<FeaturesPanel> {
           ),
         ),
         IgnorePointer(
-          ignoring: widget.panelController.isAttached &&
-              widget.panelController.isPanelClosed,
+          ignoring: panelController.isAttached &&
+              panelController.isPanelClosed,
           child: SizedBox(
             height: kFeatureItemHeight,
-            child: widget.features != null && widget.features!.isNotEmpty
+            child: features != null && features!.isNotEmpty
                 ? PageView.builder(
-                    controller: widget.pageController,
+                    controller: pageController,
                     scrollDirection: Axis.horizontal,
-                    itemCount: widget.features?.length,
+                    itemCount: features?.length,
                     itemBuilder: (context, index) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4.0),
                         child: FeatureItem(
-                          feature: widget.features![index],
-                          userLocation: widget.userLocation,
+                          feature: features![index],
+                          userLocation: userLocation,
                           onClicked: () {
-                            widget.pageController.animateToPage(
+                            pageController.animateToPage(
                               index,
                               duration: const Duration(milliseconds: 300),
                               curve: Curves.ease,
@@ -92,9 +75,9 @@ class _FeaturesPanelState extends State<FeaturesPanel> {
                         ),
                       );
                     },
-                    onPageChanged: widget.onFeaturePageChanged,
+                    onPageChanged: onFeaturePageChanged,
                   )
-                : widget.features == null
+                : features == null
                     ? const Center(
                         child: CircularProgressIndicator(),
                       )
@@ -122,7 +105,7 @@ class _FeaturesPanelState extends State<FeaturesPanel> {
           fit: BoxFit.scaleDown,
           child: IconButtonSmall(
             text:
-                "Target Distance ${FormatHelper.formatDistance(widget.selectedDistanceMeters, noRemainder: true)}",
+                "Target Distance ${FormatHelper.formatDistance(selectedDistanceMeters, noRemainder: true)}",
             textFontSize: 20,
             icon: Icons.edit,
             backgroundColor: Theme.of(context).colorScheme.tertiary,
@@ -133,10 +116,10 @@ class _FeaturesPanelState extends State<FeaturesPanel> {
                 MaterialPageRoute(
                   builder: (context) => DistanceSelectorScreen(
                     center: [
-                      widget.userLocation!.longitude,
-                      widget.userLocation!.latitude
+                      userLocation!.longitude,
+                      userLocation!.latitude
                     ],
-                    initialDistanceMeters: widget.selectedDistanceMeters ??
+                    initialDistanceMeters: selectedDistanceMeters ??
                         kDefaultFeatureDistanceMeters,
                     minDistanceKm: kMinFeatureDistanceMeters/1000,
                     maxDistanceKm: kMaxFeatureDistanceMeters/1000,
@@ -150,7 +133,7 @@ class _FeaturesPanelState extends State<FeaturesPanel> {
                 return;
               }
 
-              widget.onDistanceChanged(distanceKm * 1000);
+              onDistanceChanged(distanceKm * 1000);
             },
             // onTap: _onSelectDistanceTap,
           ),

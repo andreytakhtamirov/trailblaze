@@ -38,8 +38,6 @@ Future<Either<int, Map<String, dynamic>?>> createGraphhopperRoute(
     if (isRoundTrip) 'distance': distanceMeters,
   });
 
-  log("REQUEST distance: $distanceMeters");
-
   try {
     final response = await http.post(Uri.parse(endpoint),
         headers: kRequestHeaderBasic, body: body);

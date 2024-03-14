@@ -20,6 +20,7 @@ import 'package:trailblaze/util/annotation_helper.dart';
 import 'package:trailblaze/util/camera_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
 import 'package:trailblaze/util/position_helper.dart';
+import 'package:trailblaze/widgets/buttons/set_origin_button.dart';
 import 'package:trailblaze/widgets/map/icon_button_small.dart';
 import 'package:trailblaze/widgets/map/panels/features_panel.dart';
 import 'package:trailblaze/widgets/map/panels/panel_widgets.dart';
@@ -853,6 +854,9 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   void _getDirectionsFromSettings() {
+    setState(() {
+      _isOriginChanged = false;
+    });
     List<MapBoxPlace> waypoints = [];
 
     if (_viewMode != ViewMode.shuffle) {
@@ -962,12 +966,9 @@ class _MapWidgetState extends State<MapWidget>
       _isOriginChanged = true;
     });
     final Map<String?, Object?> jsonCoordinates = {
-      'coordinates': [
-        _nextOriginCoordinates?[0],
-        _nextOriginCoordinates![1],
-      ],
+      'coordinates': _nextOriginCoordinates,
     };
-    annotationHelper?.drawCircleAnnotation(jsonCoordinates);
+    annotationHelper?.drawOriginAnnotation(jsonCoordinates);
   }
 
   void _onDirectionsBackClicked() {
@@ -978,8 +979,18 @@ class _MapWidgetState extends State<MapWidget>
       _removeRouteLayers();
     });
 
+    _setOriginToUserLocation();
     annotationHelper?.deleteCircleAnnotations();
     _setMapControlSettings();
+  }
+
+  void _setOriginToUserLocation() async {
+    final position = await _getCurrentPosition();
+    if (position != null) {
+      setState(() {
+        _currentOriginCoordinates = [position.longitude, position.latitude];
+      });
+    }
   }
 
   void _onTransportationModeChanged(TransportationMode mode) {
@@ -1073,6 +1084,26 @@ class _MapWidgetState extends State<MapWidget>
     _getDirectionsFromSettings();
   }
 
+  void _onMapOriginAction(bool isUpdate) {
+    if (isUpdate) {
+      setState(() {
+        _currentOriginCoordinates = _nextOriginCoordinates;
+        _isOriginChanged = false;
+      });
+
+      if (_viewMode == ViewMode.shuffle) {
+        _queryForRoundTrip();
+      } else if (_viewMode == ViewMode.parks) {
+        _loadFeatures(_selectedDistanceMeters!);
+      }
+    } else {
+      setState(() {
+        annotationHelper?.deleteCircleAnnotations();
+        _isOriginChanged = false;
+      });
+    }
+  }
+
   void _setCameraPaddingForPanel(double pos) async {
     final cameraState = await _mapboxMap.getCameraState();
     if (context.mounted) {
@@ -1130,7 +1161,9 @@ class _MapWidgetState extends State<MapWidget>
       _setViewMode(ViewMode.shuffle);
       setState(() {
         _pauseUiCallbacks = true;
-        _currentOriginCoordinates = _selectedPlace?.center;
+        if (_selectedPlace != null) {
+          _currentOriginCoordinates = _selectedPlace!.center;
+        }
       });
 
       _onSelectPlace(null);
@@ -1480,70 +1513,8 @@ class _MapWidgetState extends State<MapWidget>
                       left: 0,
                       right: 0,
                       child: Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButtonSmall(
-                                icon: Icons.close_rounded,
-                                onTap: () {
-                                  setState(() {
-                                    annotationHelper?.deleteCircleAnnotations();
-                                    _isOriginChanged = false;
-                                  });
-                                }),
-                            const SizedBox(width: 4),
-                            ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  _currentOriginCoordinates =
-                                      _nextOriginCoordinates;
-                                  _isOriginChanged = false;
-                                });
-
-                                if (_viewMode == ViewMode.shuffle) {
-                                  _queryForRoundTrip();
-                                } else if (_viewMode == ViewMode.parks) {
-                                  _loadFeatures(_selectedDistanceMeters!);
-                                }
-                              },
-                              style: ButtonStyle(
-                                elevation: MaterialStateProperty.all<double>(4),
-                                shadowColor: MaterialStateProperty.all<Color>(
-                                    Colors.black),
-                                backgroundColor:
-                                    MaterialStateProperty.all<Color>(
-                                  Colors.white,
-                                ),
-                                shape:
-                                    MaterialStateProperty.all<OutlinedBorder>(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                    side: BorderSide(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
-                                        width: 0.1),
-                                  ),
-                                ),
-                              ),
-                              child: SizedBox(
-                                height: 50,
-                                width: 100,
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    "Set Origin",
-                                    style: TextStyle(
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 38),
-                          ],
+                        child: SetOriginButton(
+                          onAction: _onMapOriginAction,
                         ),
                       ),
                     ),

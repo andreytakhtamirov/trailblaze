@@ -1,6 +1,5 @@
 import 'package:dartz/dartz.dart' as dartz;
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart' as geo;
 import 'package:trailblaze/data/feature.dart';
 import 'package:trailblaze/requests/explore.dart';
 import 'package:trailblaze/util/ui_helper.dart';
