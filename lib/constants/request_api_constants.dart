@@ -8,10 +8,7 @@ const kGraphhopperRoutePrecision = 5;
 const kMapboxRouteGeometryKey = 'geometry';
 const kGraphhopperRouteGeometryKey = 'points';
 
-const kDefaultTransportationMode = TransportationMode.none;
-const double kMinFeatureDistanceMeters = 1000;
-const double kMaxFeatureDistanceMeters = 20000;
-const double kDefaultFeatureDistanceMeters = 2000;
+const kDefaultTransportationMode = TransportationMode.none; // TODO CHANGE BACK
 
 const String staticMapStyle = 'streets-v12';
 const int kStaticMapWidth = 1200;

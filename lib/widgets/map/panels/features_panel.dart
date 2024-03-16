@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:trailblaze/constants/map_constants.dart';
-import 'package:trailblaze/constants/request_api_constants.dart';
+import 'package:trailblaze/constants/ui_control_constants.dart';
 import 'package:trailblaze/data/feature.dart';
+import 'package:trailblaze/screens/distance_selector_screen.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/widgets/list_items/feature_item.dart';
+import 'package:trailblaze/widgets/map/icon_button_small.dart';
 
-class FeaturesPanel extends StatefulWidget {
+class FeaturesPanel extends StatelessWidget {
   const FeaturesPanel({
     Key? key,
     required this.panelController,
@@ -27,61 +29,41 @@ class FeaturesPanel extends StatefulWidget {
   final Function(double distance) onDistanceChanged;
 
   @override
-  State<FeaturesPanel> createState() => _FeaturesPanelState();
-}
-
-class _FeaturesPanelState extends State<FeaturesPanel> {
-  double _valueKm = (kDefaultFeatureDistanceMeters / 1000);
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.selectedDistanceMeters != null) {
-      setState(() {
-        _valueKm = widget.selectedDistanceMeters! / 1000;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  textAlign: TextAlign.center,
-                  "Nearby Parks – ${FormatHelper.formatDistance(widget.selectedDistanceMeters)}",
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                textAlign: TextAlign.center,
+                "Nearby Parks – ${FormatHelper.formatDistance(selectedDistanceMeters)}",
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         IgnorePointer(
-          ignoring: widget.panelController.isAttached &&
-              widget.panelController.isPanelClosed,
+          ignoring: panelController.isAttached && panelController.isPanelClosed,
           child: SizedBox(
-            height: kFeatureItemHeight,
-            child: widget.features != null && widget.features!.isNotEmpty
+            height: kPanelFeaturesMaxHeight * 0.5,
+            child: features != null && features!.isNotEmpty
                 ? PageView.builder(
-                    controller: widget.pageController,
+                    controller: pageController,
                     scrollDirection: Axis.horizontal,
-                    itemCount: widget.features?.length,
+                    itemCount: features?.length,
                     itemBuilder: (context, index) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4.0),
                         child: FeatureItem(
-                          feature: widget.features![index],
-                          userLocation: widget.userLocation,
+                          feature: features![index],
+                          userLocation: userLocation,
                           onClicked: () {
-                            widget.pageController.animateToPage(
+                            pageController.animateToPage(
                               index,
                               duration: const Duration(milliseconds: 300),
                               curve: Curves.ease,
@@ -90,9 +72,9 @@ class _FeaturesPanelState extends State<FeaturesPanel> {
                         ),
                       );
                     },
-                    onPageChanged: widget.onFeaturePageChanged,
+                    onPageChanged: onFeaturePageChanged,
                   )
-                : widget.features == null
+                : features == null
                     ? const Center(
                         child: CircularProgressIndicator(),
                       )
@@ -116,59 +98,44 @@ class _FeaturesPanelState extends State<FeaturesPanel> {
                       ),
           ),
         ),
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  "Distance Filter",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+        SizedBox(
+          height: kPanelFeaturesMaxHeight * 0.2,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: IconButtonSmall(
+              text:
+                  "Target Distance ${FormatHelper.formatDistance(selectedDistanceMeters, noRemainder: true)}",
+              textFontSize: 20,
+              icon: Icons.edit,
+              backgroundColor: Theme.of(context).colorScheme.tertiary,
+              foregroundColor: Colors.white,
+              onTap: () async {
+                final distanceKm = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DistanceSelectorScreen(
+                      center: [userLocation!.longitude, userLocation!.latitude],
+                      initialDistanceMeters: selectedDistanceMeters ??
+                          kDefaultFeatureDistanceMeters,
+                      minDistanceKm: kMinFeatureDistanceMeters / 1000,
+                      maxDistanceKm: kMaxFeatureDistanceMeters / 1000,
+                      minZoom: kMinFeatureFilterCameraZoom,
+                      maxZoom: kMaxFeatureFilterCameraZoom,
+                    ),
                   ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 0),
-          child: Row(
-            children: [
-              _sliderDistanceValueLabel(kMinFeatureDistanceMeters),
-              Expanded(
-                child: Slider(
-                  min: kMinFeatureDistanceMeters / 1000,
-                  max: kMaxFeatureDistanceMeters / 1000,
-                  value: _valueKm,
-                  onChangeEnd: widget.onDistanceChanged,
-                  divisions: 19,
-                  label: FormatHelper.formatDistance(_valueKm * 1000),
-                  onChanged: (double value) {
-                    setState(() {
-                      _valueKm = value;
-                    });
-                  },
-                ),
-              ),
-              _sliderDistanceValueLabel(kMaxFeatureDistanceMeters),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+                );
 
-  Text _sliderDistanceValueLabel(double distanceMeters) {
-    return Text(
-      FormatHelper.formatDistance(distanceMeters, noRemainder: true),
-      textAlign: TextAlign.center,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        color: Colors.black87,
-      ),
+                if (distanceKm == null) {
+                  return;
+                }
+
+                onDistanceChanged(distanceKm * 1000);
+              },
+              // onTap: _onSelectDistanceTap,
+            ),
+          ),
+        )
+      ],
     );
   }
 }

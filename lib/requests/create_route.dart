@@ -27,10 +27,16 @@ Future<Either<int, Map<String, dynamic>?>> createRoute(
 }
 
 Future<Either<int, Map<String, dynamic>?>> createGraphhopperRoute(
-    String profile, List<dynamic> waypoints) async {
+    String profile, List<dynamic> waypoints,
+    {bool isRoundTrip = false, double? distanceMeters}) async {
   const endpoint = '$kBaseUrl/v1/routes/create-route-graphhopper';
 
-  final body = jsonEncode({'profile': profile, 'waypoints': waypoints});
+  final body = jsonEncode({
+    if (isRoundTrip) 'mode': 'round_trip',
+    'profile': profile,
+    'waypoints': waypoints,
+    if (isRoundTrip) 'distance': distanceMeters,
+  });
 
   try {
     final response = await http.post(Uri.parse(endpoint),

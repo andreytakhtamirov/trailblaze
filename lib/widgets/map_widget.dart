@@ -10,6 +10,7 @@ import 'package:mapbox_search/mapbox_search.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/constants/request_api_constants.dart';
+import 'package:trailblaze/constants/ui_control_constants.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/extensions/mapbox_place_extension.dart';
 import 'package:geolocator/geolocator.dart' as geo;
@@ -19,12 +20,15 @@ import 'package:trailblaze/util/annotation_helper.dart';
 import 'package:trailblaze/util/camera_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
 import 'package:trailblaze/util/position_helper.dart';
+import 'package:trailblaze/widgets/buttons/set_origin_button.dart';
 import 'package:trailblaze/widgets/map/icon_button_small.dart';
 import 'package:trailblaze/widgets/map/panels/features_panel.dart';
 import 'package:trailblaze/widgets/map/panels/panel_widgets.dart';
 import 'package:trailblaze/widgets/map/panels/place_info_panel.dart';
 import 'package:trailblaze/widgets/map/panels/route_info_panel.dart';
 import 'package:trailblaze/widgets/map/picked_locations_widget.dart';
+import 'package:trailblaze/widgets/map/round_trip_controls_widget.dart';
+import 'package:trailblaze/widgets/map_light_widget.dart';
 import 'package:trailblaze/widgets/search_bar_widget.dart';
 import 'package:trailblaze/data/feature.dart' as tb;
 
@@ -72,6 +76,15 @@ class _MapWidgetState extends State<MapWidget>
   double? _selectedDistanceMeters = kDefaultFeatureDistanceMeters;
   geo.Position? _userLocation;
   final GlobalKey _topWidgetKey = GlobalKey();
+  double _panelPosition = 0;
+
+  bool _isOriginChanged = false;
+  bool _isCameraLocked = false;
+  List<double>? _currentOriginCoordinates;
+  List<double>? _nextOriginCoordinates;
+
+  // Queried coordinates of features.
+  List<double>? _featureQueriedCoordinates;
 
   final geocoding = GeoCoding(
     apiKey: kMapboxAccessToken,
@@ -112,7 +125,7 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   void _loadRouteToDisplay() async {
-    _setViewMode(ViewMode.directions);
+    await _setViewMode(ViewMode.directions);
 
     final route = widget.routeToDisplay!;
     await _drawRoute(route);
@@ -137,10 +150,16 @@ class _MapWidgetState extends State<MapWidget>
     });
     if (widget.isInteractiveMap) {
       // Only fly to user location if interactive
-      _goToUserLocation(isAnimated: false);
+      await _goToUserLocation(isAnimated: false);
     }
     _showUserLocationPuck();
     _setMapControlSettings();
+
+    final camera = await _mapboxMap.getCameraState();
+    setState(() {
+      _currentOriginCoordinates =
+          CameraHelper.centerToCoordinatesLonLat(camera.center);
+    });
 
     final circleAnnotationManager =
         await mapboxMap.annotations.createCircleAnnotationManager();
@@ -213,8 +232,8 @@ class _MapWidgetState extends State<MapWidget>
     final cameraState = await _mapboxMap.getCameraState();
     final camera = await _getCameraOptions();
     final cameraOptions = mbm.CameraOptions(
-      zoom: cameraState.zoom < 10
-          ? kDefaultCameraState.zoom + kPointSelectedCameraZoomOffset
+      zoom: cameraState.zoom < 10 || cameraState.zoom > 14
+          ? kDefaultCameraState.zoom
           : cameraState.zoom,
       center: newCenter,
       bearing: cameraState.bearing,
@@ -222,7 +241,7 @@ class _MapWidgetState extends State<MapWidget>
       pitch: cameraState.pitch,
     );
 
-    await _mapboxMap.setCamera(cameraOptions);
+    _mapFlyToOptions(cameraOptions, isAnimated: false);
   }
 
   void _onSelectedFeatureChanged(tb.Feature? oldFeature) async {
@@ -272,6 +291,7 @@ class _MapWidgetState extends State<MapWidget>
 
   Future<void> _flyToFeatures(
       {List<Map<String?, Object?>>? coordinatesList}) async {
+    await _clearCameraPadding();
     if (coordinatesList == null) {
       coordinatesList = [];
       for (var f in _features!) {
@@ -285,19 +305,27 @@ class _MapWidgetState extends State<MapWidget>
       }
     }
 
-    final camera = await _getCameraOptions();
+    if (coordinatesList.length == 1) {
+      // Only one feature so just fly to it.
+      _flyToPlace(coordinatesList.first);
+      return;
+    }
+
+    final height = mounted ? MediaQuery.of(context).size.height : 0.0;
+    final width = mounted ? MediaQuery.of(context).size.width : 0.0;
     final cameraForCoordinates = await CameraHelper.cameraOptionsForCoordinates(
       _mapboxMap,
       coordinatesList,
-      camera,
+      _getCameraPadding(),
+      height,
+      width,
     );
 
     // Get SafeArea top padding (if any), for notched devices.
     cameraForCoordinates.padding?.top +=
-        context.mounted ? MediaQuery.of(context).padding.top : 0;
+        mounted ? MediaQuery.of(context).padding.top : 0;
 
-    await _mapboxMap.flyTo(cameraForCoordinates,
-        mbm.MapAnimationOptions(duration: kMapFlyToDuration, startDelay: 0));
+    await _mapFlyToOptions(cameraForCoordinates);
   }
 
   void onManuallySelectFeature(tb.Feature feature) async {
@@ -321,19 +349,17 @@ class _MapWidgetState extends State<MapWidget>
     });
   }
 
-  void _setFeatureDistance(double distanceKm) {
+  void _onFeatureDistanceChanged(double distanceMeters) {
     setState(() {
-      _selectedDistanceMeters = distanceKm * 1000;
+      _selectedDistanceMeters = distanceMeters;
     });
 
     _loadFeatures(_selectedDistanceMeters!);
   }
 
   Future<void> _loadFeatures(double distanceMeters) async {
-    // We need the user's location to get features around them.
-    geo.Position? position = await PositionHelper.getCurrentPosition(context);
-
-    if (position == null) {
+    if (_nextOriginCoordinates == null) {
+      UiHelper.showSnackBar(context, "Could not find selected location.");
       return;
     }
 
@@ -344,11 +370,14 @@ class _MapWidgetState extends State<MapWidget>
     if (context.mounted) {
       final featuresPromise = FeatureManager.loadFeatures(
           context,
-          (_selectedDistanceMeters ?? kDefaultFeatureDistanceMeters).toInt(),
-          position);
+          (_selectedDistanceMeters ?? kDefaultFeatureDistanceMeters)
+              .clamp(kMinFeatureDistanceMeters, kMaxFeatureDistanceMeters)
+              .toInt(),
+          _nextOriginCoordinates!);
 
       setState(() {
         _features = null;
+        _featureQueriedCoordinates = _nextOriginCoordinates;
       });
 
       final features = await featuresPromise;
@@ -359,7 +388,6 @@ class _MapWidgetState extends State<MapWidget>
         });
       } else {
         setState(() {
-          _userLocation = position;
           _features = features;
         });
         _setSelectedFeature(features.first, skipFlyToFeature: true);
@@ -373,14 +401,31 @@ class _MapWidgetState extends State<MapWidget>
     });
   }
 
+  void _queryForRoundTrip({double? distanceMeters}) async {
+    setState(() {
+      _isOriginChanged = false;
+
+      if (distanceMeters != null) {
+        _selectedDistanceMeters = distanceMeters;
+      }
+    });
+    _getDirectionsFromSettings();
+  }
+
   void _setMapControlSettings() async {
-    // Run logic after frame is painted, ensuring we have the latest widget height.
-    final topOffset = await _getTopOffset();
+    double topOffset = _getTopOffset();
 
     final mbm.CompassSettings compassSettings;
     final mbm.ScaleBarSettings scaleBarSettings;
 
-    if (widget.forceTopBottomPadding) {
+    if ((widget.isInteractiveMap &&
+            _viewMode != ViewMode.shuffle &&
+            _viewMode != ViewMode.directions) ||
+        _viewMode == ViewMode.parks) {
+      topOffset += kOptionsPillHeight;
+    }
+
+    if (!widget.forceTopBottomPadding) {
       compassSettings = mbm.CompassSettings(
           position: kDefaultCompassSettings.position,
           marginTop: kDefaultCompassSettings.marginTop! + topOffset,
@@ -433,40 +478,41 @@ class _MapWidgetState extends State<MapWidget>
     _mapboxMap.logo.updateSettings(kDefaultLogoSettings);
   }
 
-  Future<double> _getTopOffset() {
-    final completer = Completer<double>();
+  double _getTopOffset() {
+    double topOffset = 0;
+    final double height = _topWidgetKey.currentContext != null
+        ? (_topWidgetKey.currentContext?.findRenderObject() as RenderBox)
+            .size
+            .height
+        : 0;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      num topOffset = 0;
+    if (_shouldShowDirectionsWidget() && _viewMode == ViewMode.search) {
+      topOffset = kSearchBarHeight + 8;
+    } else if (_viewMode == ViewMode.directions ||
+        _viewMode == ViewMode.shuffle) {
+      topOffset = height;
+    }
 
-      final num height = _topWidgetKey.currentContext != null
-          ? (_topWidgetKey.currentContext!.findRenderObject() as RenderBox)
-              .size
-              .height
-          : 0;
+    if (!widget.forceTopBottomPadding) {
+      // Need to compensate for Android status bar.
+      topOffset += kAndroidTopOffset;
+    }
 
-      if (_showTopWidget() && _viewMode == ViewMode.search) {
-        topOffset = kSearchBarHeight;
-      } else if (_viewMode == ViewMode.directions) {
-        topOffset = height;
-      }
-
-      if (!widget.forceTopBottomPadding) {
-        // Need to compensate for Android status bar.
-        topOffset += kAndroidTopOffset;
-      }
-      completer.complete(topOffset.toDouble());
-    });
-
-    return completer.future;
+    return topOffset;
   }
 
-  double _getBottomOffset() {
+  double _getBottomOffset({bool wantStatic = true}) {
     final double bottomOffset;
     if (_panelController.isAttached) {
       if (_isPanelBackdrop()) {
         bottomOffset = _getMinPanelHeight();
+      } else if (!wantStatic) {
+        // Non-static bottom offset (unstable when panel could be moving).
+        bottomOffset = _panelController.panelPosition != 0
+            ? (_getMaxPanelHeight() * _panelController.panelPosition)
+            : _getMinPanelHeight();
       } else {
+        // Static bottom offset (used when panel is moving, linear change).
         bottomOffset = _getMaxPanelHeight() * _panelController.panelPosition;
       }
     } else {
@@ -495,7 +541,7 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   Future<mbm.CameraOptions> _getCameraOptions(
-      {Map<String?, Object?>? overrideCenter, double? overrideZoom}) async {
+      {Map<String?, Object?>? overrideCenter}) async {
     geo.Position? position = await _getCurrentPosition();
 
     Map<String?, Object?>? center;
@@ -515,23 +561,29 @@ class _MapWidgetState extends State<MapWidget>
       center = overrideCenter;
     }
 
-    final topOffset = await _getTopOffset();
-    final bottomOffset = _getBottomOffset();
-
-    final padding = mbm.MbxEdgeInsets(
-      top: (widget.isInteractiveMap ? kDefaultCameraState.padding.top : 0) +
-          topOffset,
-      left: kDefaultCameraState.padding.left,
-      bottom: kDefaultCameraState.padding.bottom + bottomOffset,
-      right: kDefaultCameraState.padding.right,
-    );
-
     return mbm.CameraOptions(
-        zoom: overrideZoom ?? kDefaultCameraState.zoom,
+        zoom: kDefaultCameraState.zoom,
         center: center,
         bearing: kDefaultCameraState.bearing,
-        padding: padding,
+        padding: _getCameraPadding(),
         pitch: kDefaultCameraState.pitch);
+  }
+
+  mbm.MbxEdgeInsets _getCameraPadding() {
+    final topOffset = _getTopOffset();
+    double bottomOffset = _getBottomOffset();
+
+    // Offset bottom by refresh button height.
+    if (_viewMode == ViewMode.shuffle) {
+      bottomOffset += kOptionsPillHeight;
+    }
+
+    return mbm.MbxEdgeInsets(
+      top: (widget.isInteractiveMap ? 8 : 0) + topOffset,
+      left: 0,
+      bottom: bottomOffset,
+      right: 0,
+    );
   }
 
   void _updateDirectionsFabHeight(double pos) {
@@ -542,10 +594,16 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   void _onGpsButtonPressed() {
+    setState(() {
+      _isCameraLocked = false;
+    });
     _goToUserLocation();
   }
 
   void _displayRoute(String profile, List<dynamic> waypoints) async {
+    bool isRoundTrip = waypoints.length == 1;
+    final double? distance = isRoundTrip ? _selectedDistanceMeters : null;
+
     _removeRouteLayers();
 
     setState(() {
@@ -553,13 +611,22 @@ class _MapWidgetState extends State<MapWidget>
     });
 
     final dartz.Either<int, Map<String, dynamic>?> routeResponse;
-    bool isGraphhopperRoute = false;
-    if (profile != TransportationMode.gravel_cycling.value) {
+    bool isGraphhopperRoute;
+    if ((isRoundTrip &&
+            (profile == TransportationMode.cycling.value ||
+                profile == TransportationMode.gravel_cycling.value ||
+                profile == TransportationMode.walking.value)) ||
+        profile == TransportationMode.gravel_cycling.value) {
+      isGraphhopperRoute = true;
+      routeResponse = await createGraphhopperRoute(
+        profile,
+        waypoints,
+        isRoundTrip: isRoundTrip,
+        distanceMeters: distance,
+      );
+    } else {
       isGraphhopperRoute = false;
       routeResponse = await createRoute(profile, waypoints);
-    } else {
-      isGraphhopperRoute = true;
-      routeResponse = await createGraphhopperRoute(profile, waypoints);
     }
 
     setState(() {
@@ -626,20 +693,50 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   void _flyToRoute(TrailblazeRoute route, {bool isAnimated = true}) async {
-    final camera = await _getCameraOptions();
-    final cameraOptions = await CameraHelper.cameraOptionsForRoute(
+    await _clearCameraPadding();
+    setState(() {
+      _isCameraLocked = true;
+    });
+
+    final height = mounted ? MediaQuery.of(context).size.height : 0.0;
+    final width = mounted ? MediaQuery.of(context).size.width : 0.0;
+
+    final cameraForRoute = await CameraHelper.cameraOptionsForRoute(
       _mapboxMap,
       route,
-      camera,
+      _getCameraPadding(),
+      height,
+      width,
       extraPadding: widget.forceTopBottomPadding,
     );
+    await _mapFlyToOptions(cameraForRoute, isAnimated: isAnimated);
+  }
 
+  void _onFlyToRoute() async {
+    if (_selectedRoute != null) {
+      _flyToRoute(_selectedRoute!);
+    }
+  }
+
+  Future<void> _mapFlyToOptions(mbm.CameraOptions options,
+      {bool isAnimated = true}) async {
     if (isAnimated) {
-      _mapboxMap.flyTo(cameraOptions,
+      await _mapboxMap.flyTo(options,
           mbm.MapAnimationOptions(duration: kMapFlyToDuration, startDelay: 0));
     } else {
-      _mapboxMap.setCamera(cameraOptions);
+      await _mapboxMap.setCamera(options);
     }
+  }
+
+  Future<void> _flyToPlace(Map<String?, dynamic> coordinates) {
+    return _mapFlyToOptions(
+      mbm.CameraOptions(
+          center: coordinates,
+          padding: _getCameraPadding(),
+          zoom: kDefaultCameraState.zoom + kPointSelectedCameraZoomOffset,
+          bearing: kDefaultCameraState.bearing,
+          pitch: kDefaultCameraState.pitch),
+    );
   }
 
   void _setSelectedRoute(TrailblazeRoute route) async {
@@ -673,10 +770,17 @@ class _MapWidgetState extends State<MapWidget>
   Future<void> _drawRoute(TrailblazeRoute route) async {
     await annotationHelper?.deleteAllAnnotations();
     await _mapboxMap.style.addSource(route.geoJsonSource);
-    await _mapboxMap.style
-        .addLayerAt(route.lineLayer, mbm.LayerPosition(below: "road-label"));
 
-    for (var waypoint in route.waypoints.getRange(1, route.waypoints.length)) {
+    try {
+      await _mapboxMap.style
+          .addLayerAt(route.lineLayer, mbm.LayerPosition(below: "road-label"));
+    } catch (e) {
+      // "road-label" may not have been created yet or doesn't exist.
+      await _mapboxMap.style.addLayer(route.lineLayer);
+    }
+
+    for (var i = 0; i < route.waypoints.length; i++) {
+      final waypoint = route.waypoints[i];
       final mbp = MapBoxPlace.fromRawJson(waypoint);
 
       final Map<String?, Object?> coordinates = {
@@ -686,7 +790,11 @@ class _MapWidgetState extends State<MapWidget>
         ],
       };
 
-      annotationHelper?.drawSingleAnnotation(coordinates);
+      if (i == 0) {
+        annotationHelper?.drawStartAnnotation(coordinates);
+      } else {
+        annotationHelper?.drawSingleAnnotation(coordinates);
+      }
     }
   }
 
@@ -716,14 +824,41 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
-  void _goToUserLocation({bool isAnimated = true}) async {
-    mbm.CameraOptions options = await _getCameraOptions();
+  Future<void> _goToUserLocation({bool isAnimated = true}) async {
+    geo.Position? position = await _getCurrentPosition();
+    mbm.CameraOptions options = _cameraForUserPosition(position);
+    _setNextOriginCoordinates(options);
+    await _mapFlyToOptions(options, isAnimated: isAnimated);
+  }
 
-    if (isAnimated) {
-      _mapboxMap.flyTo(options,
-          mbm.MapAnimationOptions(duration: kMapFlyToDuration, startDelay: 0));
+  mbm.CameraOptions _cameraForUserPosition(geo.Position? position) {
+    Map<String?, Object?>? center;
+
+    if (position != null && position.latitude != 0 && position.longitude != 0) {
+      center = mbm.Point(
+              coordinates: mbm.Position(position.longitude, position.latitude))
+          .toJson();
     } else {
-      _mapboxMap.setCamera(options);
+      center = kDefaultCameraState.center;
+    }
+    return mbm.CameraOptions(
+      center: center,
+      padding: mbm.MbxEdgeInsets(
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+      ),
+      zoom: kDefaultCameraState.zoom,
+    );
+  }
+
+  void _setNextOriginCoordinates(mbm.CameraOptions options) {
+    if (options.center != null) {
+      setState(() {
+        _nextOriginCoordinates =
+            CameraHelper.centerToCoordinatesLonLat(options.center!);
+      });
     }
   }
 
@@ -755,21 +890,17 @@ class _MapWidgetState extends State<MapWidget>
     }
 
     if (place != null) {
+      if (place.center != null) {
+        setState(() {
+          _nextOriginCoordinates = place.center?.cast<double>();
+        });
+      }
+
       final coordinates = <String, Object?>{
         'coordinates': place.center?.cast<num>()
       };
 
-      final camera = await _getCameraOptions();
-
-      _mapboxMap.flyTo(
-          mbm.CameraOptions(
-              center: coordinates,
-              padding: camera.padding,
-              zoom: kDefaultCameraState.zoom + kPointSelectedCameraZoomOffset,
-              bearing: kDefaultCameraState.bearing,
-              pitch: kDefaultCameraState.pitch),
-          mbm.MapAnimationOptions(duration: kMapFlyToDuration, startDelay: 0));
-
+      _flyToPlace(coordinates);
       annotationHelper?.drawSingleAnnotation(coordinates);
     } else {
       annotationHelper?.deleteAllAnnotations();
@@ -777,13 +908,22 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   void _getDirectionsFromSettings() {
+    setState(() {
+      _isOriginChanged = false;
+    });
     List<MapBoxPlace> waypoints = [];
 
-    waypoints.insert(0, _startingLocation);
-    waypoints.add(_selectedPlace!);
+    if (_viewMode == ViewMode.directions) {
+      waypoints.insert(0, _startingLocation);
+      if (_selectedPlace != null) {
+        waypoints.add(_selectedPlace!);
+      }
+    } else if (_viewMode == ViewMode.shuffle) {
+      waypoints.add(
+          CameraHelper.getMapBoxPlaceFromLonLat(_currentOriginCoordinates));
+    }
 
     List<dynamic> waypointsJson = [];
-
     for (MapBoxPlace place in waypoints) {
       waypointsJson.add(place.toRawJsonWithNullCheck());
     }
@@ -817,9 +957,7 @@ class _MapWidgetState extends State<MapWidget>
 
       // Block other map clicks when showing route.
       return;
-    }
-
-    if (_viewMode == ViewMode.parks && _features != null) {
+    } else if (_viewMode == ViewMode.parks && _features != null) {
       final cameraState = await _mapboxMap.getCameraState();
       final closestFeature = await AnnotationHelper.getFeatureByClickProximity(
           _features!, coordinate.y, coordinate.x, cameraState.zoom);
@@ -829,7 +967,12 @@ class _MapWidgetState extends State<MapWidget>
         return;
       } else {
         await _togglePanel(false);
+        _selectOriginOnMap([coordinate.y, coordinate.x]);
+        return;
       }
+    } else if (_viewMode == ViewMode.shuffle) {
+      _selectOriginOnMap([coordinate.y, coordinate.x]);
+      return;
     }
 
     MapBoxPlace place = MapBoxPlace(center: [coordinate.y, coordinate.x]);
@@ -871,6 +1014,29 @@ class _MapWidgetState extends State<MapWidget>
     });
   }
 
+  void _onMapScrollListener(mbm.ScreenCoordinate c) async {
+    if (_isCameraLocked) {
+      setState(() {
+        _isCameraLocked = false;
+      });
+    }
+    // Parks panel should stay open even if scrolling the camera
+    if (_viewMode != ViewMode.parks) {
+      _togglePanel(false);
+    }
+  }
+
+  void _selectOriginOnMap(List<double> coordinates) {
+    setState(() {
+      _nextOriginCoordinates = coordinates;
+      _isOriginChanged = true;
+    });
+    final Map<String?, Object?> jsonCoordinates = {
+      'coordinates': _nextOriginCoordinates,
+    };
+    annotationHelper?.drawOriginAnnotation(jsonCoordinates);
+  }
+
   void _onDirectionsBackClicked() {
     _setViewMode(_previousViewMode);
     setState(() {
@@ -879,7 +1045,18 @@ class _MapWidgetState extends State<MapWidget>
       _removeRouteLayers();
     });
 
+    _setOriginToUserLocation();
+    annotationHelper?.deleteCircleAnnotations();
     _setMapControlSettings();
+  }
+
+  void _setOriginToUserLocation() async {
+    final position = await _getCurrentPosition();
+    if (position != null) {
+      setState(() {
+        _currentOriginCoordinates = [position.longitude, position.latitude];
+      });
+    }
   }
 
   void _onTransportationModeChanged(TransportationMode mode) {
@@ -963,7 +1140,7 @@ class _MapWidgetState extends State<MapWidget>
 
   void _onDirectionsClicked() async {
     await _togglePanel(false);
-    _setViewMode(ViewMode.directions);
+    await _setViewMode(ViewMode.directions);
 
     if (_selectedMode == TransportationMode.none.value) {
       // Prompt user to select mode
@@ -971,6 +1148,26 @@ class _MapWidgetState extends State<MapWidget>
     }
 
     _getDirectionsFromSettings();
+  }
+
+  void _onMapOriginAction(bool isUpdate) {
+    if (isUpdate) {
+      setState(() {
+        _currentOriginCoordinates = _nextOriginCoordinates;
+        _isOriginChanged = false;
+      });
+
+      if (_viewMode == ViewMode.shuffle) {
+        _queryForRoundTrip();
+      } else if (_viewMode == ViewMode.parks) {
+        _loadFeatures(_selectedDistanceMeters!);
+      }
+    } else {
+      setState(() {
+        annotationHelper?.deleteOriginAnnotation();
+        _isOriginChanged = false;
+      });
+    }
   }
 
   void _setCameraPaddingForPanel(double pos) async {
@@ -984,30 +1181,31 @@ class _MapWidgetState extends State<MapWidget>
         bottom: kDefaultCameraState.padding.bottom + bottomOffset,
         right: kDefaultCameraState.padding.right,
       );
-      await _mapboxMap.setCamera(
-        mbm.CameraOptions(
-          zoom: cameraState.zoom,
-          center: cameraState.center,
-          bearing: cameraState.bearing,
-          padding: padding,
-          pitch: cameraState.pitch,
-        ),
-      );
+      _mapFlyToOptions(
+          mbm.CameraOptions(
+            zoom: cameraState.zoom,
+            center: cameraState.center,
+            bearing: cameraState.bearing,
+            padding: padding,
+            pitch: cameraState.pitch,
+          ),
+          isAnimated: false);
     }
   }
 
   Future<void> _toggleParksMode() async {
     if (_viewMode == ViewMode.parks) {
-      _setViewMode(ViewMode.search);
+      await _setViewMode(ViewMode.search);
       await annotationHelper?.deleteAllAnnotations();
       _onSelectPlace(null);
-      return;
     } else {
-      if (_features == null || _features!.isEmpty) {
+      if (_features == null ||
+          _features!.isEmpty ||
+          _nextOriginCoordinates != _featureQueriedCoordinates) {
         await _loadFeatures(kDefaultFeatureDistanceMeters);
       }
 
-      _setViewMode(ViewMode.parks);
+      await _setViewMode(ViewMode.parks);
       setState(() {
         _pauseUiCallbacks = true;
       });
@@ -1017,7 +1215,35 @@ class _MapWidgetState extends State<MapWidget>
         _pauseUiCallbacks = false;
       });
       await _flyToFeatures();
-      return;
+    }
+  }
+
+  Future<void> _toggleShuffleMode() async {
+    if (_viewMode == ViewMode.shuffle) {
+      await _setViewMode(ViewMode.search);
+      await annotationHelper?.deleteAllAnnotations();
+      _onSelectPlace(null);
+    } else {
+      await _setViewMode(ViewMode.shuffle);
+      setState(() {
+        _pauseUiCallbacks = true;
+        if (_selectedPlace != null) {
+          _currentOriginCoordinates = _selectedPlace!.center;
+        }
+      });
+
+      _onSelectPlace(null);
+      await _togglePanel(false);
+      setState(() {
+        _pauseUiCallbacks = false;
+      });
+
+      if (_selectedMode == TransportationMode.none.value) {
+        setState(() {
+          _selectedMode = TransportationMode.walking.value;
+        });
+      }
+      _queryForRoundTrip();
     }
   }
 
@@ -1051,7 +1277,9 @@ class _MapWidgetState extends State<MapWidget>
     } else if (_viewMode == ViewMode.search ||
         (_viewMode == ViewMode.directions && _selectedRoute == null)) {
       return 0;
-    } else if (_viewMode == ViewMode.directions && _selectedRoute != null) {
+    } else if ((_viewMode == ViewMode.directions ||
+            _viewMode == ViewMode.shuffle) &&
+        _selectedRoute != null) {
       return kPanelRouteInfoMinHeight;
     } else {
       return kPanelMinContentHeight;
@@ -1061,10 +1289,10 @@ class _MapWidgetState extends State<MapWidget>
   bool _isPanelBackdrop() {
     // In the directions view, the panel appears over
     //  top of the map thus not affecting padding.
-    return _viewMode == ViewMode.directions;
+    return _viewMode == ViewMode.directions || _viewMode == ViewMode.shuffle;
   }
 
-  bool _showTopWidget() {
+  bool _shouldShowDirectionsWidget() {
     return widget.isInteractiveMap &&
         (_viewMode == ViewMode.search ||
             _manuallySelectedPlace ||
@@ -1072,7 +1300,20 @@ class _MapWidgetState extends State<MapWidget>
         _viewMode != ViewMode.parks;
   }
 
-  void _setViewMode(ViewMode newViewMode) async {
+  Future<void> _clearCameraPadding() async {
+    return await _mapboxMap.setCamera(
+      mbm.CameraOptions(
+        padding: mbm.MbxEdgeInsets(
+          top: 0,
+          left: 0,
+          bottom: 0,
+          right: 0,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _setViewMode(ViewMode newViewMode) async {
     setState(() {
       _previousViewMode = _viewMode;
       _viewMode = newViewMode;
@@ -1087,7 +1328,8 @@ class _MapWidgetState extends State<MapWidget>
       setState(() {
         _pauseUiCallbacks = false;
       });
-    } else if (_previousViewMode == ViewMode.directions) {
+    } else if (_previousViewMode == ViewMode.directions ||
+        _previousViewMode == ViewMode.shuffle) {
       _removeRouteLayers();
     }
 
@@ -1102,274 +1344,387 @@ class _MapWidgetState extends State<MapWidget>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final bool isParksButtonVisible = (widget.isInteractiveMap &&
+            _viewMode != ViewMode.shuffle &&
+            _viewMode != ViewMode.directions) ||
+        _viewMode == ViewMode.parks;
+    final bool isShuffleButtonVisible = (widget.isInteractiveMap &&
+        _viewMode != ViewMode.shuffle &&
+        _viewMode != ViewMode.directions);
+    final bool isDirectionsButtonVisible = _viewMode != ViewMode.directions &&
+        _viewMode != ViewMode.shuffle &&
+        _selectedPlace != null &&
+        !_isOriginChanged;
+    final bool isRefreshButtonVisible =
+        _viewMode == ViewMode.shuffle && !_isContentLoading;
+
+    final bool shouldShowShuffleWidget =
+        widget.isInteractiveMap && _viewMode == ViewMode.shuffle;
+
+    final nonStaticBottomOffset = _getBottomOffset(wantStatic: false);
+
+    final bool isPanelClosedAndAnimating = _panelController.isAttached &&
+        _panelController.isPanelClosed &&
+        !_panelController.isPanelAnimating;
+
+    if (_mapInitializedCompleter.isCompleted) {
+      _setMapControlSettings();
+    }
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (TapDownDetails _) {
-          FocusScope.of(context).requestFocus(FocusNode());
-        },
-        child: Stack(
-          children: [
-            SlidingUpPanel(
-              maxHeight: _getMaxPanelHeight(),
-              minHeight: _getMinPanelHeight(),
-              backdropEnabled: _isPanelBackdrop(),
-              controller: _panelController,
-              onPanelSlide: (double pos) {
-                if (_viewMode == ViewMode.directions) {
-                  // If we're showing the directions view, no need to update
-                  //  the directions button or other elements.
-                  return;
-                }
+      child: Stack(
+        children: [
+          SlidingUpPanel(
+            maxHeight: _getMaxPanelHeight(),
+            minHeight: _getMinPanelHeight(),
+            backdropEnabled: _isPanelBackdrop(),
+            controller: _panelController,
+            onPanelSlide: (double pos) {
+              if (pos >= 1 || pos <= 0) {
+                _panelPosition = pos;
+              }
+              if (_viewMode == ViewMode.directions) {
+                // If we're showing the directions view, no need to update
+                //  the directions button or other elements.
+                return;
+              }
 
-                if (!_pauseUiCallbacks) {
-                  // Don't interrupt changing camera.
-                  _setCameraPaddingForPanel(pos);
-                }
+              if (!_pauseUiCallbacks) {
+                // Don't interrupt changing camera.
+                _setCameraPaddingForPanel(pos);
+              }
 
-                _updateDirectionsFabHeight(pos);
+              _updateDirectionsFabHeight(pos);
+            },
+            onPanelOpened: () {
+              if (_pauseUiCallbacks ||
+                  _viewMode != ViewMode.parks ||
+                  _features == null) {
+                return;
+              }
+
+              if (_selectedFeature != null) {
+                onManuallySelectFeature(_selectedFeature!);
+              } else {
+                onManuallySelectFeature(_features!.first);
+              }
+            },
+            borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16.0), bottom: Radius.zero),
+            panel: GestureDetector(
+              onTap: () {
+                _togglePanel(true);
               },
-              onPanelOpened: () {
-                if (_pauseUiCallbacks ||
-                    _viewMode != ViewMode.parks ||
-                    _features == null) {
-                  return;
-                }
-
-                if (_selectedFeature != null) {
-                  onManuallySelectFeature(_selectedFeature!);
-                } else {
-                  onManuallySelectFeature(_features!.first);
-                }
-              },
-              borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16.0), bottom: Radius.zero),
-              panel: GestureDetector(
-                onTap: () {
-                  _togglePanel(true);
-                },
-                child: widget.forceTopBottomPadding
-                    ? SafeArea(
-                        child: Column(
-                          children: _panels(),
-                        ),
-                      )
-                    : Column(
-                        children: _panels(),
+              child: widget.forceTopBottomPadding
+                  ? SafeArea(
+                      child: Column(
+                        children: _panels(isPanelClosedAndAnimating),
                       ),
-              ),
-              body: Stack(
-                children: [
-                  Scaffold(
-                    body: mbm.MapWidget(
-                      styleUri: kMapStyleDefaultUri,
-                      onTapListener: _onMapTapListener,
-                      resourceOptions: mbm.ResourceOptions(
-                        accessToken: kMapboxAccessToken,
-                      ),
-                      cameraOptions: mbm.CameraOptions(
-                          zoom: kDefaultCameraState.zoom,
-                          center: kDefaultCameraState.center,
-                          bearing: kDefaultCameraState.bearing,
-                          padding: kDefaultCameraState.padding,
-                          pitch: kDefaultCameraState.pitch),
-                      onMapCreated: _onMapCreated,
-                      onScrollListener: (mbm.ScreenCoordinate c) {
-                        // Parks panel should stay open even if scrolling the camera
-                        if (_viewMode != ViewMode.parks) {
-                          _togglePanel(false);
-                        }
-                      },
+                    )
+                  : Column(
+                      children: _panels(isPanelClosedAndAnimating),
                     ),
+            ),
+            body: Stack(
+              children: [
+                Scaffold(
+                  body: MapLightWidget(
+                    onMapCreated: _onMapCreated,
+                    onMapTapListener: _onMapTapListener,
+                    onScrollListener: _onMapScrollListener,
                   ),
-                  SafeArea(
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: (widget.forceTopBottomPadding == true)
-                              ? 8
-                              : kMapTopOffset,
-                          left: 0,
-                          right: 0,
-                          child: Column(
-                            children: [
-                              _showTopWidget()
-                                  ? AnimatedContainer(
-                                      key: _topWidgetKey,
-                                      duration:
-                                          const Duration(milliseconds: 300),
-                                      child: AnimatedCrossFade(
-                                        duration:
-                                            const Duration(milliseconds: 300),
-                                        crossFadeState:
-                                            _viewMode == ViewMode.directions
-                                                ? CrossFadeState.showSecond
-                                                : CrossFadeState.showFirst,
-                                        firstChild: PlaceSearchBar(
-                                            onSelected: _onSelectPlace,
-                                            selectedPlace: _selectedPlace),
-                                        secondChild: InkWell(
-                                          onTap: _showEditDirectionsScreen,
-                                          child: PickedLocationsWidget(
-                                            onBackClicked:
-                                                _onDirectionsBackClicked,
-                                            onModeChanged:
-                                                _onTransportationModeChanged,
-                                            startingLocation: _startingLocation,
-                                            endingLocation: _selectedPlace,
-                                            waypoints: const [],
-                                            selectedMode:
-                                                getTransportationModeFromString(
-                                                    _selectedMode),
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  : const SizedBox(),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Visibility(
-                                        visible: widget.isInteractiveMap &&
-                                            _viewMode != ViewMode.directions,
-                                        child: Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                              16, 8, 16, 0),
-                                          child: IconButtonSmall(
-                                            icon: _viewMode == ViewMode.parks
-                                                ? Icons.close_rounded
-                                                : Icons.forest_rounded,
-                                            onTap: _toggleParksMode,
-                                            text: 'Nearby Parks',
-                                            backgroundColor:
-                                                _viewMode == ViewMode.parks
-                                                    ? Theme.of(context)
-                                                        .colorScheme
-                                                        .secondary
-                                                    : Colors.white,
-                                            foregroundColor:
-                                                _viewMode == ViewMode.parks
-                                                    ? Colors.white
-                                                    : Theme.of(context)
-                                                        .colorScheme
-                                                        .tertiary,
-                                          ),
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                            16, 8, 16, 0),
-                                        child: TapRegion(
-                                          onTapOutside: onTapOutsideMapStyle,
-                                          onTapInside: onTapInsideMapStyle,
-                                          child: MapStyleSelector(
-                                            onStyleChanged: _onStyleChanged,
-                                            hasTouchContext:
-                                                _mapStyleTouchContext,
-                                          ),
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                            16, 8, 16, 0),
-                                        child: IconButtonSmall(
-                                          icon: Icons.navigation_rounded,
-                                          onTap: _onGpsButtonPressed,
-                                        ),
-                                      ),
-                                    ],
+                ),
+                SafeArea(
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: _getTopOffset(),
+                        left: 0,
+                        right: 0,
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.zero,
+                          clipBehavior: Clip.none,
+                          scrollDirection: Axis.horizontal,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: ClipRRect(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                              child: Row(
+                                children: <Widget>[
+                                  Visibility(
+                                    visible: isParksButtonVisible,
+                                    child: IconButtonSmall(
+                                      icon: _viewMode == ViewMode.parks
+                                          ? Icons.close_rounded
+                                          : Icons.forest_rounded,
+                                      onTap: _toggleParksMode,
+                                      text: 'Nearby Parks',
+                                      backgroundColor:
+                                          _viewMode == ViewMode.parks
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .secondary
+                                              : Colors.white,
+                                      foregroundColor:
+                                          _viewMode == ViewMode.parks
+                                              ? Colors.white
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .tertiary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Visibility(
+                                    visible: isShuffleButtonVisible,
+                                    child: IconButtonSmall(
+                                      icon: _viewMode == ViewMode.shuffle
+                                          ? Icons.close_rounded
+                                          : Icons.route_outlined,
+                                      onTap: _toggleShuffleMode,
+                                      text: 'Routes in this Area',
+                                      backgroundColor:
+                                          _viewMode == ViewMode.shuffle
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .secondary
+                                              : Colors.white,
+                                      foregroundColor:
+                                          _viewMode == ViewMode.shuffle
+                                              ? Colors.white
+                                              : Colors.brown,
+                                    ),
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_isContentLoading)
-                    FutureBuilder(
-                      future: _getTopOffset(),
-                      builder: (context, snapshot) {
-                        return Positioned(
-                          bottom: _getBottomOffset() + 100,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: Container(
-                              width: 200,
-                              height: 70,
-                              padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Center(
-                                child: LoadingAnimationWidget.staggeredDotsWave(
-                                  color: Theme.of(context).colorScheme.tertiary,
-                                  size: 50,
-                                ),
-                              ),
                             ),
                           ),
-                        );
-                      },
-                    ),
-                ],
-              ),
+                        ),
+                      ),
+                      Positioned(
+                        top: (widget.forceTopBottomPadding == true)
+                            ? 8
+                            : kMapTopOffset,
+                        left: 0,
+                        right: 0,
+                        child: Column(
+                          children: [
+                            if (_shouldShowDirectionsWidget())
+                              _showDirectionsWidget()
+                            else if (shouldShowShuffleWidget)
+                              _showShuffleWidget()
+                            else
+                              const SizedBox(),
+                            SizedBox(
+                                height: isParksButtonVisible &&
+                                        isShuffleButtonVisible
+                                    ? 54
+                                    : 0),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          16, 8, 16, 0),
+                                      child: TapRegion(
+                                        onTapOutside: onTapOutsideMapStyle,
+                                        onTapInside: onTapInsideMapStyle,
+                                        child: MapStyleSelector(
+                                          onStyleChanged: _onStyleChanged,
+                                          hasTouchContext:
+                                              _mapStyleTouchContext,
+                                        ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          16, 8, 16, 0),
+                                      child: IconButtonSmall(
+                                        icon: Icons.navigation_rounded,
+                                        onTap: _onGpsButtonPressed,
+                                      ),
+                                    ),
+                                    Visibility(
+                                      visible: _selectedRoute != null &&
+                                          !_isCameraLocked,
+                                      child: Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                            16, 8, 16, 0),
+                                        child: IconButtonSmall(
+                                          icon: Icons.crop_free_rounded,
+                                          onTap: _onFlyToRoute,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            Visibility(
-              visible:
-                  _viewMode != ViewMode.directions && _selectedPlace != null,
-              child: Positioned(
-                bottom: _fabHeight,
-                right: 16,
-                child: IconButtonSmall(
-                  text: 'Directions',
-                  icon: Icons.directions,
-                  iconFontSize: 28.0,
-                  textFontSize: 17,
-                  onTap: _onDirectionsClicked,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          ),
+          if (_isContentLoading)
+            Positioned(
+              bottom: nonStaticBottomOffset + 8,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  width: 200,
+                  height: 70,
+                  padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: LoadingAnimationWidget.staggeredDotsWave(
+                      color: Theme.of(context).colorScheme.tertiary,
+                      size: 50,
+                    ),
+                  ),
                 ),
               ),
+            )
+          else if (_isOriginChanged && isPanelClosedAndAnimating)
+            Positioned(
+              bottom: nonStaticBottomOffset + 8,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: SetOriginButton(
+                  onAction: _onMapOriginAction,
+                ),
+              ),
+            )
+          else if (isRefreshButtonVisible && isPanelClosedAndAnimating)
+            Positioned(
+              bottom: nonStaticBottomOffset + 8,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: IconButtonSmall(
+                  text: "Shuffle",
+                  icon: Icons.shuffle,
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  onTap: () {
+                    _queryForRoundTrip();
+                  },
+                ),
+              ),
+            )
+          else if (isDirectionsButtonVisible)
+            Positioned(
+              bottom: _fabHeight,
+              right: 16,
+              child: IconButtonSmall(
+                text: 'Directions',
+                icon: Icons.directions,
+                iconFontSize: 28.0,
+                textFontSize: 17,
+                onTap: _onDirectionsClicked,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
             ),
-          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _showDirectionsWidget() {
+    return AnimatedContainer(
+      key: _topWidgetKey,
+      duration: const Duration(milliseconds: 300),
+      child: AnimatedCrossFade(
+        duration: const Duration(milliseconds: 300),
+        crossFadeState: _viewMode == ViewMode.directions
+            ? CrossFadeState.showSecond
+            : CrossFadeState.showFirst,
+        firstChild: PlaceSearchBar(
+            onSelected: _onSelectPlace, selectedPlace: _selectedPlace),
+        secondChild: InkWell(
+          onTap: _showEditDirectionsScreen,
+          child: PickedLocationsWidget(
+            onBackClicked: _onDirectionsBackClicked,
+            onModeChanged: _onTransportationModeChanged,
+            startingLocation: _startingLocation,
+            endingLocation: _selectedPlace,
+            waypoints: const [],
+            selectedMode: getTransportationModeFromString(_selectedMode),
+          ),
         ),
       ),
     );
   }
 
-  List<Widget> _panels() {
-    return [
-      PanelWidgets.panelGrabber(),
-      _viewMode == ViewMode.parks
-          ? FeaturesPanel(
-              panelController: _panelController,
-              pageController: _pageController,
-              features: _features,
+  Widget _showShuffleWidget() {
+    return AnimatedContainer(
+      key: _topWidgetKey,
+      duration: const Duration(milliseconds: 300),
+      child: RoundTripControlsWidget(
+        onBackClicked: _onDirectionsBackClicked,
+        onModeChanged: _onTransportationModeChanged,
+        startingLocation: _selectedPlace ?? _startingLocation,
+        selectedMode: getTransportationModeFromString(_selectedMode),
+        selectedDistanceMeters: _selectedDistanceMeters,
+        onDistanceChanged: _queryForRoundTrip,
+        center: _currentOriginCoordinates,
+      ),
+    );
+  }
+
+  List<Widget> _panels(bool panel) {
+    List<Widget>? panels;
+
+    switch (_viewMode) {
+      case ViewMode.parks:
+        panels = [
+          PanelWidgets.panelGrabber(),
+          FeaturesPanel(
+            panelController: _panelController,
+            pageController: _pageController,
+            features: _features,
+            userLocation: _userLocation,
+            onFeaturePageChanged: _onFeaturePageChanged,
+            selectedDistanceMeters: _selectedDistanceMeters,
+            onDistanceChanged: _onFeatureDistanceChanged,
+          )
+        ];
+        break;
+      default:
+        if (_selectedRoute != null) {
+          panels = [
+            PanelWidgets.panelGrabber(),
+            RouteInfoPanel(
+              route: _selectedRoute,
+              hideSaveRoute: !widget.isInteractiveMap,
+              panelHeight: _panelPosition,
+            ),
+          ];
+        } else if (_selectedPlace != null) {
+          panels = [
+            PanelWidgets.panelGrabber(),
+            PlaceInfoPanel(
+              selectedPlace: _selectedPlace,
               userLocation: _userLocation,
-              onFeaturePageChanged: _onFeaturePageChanged,
-              onDistanceChanged: _setFeatureDistance,
-              selectedDistanceMeters: _selectedDistanceMeters,
-            )
-          : _selectedRoute != null
-              ? RouteInfoPanel(
-                  route: _selectedRoute,
-                  hideSaveRoute: !widget.isInteractiveMap,
-                )
-              : _selectedPlace != null
-                  ? PlaceInfoPanel(
-                      selectedPlace: _selectedPlace,
-                      userLocation: _userLocation,
-                    )
-                  : const SizedBox(),
-    ];
+            ),
+          ];
+        }
+        break;
+    }
+
+    return panels ?? [];
   }
 
   @override
