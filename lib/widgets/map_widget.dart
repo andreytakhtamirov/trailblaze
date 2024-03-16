@@ -28,6 +28,7 @@ import 'package:trailblaze/widgets/map/panels/place_info_panel.dart';
 import 'package:trailblaze/widgets/map/panels/route_info_panel.dart';
 import 'package:trailblaze/widgets/map/picked_locations_widget.dart';
 import 'package:trailblaze/widgets/map/round_trip_controls_widget.dart';
+import 'package:trailblaze/widgets/map_light_widget.dart';
 import 'package:trailblaze/widgets/search_bar_widget.dart';
 import 'package:trailblaze/data/feature.dart' as tb;
 
@@ -980,6 +981,18 @@ class _MapWidgetState extends State<MapWidget>
     });
   }
 
+  void _onMapScrollListener(mbm.ScreenCoordinate c) async {
+    if (_isCameraLocked) {
+      setState(() {
+        _isCameraLocked = false;
+      });
+    }
+    // Parks panel should stay open even if scrolling the camera
+    if (_viewMode != ViewMode.parks) {
+      _togglePanel(false);
+    }
+  }
+
   void _selectOriginOnMap(List<double> coordinates) {
     setState(() {
       _nextOriginCoordinates = coordinates;
@@ -1376,27 +1389,10 @@ class _MapWidgetState extends State<MapWidget>
               body: Stack(
                 children: [
                   Scaffold(
-                    body: mbm.MapWidget(
-                      styleUri: kMapStyleDefaultUri,
-                      onTapListener: _onMapTapListener,
-                      cameraOptions: mbm.CameraOptions(
-                          zoom: kDefaultCameraState.zoom,
-                          center: kDefaultCameraState.center,
-                          bearing: kDefaultCameraState.bearing,
-                          padding: kDefaultCameraState.padding,
-                          pitch: kDefaultCameraState.pitch),
+                    body: MapLightWidget(
                       onMapCreated: _onMapCreated,
-                      onScrollListener: (mbm.ScreenCoordinate c) async {
-                        if (_isCameraLocked) {
-                          setState(() {
-                            _isCameraLocked = false;
-                          });
-                        }
-                        // Parks panel should stay open even if scrolling the camera
-                        if (_viewMode != ViewMode.parks) {
-                          _togglePanel(false);
-                        }
-                      },
+                      onMapTapListener: _onMapTapListener,
+                      onScrollListener: _onMapScrollListener,
                     ),
                   ),
                   SafeArea(
@@ -1560,7 +1556,9 @@ class _MapWidgetState extends State<MapWidget>
                   ),
                 ),
               )
-            else if (_isOriginChanged)
+            else if (_isOriginChanged &&
+                !_panelController.isPanelOpen &&
+                !_panelController.isPanelAnimating)
               Positioned(
                 bottom: nonStaticBottomOffset + 8,
                 left: 0,
@@ -1571,7 +1569,9 @@ class _MapWidgetState extends State<MapWidget>
                   ),
                 ),
               )
-            else if (isRefreshButtonVisible)
+            else if (isRefreshButtonVisible &&
+                !_panelController.isPanelOpen &&
+                !_panelController.isPanelAnimating)
               Positioned(
                 bottom: nonStaticBottomOffset + 8,
                 left: 0,
