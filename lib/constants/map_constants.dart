@@ -31,7 +31,7 @@ const kPointSelectedCameraZoomOffset = 2;
 const double kPanelMinContentHeight = 70;
 const double kPanelRouteInfoMinHeight = 120;
 final double kPanelRouteInfoMaxHeight =
-    kScreenHeight / 2 - kSafeAreaPaddingBottom;
+    kScreenHeight * 0.8 - kSafeAreaPaddingBottom;
 final double kPanelMaxHeight = kScreenHeight / 3 - kSafeAreaPaddingBottom;
 final double kPanelFeaturesMaxHeight =
     kScreenHeight / 3 - kSafeAreaPaddingBottom;
@@ -86,7 +86,7 @@ final kMapTopOffset = Platform.isAndroid ? 8.0 : 0.0;
 final kAndroidTopOffset = Platform.isAndroid ? 8.0 : 0.0;
 const kMapUiPadding = 14.0;
 const kCompassTopOffset = 32.0;
-const kMapUiTopOffset = 8.0 + kMapUiPadding;
+const kMapUiTopOffset = kMapUiPadding - 4;
 const kAttributionLeftOffset = kMapUiPadding + 72.0;
 const kAttributionBottomOffset = 62.0;
 const kLogoLeftOffset = 4.0;
@@ -128,7 +128,7 @@ final ScaleBarSettings kPostDetailsScaleBarSettings = ScaleBarSettings(
 final ScaleBarSettings kDefaultScaleBarSettings = ScaleBarSettings(
     isMetricUnits: true,
     position: OrnamentPosition.TOP_LEFT,
-    marginTop: kMapUiTopOffset + kAndroidTopOffset * 2,
+    marginTop: kMapUiTopOffset + kAndroidTopOffset * 4,
     marginBottom: 0,
     marginLeft: kMapUiPadding,
     marginRight: 0);

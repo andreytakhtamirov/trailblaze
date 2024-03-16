@@ -31,29 +31,26 @@ class FeaturesPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  textAlign: TextAlign.center,
-                  "Nearby Parks – ${FormatHelper.formatDistance(selectedDistanceMeters)}",
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                textAlign: TextAlign.center,
+                "Nearby Parks – ${FormatHelper.formatDistance(selectedDistanceMeters)}",
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         IgnorePointer(
-          ignoring: panelController.isAttached &&
-              panelController.isPanelClosed,
+          ignoring: panelController.isAttached && panelController.isPanelClosed,
           child: SizedBox(
-            height: kFeatureItemHeight,
+            height: kPanelFeaturesMaxHeight * 0.5,
             child: features != null && features!.isNotEmpty
                 ? PageView.builder(
                     controller: pageController,
@@ -101,41 +98,41 @@ class FeaturesPanel extends StatelessWidget {
                       ),
           ),
         ),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: IconButtonSmall(
-            text:
-                "Target Distance ${FormatHelper.formatDistance(selectedDistanceMeters, noRemainder: true)}",
-            textFontSize: 20,
-            icon: Icons.edit,
-            backgroundColor: Theme.of(context).colorScheme.tertiary,
-            foregroundColor: Colors.white,
-            onTap: () async {
-              final distanceKm = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DistanceSelectorScreen(
-                    center: [
-                      userLocation!.longitude,
-                      userLocation!.latitude
-                    ],
-                    initialDistanceMeters: selectedDistanceMeters ??
-                        kDefaultFeatureDistanceMeters,
-                    minDistanceKm: kMinFeatureDistanceMeters/1000,
-                    maxDistanceKm: kMaxFeatureDistanceMeters/1000,
-                    minZoom: kMinFeatureFilterCameraZoom,
-                    maxZoom: kMaxFeatureFilterCameraZoom,
+        SizedBox(
+          height: kPanelFeaturesMaxHeight * 0.2,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: IconButtonSmall(
+              text:
+                  "Target Distance ${FormatHelper.formatDistance(selectedDistanceMeters, noRemainder: true)}",
+              textFontSize: 20,
+              icon: Icons.edit,
+              backgroundColor: Theme.of(context).colorScheme.tertiary,
+              foregroundColor: Colors.white,
+              onTap: () async {
+                final distanceKm = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DistanceSelectorScreen(
+                      center: [userLocation!.longitude, userLocation!.latitude],
+                      initialDistanceMeters: selectedDistanceMeters ??
+                          kDefaultFeatureDistanceMeters,
+                      minDistanceKm: kMinFeatureDistanceMeters / 1000,
+                      maxDistanceKm: kMaxFeatureDistanceMeters / 1000,
+                      minZoom: kMinFeatureFilterCameraZoom,
+                      maxZoom: kMaxFeatureFilterCameraZoom,
+                    ),
                   ),
-                ),
-              );
+                );
 
-              if (distanceKm == null) {
-                return;
-              }
+                if (distanceKm == null) {
+                  return;
+                }
 
-              onDistanceChanged(distanceKm * 1000);
-            },
-            // onTap: _onSelectDistanceTap,
+                onDistanceChanged(distanceKm * 1000);
+              },
+              // onTap: _onSelectDistanceTap,
+            ),
           ),
         )
       ],

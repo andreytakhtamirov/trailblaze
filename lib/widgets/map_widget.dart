@@ -290,6 +290,7 @@ class _MapWidgetState extends State<MapWidget>
 
   Future<void> _flyToFeatures(
       {List<Map<String?, Object?>>? coordinatesList}) async {
+    await _clearCameraPadding();
     if (coordinatesList == null) {
       coordinatesList = [];
       for (var f in _features!) {
@@ -303,15 +304,25 @@ class _MapWidgetState extends State<MapWidget>
       }
     }
 
+    if (coordinatesList.length == 1) {
+      // Only one feature so just fly to it.
+      _flyToPlace(coordinatesList.first);
+      return;
+    }
+
+    final height = mounted ? MediaQuery.of(context).size.height : 0.0;
+    final width = mounted ? MediaQuery.of(context).size.width : 0.0;
     final cameraForCoordinates = await CameraHelper.cameraOptionsForCoordinates(
       _mapboxMap,
       coordinatesList,
       _getCameraPadding(),
+      height,
+      width,
     );
 
     // Get SafeArea top padding (if any), for notched devices.
     cameraForCoordinates.padding?.top +=
-        context.mounted ? MediaQuery.of(context).padding.top : 0;
+        mounted ? MediaQuery.of(context).padding.top : 0;
 
     await _mapFlyToOptions(cameraForCoordinates);
   }
@@ -469,7 +480,7 @@ class _MapWidgetState extends State<MapWidget>
   double _getTopOffset() {
     double topOffset = 0;
     final double height = _topWidgetKey.currentContext != null
-        ? (_topWidgetKey.currentContext!.findRenderObject() as RenderBox)
+        ? (_topWidgetKey.currentContext?.findRenderObject() as RenderBox)
             .size
             .height
         : 0;
@@ -600,10 +611,9 @@ class _MapWidgetState extends State<MapWidget>
 
     final dartz.Either<int, Map<String, dynamic>?> routeResponse;
     bool isGraphhopperRoute;
-    if (profile != TransportationMode.gravel_cycling.value) {
-      isGraphhopperRoute = false;
-      routeResponse = await createRoute(profile, waypoints);
-    } else {
+    if (profile == TransportationMode.cycling.value ||
+        profile == TransportationMode.gravel_cycling.value ||
+        profile == TransportationMode.walking.value) {
       isGraphhopperRoute = true;
       routeResponse = await createGraphhopperRoute(
         profile,
@@ -611,6 +621,9 @@ class _MapWidgetState extends State<MapWidget>
         isRoundTrip: isRoundTrip,
         distanceMeters: distance,
       );
+    } else {
+      isGraphhopperRoute = false;
+      routeResponse = await createRoute(profile, waypoints);
     }
 
     setState(() {
@@ -682,10 +695,15 @@ class _MapWidgetState extends State<MapWidget>
       _isCameraLocked = true;
     });
 
+    final height = mounted ? MediaQuery.of(context).size.height : 0.0;
+    final width = mounted ? MediaQuery.of(context).size.width : 0.0;
+
     final cameraForRoute = await CameraHelper.cameraOptionsForRoute(
       _mapboxMap,
       route,
       _getCameraPadding(),
+      height,
+      width,
       extraPadding: widget.forceTopBottomPadding,
     );
     await _mapFlyToOptions(cameraForRoute, isAnimated: isAnimated);
@@ -705,6 +723,17 @@ class _MapWidgetState extends State<MapWidget>
     } else {
       await _mapboxMap.setCamera(options);
     }
+  }
+
+  Future<void> _flyToPlace(Map<String?, dynamic> coordinates) {
+    return _mapFlyToOptions(
+      mbm.CameraOptions(
+          center: coordinates,
+          padding: _getCameraPadding(),
+          zoom: kDefaultCameraState.zoom + kPointSelectedCameraZoomOffset,
+          bearing: kDefaultCameraState.bearing,
+          pitch: kDefaultCameraState.pitch),
+    );
   }
 
   void _setSelectedRoute(TrailblazeRoute route) async {
@@ -738,8 +767,14 @@ class _MapWidgetState extends State<MapWidget>
   Future<void> _drawRoute(TrailblazeRoute route) async {
     await annotationHelper?.deleteAllAnnotations();
     await _mapboxMap.style.addSource(route.geoJsonSource);
-    await _mapboxMap.style
-        .addLayerAt(route.lineLayer, mbm.LayerPosition(below: "road-label"));
+
+    try {
+      await _mapboxMap.style
+          .addLayerAt(route.lineLayer, mbm.LayerPosition(below: "road-label"));
+    } catch (e) {
+      // "road-label" may not have been created yet or doesn't exist.
+      await _mapboxMap.style.addLayer(route.lineLayer);
+    }
 
     for (var i = 0; i < route.waypoints.length; i++) {
       final waypoint = route.waypoints[i];
@@ -862,12 +897,7 @@ class _MapWidgetState extends State<MapWidget>
         'coordinates': place.center?.cast<num>()
       };
 
-      _mapFlyToOptions(mbm.CameraOptions(
-          center: coordinates,
-          padding: _getCameraPadding(),
-          zoom: kDefaultCameraState.zoom + kPointSelectedCameraZoomOffset,
-          bearing: kDefaultCameraState.bearing,
-          pitch: kDefaultCameraState.pitch));
+      _flyToPlace(coordinates);
       annotationHelper?.drawSingleAnnotation(coordinates);
     } else {
       annotationHelper?.deleteAllAnnotations();
@@ -1325,285 +1355,278 @@ class _MapWidgetState extends State<MapWidget>
 
     final nonStaticBottomOffset = _getBottomOffset(wantStatic: false);
 
+    final bool isPanelClosedAndAnimating = _panelController.isAttached &&
+        _panelController.isPanelClosed &&
+        !_panelController.isPanelAnimating;
+
     if (_mapInitializedCompleter.isCompleted) {
       _setMapControlSettings();
     }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (TapDownDetails _) {
-          FocusScope.of(context).requestFocus(FocusNode());
-        },
-        child: Stack(
-          children: [
-            SlidingUpPanel(
-              maxHeight: _getMaxPanelHeight(),
-              minHeight: _getMinPanelHeight(),
-              backdropEnabled: _isPanelBackdrop(),
-              controller: _panelController,
-              onPanelSlide: (double pos) {
-                if (_viewMode == ViewMode.directions) {
-                  // If we're showing the directions view, no need to update
-                  //  the directions button or other elements.
-                  return;
-                }
+      child: Stack(
+        children: [
+          SlidingUpPanel(
+            maxHeight: _getMaxPanelHeight(),
+            minHeight: _getMinPanelHeight(),
+            backdropEnabled: _isPanelBackdrop(),
+            controller: _panelController,
+            onPanelSlide: (double pos) {
+              if (_viewMode == ViewMode.directions) {
+                // If we're showing the directions view, no need to update
+                //  the directions button or other elements.
+                return;
+              }
 
-                if (!_pauseUiCallbacks) {
-                  // Don't interrupt changing camera.
-                  _setCameraPaddingForPanel(pos);
-                }
+              if (!_pauseUiCallbacks) {
+                // Don't interrupt changing camera.
+                _setCameraPaddingForPanel(pos);
+              }
 
-                _updateDirectionsFabHeight(pos);
+              _updateDirectionsFabHeight(pos);
+            },
+            onPanelOpened: () {
+              if (_pauseUiCallbacks ||
+                  _viewMode != ViewMode.parks ||
+                  _features == null) {
+                return;
+              }
+
+              if (_selectedFeature != null) {
+                onManuallySelectFeature(_selectedFeature!);
+              } else {
+                onManuallySelectFeature(_features!.first);
+              }
+            },
+            borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16.0), bottom: Radius.zero),
+            panel: GestureDetector(
+              onTap: () {
+                _togglePanel(true);
               },
-              onPanelOpened: () {
-                if (_pauseUiCallbacks ||
-                    _viewMode != ViewMode.parks ||
-                    _features == null) {
-                  return;
-                }
-
-                if (_selectedFeature != null) {
-                  onManuallySelectFeature(_selectedFeature!);
-                } else {
-                  onManuallySelectFeature(_features!.first);
-                }
-              },
-              borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16.0), bottom: Radius.zero),
-              panel: GestureDetector(
-                onTap: () {
-                  _togglePanel(true);
-                },
-                child: widget.forceTopBottomPadding
-                    ? SafeArea(
-                        child: Column(
-                          children: _panels(),
-                        ),
-                      )
-                    : Column(
-                        children: _panels(),
+              child: widget.forceTopBottomPadding
+                  ? SafeArea(
+                      child: Column(
+                        children: _panels(isPanelClosedAndAnimating),
                       ),
-              ),
-              body: Stack(
-                children: [
-                  Scaffold(
-                    body: MapLightWidget(
-                      onMapCreated: _onMapCreated,
-                      onMapTapListener: _onMapTapListener,
-                      onScrollListener: _onMapScrollListener,
+                    )
+                  : Column(
+                      children: _panels(isPanelClosedAndAnimating),
                     ),
+            ),
+            body: Stack(
+              children: [
+                Scaffold(
+                  body: MapLightWidget(
+                    onMapCreated: _onMapCreated,
+                    onMapTapListener: _onMapTapListener,
+                    onScrollListener: _onMapScrollListener,
                   ),
-                  SafeArea(
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: _getTopOffset(),
-                          left: 0,
-                          right: 0,
-                          child: SingleChildScrollView(
-                            padding: EdgeInsets.zero,
-                            clipBehavior: Clip.none,
-                            scrollDirection: Axis.horizontal,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            child: ClipRRect(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                                child: Row(
-                                  children: <Widget>[
-                                    Visibility(
-                                      visible: isParksButtonVisible,
-                                      child: IconButtonSmall(
-                                        icon: _viewMode == ViewMode.parks
-                                            ? Icons.close_rounded
-                                            : Icons.forest_rounded,
-                                        onTap: _toggleParksMode,
-                                        text: 'Nearby Parks',
-                                        backgroundColor:
-                                            _viewMode == ViewMode.parks
-                                                ? Theme.of(context)
-                                                    .colorScheme
-                                                    .secondary
-                                                : Colors.white,
-                                        foregroundColor:
-                                            _viewMode == ViewMode.parks
-                                                ? Colors.white
-                                                : Theme.of(context)
-                                                    .colorScheme
-                                                    .tertiary,
-                                      ),
+                ),
+                SafeArea(
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: _getTopOffset(),
+                        left: 0,
+                        right: 0,
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.zero,
+                          clipBehavior: Clip.none,
+                          scrollDirection: Axis.horizontal,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: ClipRRect(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                              child: Row(
+                                children: <Widget>[
+                                  Visibility(
+                                    visible: isParksButtonVisible,
+                                    child: IconButtonSmall(
+                                      icon: _viewMode == ViewMode.parks
+                                          ? Icons.close_rounded
+                                          : Icons.forest_rounded,
+                                      onTap: _toggleParksMode,
+                                      text: 'Nearby Parks',
+                                      backgroundColor:
+                                          _viewMode == ViewMode.parks
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .secondary
+                                              : Colors.white,
+                                      foregroundColor:
+                                          _viewMode == ViewMode.parks
+                                              ? Colors.white
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .tertiary,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Visibility(
-                                      visible: isShuffleButtonVisible,
-                                      child: IconButtonSmall(
-                                        icon: _viewMode == ViewMode.shuffle
-                                            ? Icons.close_rounded
-                                            : Icons.route_outlined,
-                                        onTap: _toggleShuffleMode,
-                                        text: 'Routes in this Area',
-                                        backgroundColor:
-                                            _viewMode == ViewMode.shuffle
-                                                ? Theme.of(context)
-                                                    .colorScheme
-                                                    .secondary
-                                                : Colors.white,
-                                        foregroundColor:
-                                            _viewMode == ViewMode.shuffle
-                                                ? Colors.white
-                                                : Colors.brown,
-                                      ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Visibility(
+                                    visible: isShuffleButtonVisible,
+                                    child: IconButtonSmall(
+                                      icon: _viewMode == ViewMode.shuffle
+                                          ? Icons.close_rounded
+                                          : Icons.route_outlined,
+                                      onTap: _toggleShuffleMode,
+                                      text: 'Routes in this Area',
+                                      backgroundColor:
+                                          _viewMode == ViewMode.shuffle
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .secondary
+                                              : Colors.white,
+                                      foregroundColor:
+                                          _viewMode == ViewMode.shuffle
+                                              ? Colors.white
+                                              : Colors.brown,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         ),
-                        Positioned(
-                          top: (widget.forceTopBottomPadding == true)
-                              ? 8
-                              : kMapTopOffset,
-                          left: 0,
-                          right: 0,
-                          child: Column(
-                            children: [
-                              if (_shouldShowDirectionsWidget())
-                                _showDirectionsWidget()
-                              else if (shouldShowShuffleWidget)
-                                _showShuffleWidget()
-                              else
-                                const SizedBox(),
-                              SizedBox(
-                                  height: isParksButtonVisible &&
-                                          isShuffleButtonVisible
-                                      ? 54
-                                      : 0),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                            16, 8, 16, 0),
-                                        child: TapRegion(
-                                          onTapOutside: onTapOutsideMapStyle,
-                                          onTapInside: onTapInsideMapStyle,
-                                          child: MapStyleSelector(
-                                            onStyleChanged: _onStyleChanged,
-                                            hasTouchContext:
-                                                _mapStyleTouchContext,
-                                          ),
+                      ),
+                      Positioned(
+                        top: (widget.forceTopBottomPadding == true)
+                            ? 8
+                            : kMapTopOffset,
+                        left: 0,
+                        right: 0,
+                        child: Column(
+                          children: [
+                            if (_shouldShowDirectionsWidget())
+                              _showDirectionsWidget()
+                            else if (shouldShowShuffleWidget)
+                              _showShuffleWidget()
+                            else
+                              const SizedBox(),
+                            SizedBox(
+                                height: isParksButtonVisible &&
+                                        isShuffleButtonVisible
+                                    ? 54
+                                    : 0),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          16, 8, 16, 0),
+                                      child: TapRegion(
+                                        onTapOutside: onTapOutsideMapStyle,
+                                        onTapInside: onTapInsideMapStyle,
+                                        child: MapStyleSelector(
+                                          onStyleChanged: _onStyleChanged,
+                                          hasTouchContext:
+                                              _mapStyleTouchContext,
                                         ),
                                       ),
-                                      Padding(
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                          16, 8, 16, 0),
+                                      child: IconButtonSmall(
+                                        icon: Icons.navigation_rounded,
+                                        onTap: _onGpsButtonPressed,
+                                      ),
+                                    ),
+                                    Visibility(
+                                      visible: _selectedRoute != null &&
+                                          !_isCameraLocked,
+                                      child: Padding(
                                         padding: const EdgeInsets.fromLTRB(
                                             16, 8, 16, 0),
                                         child: IconButtonSmall(
-                                          icon: Icons.navigation_rounded,
-                                          onTap: _onGpsButtonPressed,
+                                          icon: Icons.crop_free_rounded,
+                                          onTap: _onFlyToRoute,
                                         ),
                                       ),
-                                      Visibility(
-                                        visible: _selectedRoute != null &&
-                                            !_isCameraLocked,
-                                        child: Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                              16, 8, 16, 0),
-                                          child: IconButtonSmall(
-                                            icon: Icons.crop_free_rounded,
-                                            onTap: _onFlyToRoute,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_isContentLoading)
+            Positioned(
+              bottom: nonStaticBottomOffset + 8,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  width: 200,
+                  height: 70,
+                  padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: LoadingAnimationWidget.staggeredDotsWave(
+                      color: Theme.of(context).colorScheme.tertiary,
+                      size: 50,
                     ),
                   ),
-                ],
+                ),
+              ),
+            )
+          else if (_isOriginChanged && isPanelClosedAndAnimating)
+            Positioned(
+              bottom: nonStaticBottomOffset + 8,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: SetOriginButton(
+                  onAction: _onMapOriginAction,
+                ),
+              ),
+            )
+          else if (isRefreshButtonVisible && isPanelClosedAndAnimating)
+            Positioned(
+              bottom: nonStaticBottomOffset + 8,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: IconButtonSmall(
+                  text: "Shuffle",
+                  icon: Icons.shuffle,
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  onTap: () {
+                    _queryForRoundTrip();
+                  },
+                ),
+              ),
+            )
+          else if (isDirectionsButtonVisible)
+            Positioned(
+              bottom: _fabHeight,
+              right: 16,
+              child: IconButtonSmall(
+                text: 'Directions',
+                icon: Icons.directions,
+                iconFontSize: 28.0,
+                textFontSize: 17,
+                onTap: _onDirectionsClicked,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
-            if (_isContentLoading)
-              Positioned(
-                bottom: nonStaticBottomOffset + 8,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    width: 200,
-                    height: 70,
-                    padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child: LoadingAnimationWidget.staggeredDotsWave(
-                        color: Theme.of(context).colorScheme.tertiary,
-                        size: 50,
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            else if (_isOriginChanged &&
-                !_panelController.isPanelOpen &&
-                !_panelController.isPanelAnimating)
-              Positioned(
-                bottom: nonStaticBottomOffset + 8,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: SetOriginButton(
-                    onAction: _onMapOriginAction,
-                  ),
-                ),
-              )
-            else if (isRefreshButtonVisible &&
-                !_panelController.isPanelOpen &&
-                !_panelController.isPanelAnimating)
-              Positioned(
-                bottom: nonStaticBottomOffset + 8,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: IconButtonSmall(
-                    text: "Shuffle",
-                    icon: Icons.shuffle,
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
-                    onTap: () {
-                      _queryForRoundTrip();
-                    },
-                  ),
-                ),
-              )
-            else if (isDirectionsButtonVisible)
-              Positioned(
-                bottom: _fabHeight,
-                right: 16,
-                child: IconButtonSmall(
-                  text: 'Directions',
-                  icon: Icons.directions,
-                  iconFontSize: 28.0,
-                  textFontSize: 17,
-                  onTap: _onDirectionsClicked,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                ),
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -1650,7 +1673,7 @@ class _MapWidgetState extends State<MapWidget>
     );
   }
 
-  List<Widget> _panels() {
+  List<Widget> _panels(bool panel) {
     List<Widget>? panels;
 
     switch (_viewMode) {
@@ -1675,6 +1698,9 @@ class _MapWidgetState extends State<MapWidget>
             RouteInfoPanel(
               route: _selectedRoute,
               hideSaveRoute: !widget.isInteractiveMap,
+              panelHeight: _panelController.isAttached
+                  ? _panelController.panelPosition
+                  : 0.0,
             ),
           ];
         } else if (_selectedPlace != null) {

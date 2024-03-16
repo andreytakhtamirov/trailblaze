@@ -29,14 +29,25 @@ class CameraHelper {
   }
 
   static Future<CameraOptions> cameraOptionsForCoordinates(MapboxMap mapboxMap,
-      List<Map<String?, Object?>> coordinatesList, MbxEdgeInsets? padding) {
+      List<Map<String?, Object?>> coordinatesList, MbxEdgeInsets? padding, double maxHeight, double maxWidth) {
     final customPadding = MbxEdgeInsets(
       top: (padding?.top ?? 0) + kFeaturesCameraState.padding.top,
       left: (padding?.left ?? 0) + kFeaturesCameraState.padding.left,
-      bottom:
-          (padding?.bottom ?? 0) + kFeaturesCameraState.padding.bottom,
+      bottom: (padding?.bottom ?? 0) + kFeaturesCameraState.padding.bottom,
       right: (padding?.right ?? 0) + kFeaturesCameraState.padding.right,
     );
+
+    // For small screen devices where padding might be larger than the screen.
+    if (customPadding.top + customPadding.bottom >= maxHeight) {
+      final ratio = maxHeight / (customPadding.top + customPadding.bottom + 100);
+      customPadding.top *= ratio;
+      customPadding.bottom *= ratio;
+    }
+    if (customPadding.right + customPadding.left >= maxWidth) {
+      customPadding.right -= kFeaturesCameraState.padding.right;
+      customPadding.left -= kFeaturesCameraState.padding.left;
+    }
+
     return mapboxMap.cameraForCoordinates(
         coordinatesList, customPadding, null, null);
   }
@@ -44,7 +55,9 @@ class CameraHelper {
   static Future<CameraOptions> cameraOptionsForRoute(
     MapboxMap mapboxMap,
     TrailblazeRoute route,
-    MbxEdgeInsets? padding, {
+    MbxEdgeInsets? padding,
+    double maxHeight,
+    double maxWidth, {
     bool extraPadding = false,
   }) async {
     num topBottomPadding;
@@ -64,6 +77,17 @@ class CameraHelper {
           topBottomPadding,
       right: (padding?.right ?? 0) + kRouteCameraState.padding.right,
     );
+
+    // For small screen devices where padding might be larger than the screen.
+    if (customPadding.top + customPadding.bottom >= maxHeight) {
+      final ratio = maxHeight / (customPadding.top + customPadding.bottom + 100);
+      customPadding.top *= ratio;
+      customPadding.bottom *= ratio;
+    }
+    if (customPadding.right + customPadding.left >= maxWidth) {
+      customPadding.right -= kRouteCameraState.padding.right;
+      customPadding.left -= kRouteCameraState.padding.left;
+    }
 
     final cameraForRoute = await mapboxMap.cameraForGeometry(
       route.geometryJson,

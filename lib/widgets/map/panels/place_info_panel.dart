@@ -46,7 +46,6 @@ class _PlaceInfoPanelState extends State<PlaceInfoPanel> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 16, 0),
           child: Column(
-
             children: [
               if (widget.selectedPlace?.placeName != null)
                 Column(
