@@ -1,7 +1,6 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-const kBaseUrl =
-    'https://651a-131-104-23-222.ngrok-free.app'; //'https://trailblaze.azurewebsites.net'; // TODO CHANGE BACK
+const kBaseUrl = 'https://trailblaze.azurewebsites.net';
 
 final String kAppToken = dotenv.env['TRAILBLAZE_APP_TOKEN'] ?? '';
 

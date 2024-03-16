@@ -76,6 +76,7 @@ class _MapWidgetState extends State<MapWidget>
   double? _selectedDistanceMeters = kDefaultFeatureDistanceMeters;
   geo.Position? _userLocation;
   final GlobalKey _topWidgetKey = GlobalKey();
+  double _panelPosition = 0;
 
   bool _isOriginChanged = false;
   bool _isCameraLocked = false;
@@ -611,9 +612,11 @@ class _MapWidgetState extends State<MapWidget>
 
     final dartz.Either<int, Map<String, dynamic>?> routeResponse;
     bool isGraphhopperRoute;
-    if (profile == TransportationMode.cycling.value ||
-        profile == TransportationMode.gravel_cycling.value ||
-        profile == TransportationMode.walking.value) {
+    if ((isRoundTrip &&
+            (profile == TransportationMode.cycling.value ||
+                profile == TransportationMode.gravel_cycling.value ||
+                profile == TransportationMode.walking.value)) ||
+        profile == TransportationMode.gravel_cycling.value) {
       isGraphhopperRoute = true;
       routeResponse = await createGraphhopperRoute(
         profile,
@@ -1235,6 +1238,11 @@ class _MapWidgetState extends State<MapWidget>
         _pauseUiCallbacks = false;
       });
 
+      if (_selectedMode == TransportationMode.none.value) {
+        setState(() {
+          _selectedMode = TransportationMode.walking.value;
+        });
+      }
       _queryForRoundTrip();
     }
   }
@@ -1373,6 +1381,9 @@ class _MapWidgetState extends State<MapWidget>
             backdropEnabled: _isPanelBackdrop(),
             controller: _panelController,
             onPanelSlide: (double pos) {
+              if (pos >= 1 || pos <= 0) {
+                _panelPosition = pos;
+              }
               if (_viewMode == ViewMode.directions) {
                 // If we're showing the directions view, no need to update
                 //  the directions button or other elements.
@@ -1698,9 +1709,7 @@ class _MapWidgetState extends State<MapWidget>
             RouteInfoPanel(
               route: _selectedRoute,
               hideSaveRoute: !widget.isInteractiveMap,
-              panelHeight: _panelController.isAttached
-                  ? _panelController.panelPosition
-                  : 0.0,
+              panelHeight: _panelPosition,
             ),
           ];
         } else if (_selectedPlace != null) {
