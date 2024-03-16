@@ -42,6 +42,12 @@
 version
 analysis_benchmark.json
 
+# Google Services (e.g. APIs or Firebase)
+google-services.json
+GoogleService-Info.plist
+firebase_app_id_file.json
+firebase_options.dart
+
 # packages file containing multi-root paths
 .packages.generated
 
