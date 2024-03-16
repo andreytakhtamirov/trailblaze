@@ -2,6 +2,8 @@ import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/tabs/discover.dart';
 import 'package:trailblaze/tabs/map.dart';
 import 'package:trailblaze/tabs/profile/profile.dart';
@@ -13,10 +15,12 @@ import 'managers/credential_manager.dart';
 import 'managers/profile_manager.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  MapboxOptions.setAccessToken(kMapboxAccessToken);
   runApp(const ProviderScope(child: MyApp()));
 }
 

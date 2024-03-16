@@ -124,13 +124,13 @@ sealed class Pubspec {
   /// Build date and time (UTC)
   static final DateTime timestamp = DateTime.utc(
     2024,
-    1,
-    28,
-    17,
-    18,
-    24,
-    801,
-    9,
+    3,
+    16,
+    15,
+    55,
+    32,
+    223,
+    744,
   );
 
   /// Name
@@ -406,7 +406,7 @@ sealed class Pubspec {
   /// For more information,
   /// see [Package dependencies](https://dart.dev/tools/pub/dependencies).
   static const Map<String, Object> dependencies = <String, Object>{
-    'mapbox_maps_flutter': r'^0.5.1',
+    'mapbox_maps_flutter': r'^1.0.0',
     'auth0_flutter': r'^1.4.1',
     'mapbox_search': r'4.0.0-beta.1',
     'http': r'^0.13.5',
