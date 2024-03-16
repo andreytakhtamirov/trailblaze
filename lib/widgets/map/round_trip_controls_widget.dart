@@ -111,21 +111,6 @@ class RoundTripControlsWidget extends StatelessWidget {
               onPressed: onBackClicked,
             ),
           ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: IconButtonSmall(
-                icon: Icons.refresh_outlined,
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                onTap: () {
-                  onDistanceChanged();
-                },
-              ),
-            ),
-          ),
         ],
       ),
     );

@@ -44,7 +44,7 @@ class SetOriginButton extends StatelessWidget {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                "Set Origin",
+                "Search Here",
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Colors.white,

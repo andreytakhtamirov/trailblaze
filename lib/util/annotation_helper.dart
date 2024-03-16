@@ -118,14 +118,8 @@ class AnnotationHelper {
   }
 
   void drawOriginAnnotation(Map<String?, Object?> geometry) async {
-    if (selectOriginAnnotation != null) {
-      try {
-        await _circleAnnotationManager.delete(selectOriginAnnotation!);
-      } catch (e) {
-        // Already deleted by manager.deleteAll()
-      }
-      selectOriginAnnotation = null;
-    }
+    deleteOriginAnnotation();
+
     var options = mbm.CircleAnnotationOptions(
         geometry: geometry,
         circleRadius: 10,
@@ -148,12 +142,12 @@ class AnnotationHelper {
 
     final annotation = await _circleAnnotationManager.create(options);
     circleAnnotations.add(annotation);
-    }
+  }
 
   Future<mbm.PointAnnotation?> showAnnotation(
       mbm.PointAnnotationOptions options) async {
     return _annotationManager.create(options);
-    }
+  }
 
   Future<void> deleteAllAnnotations() async {
     await deletePointAnnotations();
@@ -163,10 +157,21 @@ class AnnotationHelper {
   Future<void> deletePointAnnotations() async {
     pointAnnotations.clear();
     await _annotationManager.deleteAll();
-    }
+  }
 
   Future<void> deleteCircleAnnotations() async {
     circleAnnotations.clear();
     await _circleAnnotationManager.deleteAll();
+  }
+
+  Future<void> deleteOriginAnnotation() async {
+    if (selectOriginAnnotation != null) {
+      try {
+        await _circleAnnotationManager.delete(selectOriginAnnotation!);
+      } catch (e) {
+        // Already deleted by manager.deleteAll()
+      }
+      selectOriginAnnotation = null;
     }
+  }
 }

@@ -83,7 +83,7 @@ const List<String> kMapStyleOptions = [
 ];
 
 final kMapTopOffset = Platform.isAndroid ? 8.0 : 0.0;
-final kAndroidTopOffset = Platform.isAndroid ? 32.0 : 0.0;
+final kAndroidTopOffset = Platform.isAndroid ? 8.0 : 0.0;
 const kMapUiPadding = 14.0;
 const kCompassTopOffset = 32.0;
 const kMapUiTopOffset = 8.0 + kMapUiPadding;
@@ -95,21 +95,24 @@ final kFeaturesPaneOffset = kPanelMaxHeight;
 
 final CompassSettings kDefaultCompassSettings = CompassSettings(
     position: OrnamentPosition.TOP_LEFT,
-    marginTop: kMapUiTopOffset + kCompassTopOffset,
+    marginTop: kMapUiTopOffset + kCompassTopOffset + kAndroidTopOffset * 2,
     marginBottom: 0,
     marginLeft: kMapUiPadding,
     marginRight: 0);
 
 final CompassSettings kPostDetailsCompassSettings = CompassSettings(
     position: OrnamentPosition.TOP_LEFT,
-    marginTop: kMapUiPadding + kCompassTopOffset,
+    marginTop: kMapUiPadding + kCompassTopOffset + kAndroidTopOffset,
     marginBottom: 0,
     marginLeft: kMapUiPadding,
     marginRight: 0);
 
 final CompassSettings kDirectionsCompassSettings = CompassSettings(
     position: OrnamentPosition.TOP_LEFT,
-    marginTop: kMapUiPadding + kCompassTopOffset + kDirectionsWidgetOffset,
+    marginTop: kMapUiPadding +
+        kCompassTopOffset +
+        kDirectionsWidgetOffset +
+        kAndroidTopOffset,
     marginBottom: 0,
     marginLeft: kMapUiPadding,
     marginRight: 0);
@@ -125,7 +128,7 @@ final ScaleBarSettings kPostDetailsScaleBarSettings = ScaleBarSettings(
 final ScaleBarSettings kDefaultScaleBarSettings = ScaleBarSettings(
     isMetricUnits: true,
     position: OrnamentPosition.TOP_LEFT,
-    marginTop: kMapUiTopOffset,
+    marginTop: kMapUiTopOffset + kAndroidTopOffset * 2,
     marginBottom: 0,
     marginLeft: kMapUiPadding,
     marginRight: 0);
