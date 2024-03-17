@@ -10,7 +10,6 @@ import 'package:trailblaze/widgets/map/transportation_mode_widget.dart';
 import '../../data/transportation_mode.dart';
 
 class RoundTripControlsWidget extends StatelessWidget {
-  final MapBoxPlace? startingLocation;
   final TransportationMode selectedMode;
   final void Function() onBackClicked;
   final void Function(TransportationMode) onModeChanged;
@@ -20,7 +19,6 @@ class RoundTripControlsWidget extends StatelessWidget {
 
   const RoundTripControlsWidget({
     super.key,
-    this.startingLocation,
     required this.selectedMode,
     required this.onBackClicked,
     required this.onModeChanged,
@@ -49,49 +47,31 @@ class RoundTripControlsWidget extends StatelessWidget {
         children: [
           Column(
             children: [
-              AnimatedCrossFade(
-                duration: const Duration(milliseconds: 300),
-                crossFadeState: selectedMode == TransportationMode.none
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-                firstChild: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(48, 8, 48, 0),
-                      child: ListView(
-                        shrinkWrap: true,
-                        padding: EdgeInsets.zero,
-                        physics: const NeverScrollableScrollPhysics(),
-                        children: [
-                          _buildLocationTile(
-                              title: startingLocation!.placeName ??
-                                  "Select point on map"),
-                          _buildControls(context),
-                        ],
-                      ),
-                    ),
-                  ],
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: const Text(
+                  "Route Explorer",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                secondChild: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(48, 8, 48, 4),
-                      child: ListView(
-                        shrinkWrap: true,
-                        padding: EdgeInsets.zero,
-                        physics: const NeverScrollableScrollPhysics(),
-                        children: [
-                          _buildLocationTile(
-                              title: 'Starting Location',
-                              subtitle: startingLocation!.placeName ??
-                                  "Select origin"),
-                        ],
-                      ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(48, 8, 48, 0),
+                    child: ListView(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        _buildControls(context),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),

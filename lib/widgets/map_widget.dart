@@ -1385,10 +1385,11 @@ class _MapWidgetState extends State<MapWidget>
             backdropEnabled: _isPanelBackdrop(),
             controller: _panelController,
             onPanelSlide: (double pos) {
-              if (pos >= 1 || pos <= 0) {
+              setState(() {
                 _panelPosition = pos;
-              }
-              if (_viewMode == ViewMode.directions) {
+              });
+              if (_viewMode == ViewMode.directions ||
+                  _viewMode == ViewMode.shuffle) {
                 // If we're showing the directions view, no need to update
                 //  the directions button or other elements.
                 return;
@@ -1486,7 +1487,7 @@ class _MapWidgetState extends State<MapWidget>
                                           ? Icons.close_rounded
                                           : Icons.route_outlined,
                                       onTap: _toggleShuffleMode,
-                                      text: 'Routes in this Area',
+                                      text: 'Route Explorer',
                                       backgroundColor:
                                           _viewMode == ViewMode.shuffle
                                               ? Theme.of(context)
@@ -1497,6 +1498,7 @@ class _MapWidgetState extends State<MapWidget>
                                           _viewMode == ViewMode.shuffle
                                               ? Colors.white
                                               : Colors.brown,
+                                      isNew: true,
                                     ),
                                   ),
                                 ],
@@ -1679,7 +1681,6 @@ class _MapWidgetState extends State<MapWidget>
       child: RoundTripControlsWidget(
         onBackClicked: _onDirectionsBackClicked,
         onModeChanged: _onTransportationModeChanged,
-        startingLocation: _selectedPlace ?? _startingLocation,
         selectedMode: getTransportationModeFromString(_selectedMode),
         selectedDistanceMeters: _selectedDistanceMeters,
         onDistanceChanged: _queryForRoundTrip,
