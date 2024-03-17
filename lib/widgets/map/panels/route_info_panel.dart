@@ -294,33 +294,31 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
       child: ScrollOnExpand(
         child: ExpandablePanel(
           theme: const ExpandableThemeData(
-            tapHeaderToExpand: true,
-            tapBodyToExpand: true,
-            tapBodyToCollapse: true,
-            hasIcon: true,
+            tapHeaderToExpand: false,
+            tapBodyToExpand: false,
+            tapBodyToCollapse: false,
+            hasIcon: false,
             iconPlacement: ExpandablePanelIconPlacement.right,
             iconColor: Colors.black,
             bodyAlignment: ExpandablePanelBodyAlignment.right,
             headerAlignment: ExpandablePanelHeaderAlignment.center,
             alignment: Alignment.center,
-            iconSize: 20,
-            expandIcon: Icons.add_rounded,
-            collapseIcon: Icons.close_rounded,
           ),
           header: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.fromLTRB(8, 24, 8, 4),
             child: Text(
               title,
               style: const TextStyle(
                 fontSize: 15.0,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
           collapsed: const SizedBox(),
           expanded: SizedBox(
-            height: 120,
+            height: 100,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
               child: chart,
             ),
           ),

@@ -108,9 +108,10 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
   }
 
   Widget _buildTransportationModeWidget(
-      TransportationMode mode, IconData icon, bool isBetaFeature,
+      TransportationMode mode, IconData icon, bool isCustomIcon,
       {double minIconHeight = 24}) {
     final isSelected = _selectedMode == mode;
+    minIconHeight += isCustomIcon ? 8 : 0; // Custom icon needs to be larger
 
     return GestureDetector(
       onTap: () {
@@ -136,26 +137,6 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
               ],
             ),
           ),
-          if (isBetaFeature)
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'BETA',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
