@@ -166,13 +166,7 @@ class _DistanceSelectorScreenState extends State<DistanceSelectorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Choose a Distance'),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.question_mark_rounded),
-            onPressed: () {},
-          ),
-        ],
+        title: const Text('Choose Distance'),
       ),
       body: SafeArea(
         child: LayoutBuilder(
@@ -189,6 +183,7 @@ class _DistanceSelectorScreenState extends State<DistanceSelectorScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 30,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
