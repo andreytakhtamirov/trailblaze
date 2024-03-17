@@ -15,6 +15,7 @@ import 'package:trailblaze/tabs/profile/widgets/login_widget.dart';
 import 'package:trailblaze/tabs/profile/widgets/profile_header_widget.dart';
 import 'package:trailblaze/tabs/profile/widgets/profile_menu_widget.dart';
 import 'package:trailblaze/tabs/profile/widgets/profile_tabs_widget.dart';
+import 'package:trailblaze/util/firebase_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -75,6 +76,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       log('Authentication error: $e');
       return;
     }
+    final sub = credentials.user.sub;
+    FirebaseHelper.logLogin(sub.substring(0, sub.indexOf('|')));
 
     _storeCredentials(credentials);
     refreshProfile(credentials);
@@ -91,6 +94,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   Future<void> _onLogoutPressed() async {
     try {
       await _auth0.webAuthentication(scheme: kAuth0Scheme).logout();
+      FirebaseHelper.resetData();
     } on WebAuthenticationException {
       // This exception occurs if user cancels the browser prompt to log out.
       // Let's assume that this means they don't want to log out.
@@ -105,6 +109,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   }
 
   void _onEditProfilePressed(Credentials? credentials) async {
+    FirebaseHelper.logScreen("EditProfile");
     final data = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -129,6 +134,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   }
 
   void _onAboutPressed() {
+    FirebaseHelper.logScreen("About");
     Navigator.push(
       context,
       MaterialPageRoute(

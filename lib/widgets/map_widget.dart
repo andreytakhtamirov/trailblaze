@@ -18,6 +18,7 @@ import 'package:trailblaze/managers/feature_manager.dart';
 import 'package:trailblaze/screens/waypoint_edit_screen.dart';
 import 'package:trailblaze/util/annotation_helper.dart';
 import 'package:trailblaze/util/camera_helper.dart';
+import 'package:trailblaze/util/firebase_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
 import 'package:trailblaze/util/position_helper.dart';
 import 'package:trailblaze/widgets/buttons/set_origin_button.dart';
@@ -1068,6 +1069,7 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   Future<void> _showEditDirectionsScreen() async {
+    FirebaseHelper.logScreen("EditDirections");
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -1199,6 +1201,7 @@ class _MapWidgetState extends State<MapWidget>
       await annotationHelper?.deleteAllAnnotations();
       _onSelectPlace(null);
     } else {
+      FirebaseHelper.logScreen("NearbyParks");
       if (_features == null ||
           _features!.isEmpty ||
           _nextOriginCoordinates != _featureQueriedCoordinates) {
@@ -1224,6 +1227,7 @@ class _MapWidgetState extends State<MapWidget>
       await annotationHelper?.deleteAllAnnotations();
       _onSelectPlace(null);
     } else {
+      FirebaseHelper.logScreen("Shuffle");
       await _setViewMode(ViewMode.shuffle);
       setState(() {
         _pauseUiCallbacks = true;

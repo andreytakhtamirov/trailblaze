@@ -4,6 +4,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:trailblaze/constants/about_constants.dart';
 import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/constants/pubspec.yaml.g.dart';
+import 'package:trailblaze/util/firebase_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -53,6 +54,7 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   void _showDependenciesScreen() async {
+    FirebaseHelper.logScreen("Dependencies");
     Navigator.push(
       context,
       MaterialPageRoute(

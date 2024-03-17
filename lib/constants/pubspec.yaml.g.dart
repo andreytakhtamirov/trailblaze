@@ -125,12 +125,12 @@ sealed class Pubspec {
   static final DateTime timestamp = DateTime.utc(
     2024,
     3,
-    16,
-    15,
-    55,
-    32,
-    223,
-    744,
+    17,
+    0,
+    0,
+    24,
+    972,
+    80,
   );
 
   /// Name
@@ -435,6 +435,8 @@ sealed class Pubspec {
     },
     'cupertino_icons': r'^1.0.2',
     'dartz': r'^0.10.1',
+    'firebase_core': r'^2.25.4',
+    'firebase_analytics': r'^10.8.10',
   };
 
   /// Developer dependencies

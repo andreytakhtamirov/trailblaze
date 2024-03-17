@@ -142,8 +142,7 @@ class _DistanceSelectorScreenState extends State<DistanceSelectorScreen> {
   }
 
   double _zoomForDistance(double max, double distance) {
-    return lerpDouble(widget.minZoom,
-        widget.maxZoom, (_dragAmount) / (max))!;
+    return lerpDouble(widget.minZoom, widget.maxZoom, (_dragAmount) / (max))!;
   }
 
   Future<void> _updateCamera(double max) {
@@ -341,22 +340,39 @@ class _DistanceSelectorScreenState extends State<DistanceSelectorScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        MaterialButton(
-                          color: Theme.of(context).colorScheme.primary,
-                          onPressed: () {
-                            Navigator.of(context)
-                                .pop(_selectedDistanceKm.floorToDouble());
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 36,
-                              vertical: 8,
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.8),
+                                spreadRadius: 4,
+                                blurRadius: 5,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: MaterialButton(
+                            color: Theme.of(context).colorScheme.primary,
+                            onPressed: () {
+                              Navigator.of(context)
+                                  .pop(_selectedDistanceKm.floorToDouble());
+                            },
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
                             ),
-                            child: Text(
-                              "Let's Go!",
-                              style: TextStyle(
-                                fontSize: 30,
-                                color: Theme.of(context).colorScheme.onPrimary,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 36,
+                                vertical: 8,
+                              ),
+                              child: Text(
+                                "Let's Go!",
+                                style: TextStyle(
+                                  fontSize: 30,
+                                  color:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                ),
                               ),
                             ),
                           ),

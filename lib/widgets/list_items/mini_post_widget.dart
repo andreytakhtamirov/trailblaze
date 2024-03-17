@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trailblaze/managers/credential_manager.dart';
 import 'package:trailblaze/managers/profile_manager.dart';
 import 'package:trailblaze/screens/route_details.dart';
+import 'package:trailblaze/util/firebase_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
 
@@ -88,6 +89,7 @@ class MiniPostView extends ConsumerWidget {
       },
       child: GestureDetector(
         onTap: () {
+          FirebaseHelper.logScreen("RouteDetails(Mini)");
           Navigator.push(
             context,
             MaterialPageRoute(
