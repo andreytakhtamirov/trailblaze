@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/constants/ui_control_constants.dart';
 import 'package:trailblaze/screens/distance_selector_screen.dart';
+import 'package:trailblaze/util/firebase_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/widgets/map/icon_button_small.dart';
 import 'package:trailblaze/widgets/map/transportation_mode_widget.dart';
@@ -163,6 +164,7 @@ class RoundTripControlsWidget extends StatelessWidget {
         backgroundColor: Theme.of(context).colorScheme.tertiary,
         foregroundColor: Colors.white,
         onTap: () async {
+          FirebaseHelper.logScreen("DistanceSelectorScreen(RoundTrip)");
           final distanceKm = await Navigator.push(
             context,
             MaterialPageRoute(

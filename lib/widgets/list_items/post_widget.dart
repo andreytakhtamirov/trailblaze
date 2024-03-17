@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:trailblaze/screens/route_details.dart';
+import 'package:trailblaze/util/firebase_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
 
@@ -16,6 +17,7 @@ class PostView extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        FirebaseHelper.logScreen("RouteDetails(Big)");
         Navigator.push(
           context,
           MaterialPageRoute(

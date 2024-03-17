@@ -5,6 +5,7 @@ import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/constants/ui_control_constants.dart';
 import 'package:trailblaze/data/feature.dart';
 import 'package:trailblaze/screens/distance_selector_screen.dart';
+import 'package:trailblaze/util/firebase_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/widgets/list_items/feature_item.dart';
 import 'package:trailblaze/widgets/map/icon_button_small.dart';
@@ -110,6 +111,7 @@ class FeaturesPanel extends StatelessWidget {
               backgroundColor: Theme.of(context).colorScheme.tertiary,
               foregroundColor: Colors.white,
               onTap: () async {
+                FirebaseHelper.logScreen("DistanceSelectorScreen(Features)");
                 final distanceKm = await Navigator.push(
                   context,
                   MaterialPageRoute(
