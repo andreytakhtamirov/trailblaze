@@ -97,7 +97,6 @@ flutter:
     - assets/app_icon.jpg
     - assets/location-puck.png
     - assets/location-pin.png
-    - .env
 
 
   fonts:

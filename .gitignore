@@ -142,3 +142,4 @@ app.*.symbols
 # Secrets
 encryption_key.json
 lib/secrets/secrets.dart
+lib/secrets/env_tokens.g.dart
