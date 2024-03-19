@@ -139,7 +139,10 @@ app.*.symbols
 !/dev/ci/**/Gemfile.lock
 !.vscode/settings.json
 
+# Generated files
+lib/constants/pubspec.yaml.g.dart
+lib/secrets/env_tokens.g.dart
+
 # Secrets
 encryption_key.json
 lib/secrets/secrets.dart
-lib/secrets/env_tokens.g.dart
