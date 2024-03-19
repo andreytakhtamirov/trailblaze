@@ -34,7 +34,7 @@ dependencies:
   auth0_flutter: ^1.4.1
   mapbox_search: 4.0.0-beta.1
   http: ^0.13.5
-  flutter_dotenv: ^5.0.0
+  secure_dotenv: ^1.0.0
   geolocator: ^9.0.2
   polyline_codec: ^0.1.6
   turf: ^0.0.7
@@ -70,7 +70,8 @@ dev_dependencies:
     sdk: flutter
   flutter_launcher_icons: "^0.13.1"
   build_runner: ^2.4.6
-  pubspec_generator: ^4.0.0
+  pubspec_generator: ^3.0.1
+  secure_dotenv_generator: ^1.0.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

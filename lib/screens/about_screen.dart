@@ -123,9 +123,9 @@ class _AboutScreenState extends State<AboutScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          Pubspec.version.canonical,
-                          style: const TextStyle(
+                        const Text(
+                          version,
+                          style: TextStyle(
                             fontSize: 24,
                             color: Colors.grey,
                           ),
@@ -142,7 +142,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      Pubspec.description,
+                      description,
                       style: TextStyle(
                         fontSize: 20,
                       ),

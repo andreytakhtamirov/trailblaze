@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:trailblaze/secrets/env_tokens.dart';
+import 'package:trailblaze/secrets/secrets.dart';
 
-final String kMapboxAccessToken = dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
+final String kMapboxAccessToken =
+    const Env(kEncryptionKey, kInitializationVector).mapboxAccessToken;
 
 final double kDevicePixelRatio =
     WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
