@@ -1,7 +1,8 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:trailblaze/secrets/env_tokens.dart';
+import 'package:trailblaze/secrets/secrets.dart';
 
-final String kAuth0Scheme = dotenv.env['AUTH0_SCHEME'] ?? '';
-final String kAuth0Domain = dotenv.env['AUTH0_DOMAIN'] ?? '';
-final String kAuth0ClientId = dotenv.env['AUTH0_CLIENT_ID'] ?? '';
+final String kAuth0Scheme = const Env(kEncryptionKey, kInitializationVector).auth0Scheme;
+final String kAuth0Domain = const Env(kEncryptionKey, kInitializationVector).auth0Domain;
+final String kAuth0ClientId = const Env(kEncryptionKey, kInitializationVector).auth0ClientId;
 
 const kFlagProfileDeleted = "PROFILE_DELETED";

@@ -16,19 +16,19 @@ class DependenciesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dependencies = <dynamic, dynamic>{};
-    dependencies.addAll(Pubspec.dependencies);
-    dependencies.addAll(Pubspec.devDependencies);
+    final allDependencies = <dynamic, dynamic>{};
+    allDependencies.addAll(dependencies);
+    allDependencies.addAll(devDependencies);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dependencies'),
       ),
       body: ListView.builder(
-        itemCount: dependencies.length,
+        itemCount: allDependencies.length,
         itemBuilder: (context, index) {
-          final dependency = dependencies.keys.toList()[index];
-          final version = dependencies[dependency];
+          final dependency = allDependencies.keys.toList()[index];
+          final version = allDependencies[dependency];
 
           return ListTile(
             title: InkWell(

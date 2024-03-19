@@ -138,3 +138,11 @@ app.*.symbols
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
 !.vscode/settings.json
+
+# Generated files
+lib/constants/pubspec.yaml.g.dart
+lib/secrets/env_tokens.g.dart
+
+# Secrets
+encryption_key.json
+lib/secrets/secrets.dart
