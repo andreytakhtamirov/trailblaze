@@ -613,8 +613,6 @@ class _MapWidgetState extends State<MapWidget>
     });
 
     final dartz.Either<int, Map<String, dynamic>?> routeResponse;
-    bool isGraphhopperRoute;
-    isGraphhopperRoute = true;
     routeResponse = await createGraphhopperRoute(
       profile,
       waypoints,
@@ -622,22 +620,6 @@ class _MapWidgetState extends State<MapWidget>
       distanceMeters: distance,
       influence: _influenceValue,
     );
-    // if ((isRoundTrip &&
-    //         (profile == TransportationMode.cycling.value ||
-    //             profile == TransportationMode.gravel_cycling.value ||
-    //             profile == TransportationMode.walking.value)) ||
-    //     profile == TransportationMode.gravel_cycling.value) {
-    //   isGraphhopperRoute = true;
-    //   routeResponse = await createGraphhopperRoute(
-    //     profile,
-    //     waypoints,
-    //     isRoundTrip: isRoundTrip,
-    //     distanceMeters: distance,
-    //   );
-    // } else {
-    //   isGraphhopperRoute = false;
-    //   routeResponse = await createRoute(profile, waypoints);
-    // }
 
     setState(() {
       _isContentLoading = false;
@@ -684,7 +666,7 @@ class _MapWidgetState extends State<MapWidget>
         waypoints,
         routeData?['routeOptions'],
         isActive: isFirstRoute,
-        isGraphhopperRoute: isGraphhopperRoute,
+        isGraphhopperRoute: true,
       );
 
       _drawRoute(route);

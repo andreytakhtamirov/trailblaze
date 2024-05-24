@@ -247,6 +247,7 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
                   ],
                 ),
               ),
+              const SizedBox(height: 8),
             ],
           ),
           Positioned(
