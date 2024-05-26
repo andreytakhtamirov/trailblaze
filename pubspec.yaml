@@ -64,6 +64,7 @@ dependencies:
   dartz: ^0.10.1
   firebase_core: ^2.25.4
   firebase_analytics: ^10.8.10
+  onnxruntime: ^1.4.1
 
 dev_dependencies:
   flutter_test:
@@ -97,6 +98,7 @@ flutter:
     - assets/app_icon.jpg
     - assets/location-puck.png
     - assets/location-pin.png
+    - assets/models/blend.onnx
 
 
   fonts:

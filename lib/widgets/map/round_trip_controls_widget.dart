@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/constants/ui_control_constants.dart';
 import 'package:trailblaze/screens/distance_selector_screen.dart';
 import 'package:trailblaze/util/firebase_helper.dart';
@@ -12,7 +11,7 @@ import '../../data/transportation_mode.dart';
 class RoundTripControlsWidget extends StatelessWidget {
   final TransportationMode selectedMode;
   final void Function() onBackClicked;
-  final void Function(TransportationMode) onModeChanged;
+  final void Function(TransportationMode, double?) onModeChanged;
   final double? selectedDistanceMeters;
   final List<double>? center;
   final Function({double? distanceMeters}) onDistanceChanged;
@@ -76,7 +75,7 @@ class RoundTripControlsWidget extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
                 child: TransportationModeWidget(
-                    onSelected: onModeChanged,
+                    onSelected: (mode) => {onModeChanged(mode, null)},
                     initialMode: selectedMode,
                     isMinifiedView: selectedMode == TransportationMode.none),
               ),

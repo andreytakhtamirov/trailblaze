@@ -18,7 +18,7 @@ Android release and development builds:
 - 🏔️🚴 **[BETA] Routing for gravel cycling, prioritizing unpaved trails (available only in North America)**.
 - Sign in and customize your profile.
 
-</br>
+<br>
 
 - *[COMING SOON] Discover page with routes from other users.*
 - *[COMING SOON] Save and share your own routes.*

@@ -61,6 +61,7 @@ class _MapWidgetState extends State<MapWidget>
   MapBoxPlace? _selectedPlace;
   MapBoxPlace _startingLocation = MapBoxPlace(placeName: "My Location");
   String _selectedMode = kDefaultTransportationMode.value;
+  num? _influenceValue;
   List<TrailblazeRoute> routesList = [];
   TrailblazeRoute? _selectedRoute;
   bool _isContentLoading = false;
@@ -612,23 +613,13 @@ class _MapWidgetState extends State<MapWidget>
     });
 
     final dartz.Either<int, Map<String, dynamic>?> routeResponse;
-    bool isGraphhopperRoute;
-    if ((isRoundTrip &&
-            (profile == TransportationMode.cycling.value ||
-                profile == TransportationMode.gravel_cycling.value ||
-                profile == TransportationMode.walking.value)) ||
-        profile == TransportationMode.gravel_cycling.value) {
-      isGraphhopperRoute = true;
-      routeResponse = await createGraphhopperRoute(
-        profile,
-        waypoints,
-        isRoundTrip: isRoundTrip,
-        distanceMeters: distance,
-      );
-    } else {
-      isGraphhopperRoute = false;
-      routeResponse = await createRoute(profile, waypoints);
-    }
+    routeResponse = await createGraphhopperRoute(
+      profile,
+      waypoints,
+      isRoundTrip: isRoundTrip,
+      distanceMeters: distance,
+      influence: _influenceValue,
+    );
 
     setState(() {
       _isContentLoading = false;
@@ -675,7 +666,7 @@ class _MapWidgetState extends State<MapWidget>
         waypoints,
         routeData?['routeOptions'],
         isActive: isFirstRoute,
-        isGraphhopperRoute: isGraphhopperRoute,
+        isGraphhopperRoute: true,
       );
 
       _drawRoute(route);
@@ -1060,9 +1051,10 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
-  void _onTransportationModeChanged(TransportationMode mode) {
+  void _onRouteSettingsChanged(TransportationMode mode, num? influenceValue) {
     setState(() {
       _selectedMode = mode.value;
+      _influenceValue = influenceValue;
     });
 
     _getDirectionsFromSettings();
@@ -1663,7 +1655,7 @@ class _MapWidgetState extends State<MapWidget>
           onTap: _showEditDirectionsScreen,
           child: PickedLocationsWidget(
             onBackClicked: _onDirectionsBackClicked,
-            onModeChanged: _onTransportationModeChanged,
+            onOptionsChanged: _onRouteSettingsChanged,
             startingLocation: _startingLocation,
             endingLocation: _selectedPlace,
             waypoints: const [],
@@ -1680,7 +1672,7 @@ class _MapWidgetState extends State<MapWidget>
       duration: const Duration(milliseconds: 300),
       child: RoundTripControlsWidget(
         onBackClicked: _onDirectionsBackClicked,
-        onModeChanged: _onTransportationModeChanged,
+        onModeChanged: _onRouteSettingsChanged,
         selectedMode: getTransportationModeFromString(_selectedMode),
         selectedDistanceMeters: _selectedDistanceMeters,
         onDistanceChanged: _queryForRoundTrip,
