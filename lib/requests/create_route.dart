@@ -3,12 +3,16 @@ import 'dart:developer';
 
 import 'package:dartz/dartz.dart';
 import 'package:http/http.dart' as http;
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 import '../constants/request_constants.dart';
 
 Future<Either<int, Map<String, dynamic>?>> createGraphhopperRoute(
     String profile, List<dynamic> waypoints,
-    {bool isRoundTrip = false, double? distanceMeters, num? influence}) async {
+    {bool isRoundTrip = false,
+    double? distanceMeters,
+    Polygon? ignoreArea,
+    num? influence}) async {
   const endpoint = '$kBaseUrl/v1/routes/create-route-graphhopper';
 
   final body = jsonEncode({
@@ -16,6 +20,7 @@ Future<Either<int, Map<String, dynamic>?>> createGraphhopperRoute(
     'profile': profile,
     'waypoints': waypoints,
     'influence': influence,
+    'ignore_area': ignoreArea,
     if (isRoundTrip) 'distance': distanceMeters,
   });
 

@@ -30,7 +30,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  mapbox_maps_flutter: ^1.0.0
+  mapbox_maps_flutter: ^2.0.0-rc.1
   auth0_flutter: ^1.4.1
   mapbox_search: 4.0.0-beta.1
   http: ^0.13.5

@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:ui';
 
 import 'package:dartz/dartz.dart' as dartz;
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -69,6 +71,7 @@ class _MapWidgetState extends State<MapWidget>
   bool _manuallySelectedPlace = false;
   bool _pauseUiCallbacks = false;
   ViewMode _viewMode = ViewMode.search;
+  ViewMode _secondaryViewMode = ViewMode.none;
   ViewMode _previousViewMode = ViewMode.search;
   late Completer<void> _mapInitializedCompleter;
   AnnotationHelper? annotationHelper;
@@ -159,16 +162,26 @@ class _MapWidgetState extends State<MapWidget>
 
     final camera = await _mapboxMap.getCameraState();
     setState(() {
-      _currentOriginCoordinates =
-          CameraHelper.centerToCoordinatesLonLat(camera.center);
+      _currentOriginCoordinates = [
+        camera.center.coordinates.lng.toDouble(),
+        camera.center.coordinates.lat.toDouble()
+      ];
     });
 
-    final circleAnnotationManager =
-        await mapboxMap.annotations.createCircleAnnotationManager();
     final pointAnnotationManager =
         await mapboxMap.annotations.createPointAnnotationManager();
-    annotationHelper =
-        AnnotationHelper(pointAnnotationManager, circleAnnotationManager);
+    final circleAnnotationManager =
+        await mapboxMap.annotations.createCircleAnnotationManager();
+    final ignoreAreaAnnotationManager =
+        await mapboxMap.annotations.createCircleAnnotationManager();
+    final polygonAnnotationManager =
+        await mapboxMap.annotations.createPolygonAnnotationManager();
+    annotationHelper = AnnotationHelper(
+      pointAnnotationManager,
+      circleAnnotationManager,
+      ignoreAreaAnnotationManager,
+      polygonAnnotationManager,
+    );
 
     _mapInitializedCompleter.complete();
   }
@@ -214,18 +227,10 @@ class _MapWidgetState extends State<MapWidget>
     final currentFeature = _features![pageScrollProgress.floor()];
     final nextFeature = _features![pageScrollProgress.ceil()];
 
-    final Map<String?, Object?> currentCameraCenter = {
-      'coordinates': [
-        currentFeature.center['lon'],
-        currentFeature.center['lat']
-      ],
-    };
-    final Map<String?, Object?> nextCameraCenter = {
-      'coordinates': [
-        nextFeature.center['lon'],
-        nextFeature.center['lat'],
-      ],
-    };
+    final currentCameraCenter = mbm.Position(
+        currentFeature.center['lon'], currentFeature.center['lat']);
+    final nextCameraCenter =
+        mbm.Position(nextFeature.center['lon'], nextFeature.center['lat']);
 
     final change = pageScrollProgress - pageScrollProgress.floor();
     final newCenter = CameraHelper.interpolatePoints(
@@ -237,7 +242,7 @@ class _MapWidgetState extends State<MapWidget>
       zoom: cameraState.zoom < 10 || cameraState.zoom > 14
           ? kDefaultCameraState.zoom
           : cameraState.zoom,
-      center: newCenter,
+      center: mbm.Point(coordinates: newCenter),
       bearing: cameraState.bearing,
       padding: camera.padding,
       pitch: cameraState.pitch,
@@ -262,13 +267,8 @@ class _MapWidgetState extends State<MapWidget>
 
       // Fly to place after map is fully initialized to not interfere with animations.
       _mapInitializedCompleter.future.then((_) {
-        final Map<String?, Object?> coordinates = {
-          'coordinates': [
-            f.center['lon'],
-            f.center['lat'],
-          ],
-        };
-        annotationHelper?.drawSingleAnnotation(coordinates);
+        annotationHelper?.drawSingleAnnotation(
+            mbm.Position(f.center['lon'], f.center['lat']));
       });
     }
   }
@@ -276,40 +276,29 @@ class _MapWidgetState extends State<MapWidget>
   Future<void> _updateFeatures() async {
     if (_features == null) return;
 
-    final List<Map<String?, Object?>> coordinatesList = [];
+    final List<mbm.Point> coordinatesList = [];
     for (var f in _features!) {
-      final Map<String?, Object?> coordinates = {
-        'coordinates': [
-          f.center['lon'],
-          f.center['lat'],
-        ],
-      };
-      coordinatesList.add(coordinates);
+      coordinatesList.add(mbm.Point(
+          coordinates: mbm.Position(f.center['lon'], f.center['lat'])));
     }
 
     annotationHelper?.drawCircleAnnotationMulti(coordinatesList);
     await _flyToFeatures(coordinatesList: coordinatesList);
   }
 
-  Future<void> _flyToFeatures(
-      {List<Map<String?, Object?>>? coordinatesList}) async {
+  Future<void> _flyToFeatures({List<mbm.Point>? coordinatesList}) async {
     await _clearCameraPadding();
     if (coordinatesList == null) {
       coordinatesList = [];
       for (var f in _features!) {
-        final Map<String?, Object?> coordinates = {
-          'coordinates': [
-            f.center['lon'],
-            f.center['lat'],
-          ],
-        };
-        coordinatesList.add(coordinates);
+        coordinatesList.add(mbm.Point(
+            coordinates: mbm.Position(f.center['lon'], f.center['lat'])));
       }
     }
 
     if (coordinatesList.length == 1) {
       // Only one feature so just fly to it.
-      _flyToPlace(coordinatesList.first);
+      _flyToPlace(coordinatesList.first.coordinates);
       return;
     }
 
@@ -543,19 +532,17 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   Future<mbm.CameraOptions> _getCameraOptions(
-      {Map<String?, Object?>? overrideCenter}) async {
+      {mbm.Point? overrideCenter}) async {
     geo.Position? position = await _getCurrentPosition();
 
-    Map<String?, Object?>? center;
+    mbm.Point center;
 
     if (overrideCenter == null) {
       if (position != null &&
           position.latitude != 0 &&
           position.longitude != 0) {
         center = mbm.Point(
-                coordinates:
-                    mbm.Position(position.longitude, position.latitude))
-            .toJson();
+            coordinates: mbm.Position(position.longitude, position.latitude));
       } else {
         center = kDefaultCameraState.center;
       }
@@ -618,6 +605,7 @@ class _MapWidgetState extends State<MapWidget>
       waypoints,
       isRoundTrip: isRoundTrip,
       distanceMeters: distance,
+      ignoreArea: annotationHelper?.getIgnorePolygon(),
       influence: _influenceValue,
     );
 
@@ -720,10 +708,10 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
-  Future<void> _flyToPlace(Map<String?, dynamic> coordinates) {
+  Future<void> _flyToPlace(mbm.Position coordinates) {
     return _mapFlyToOptions(
       mbm.CameraOptions(
-          center: coordinates,
+          center: mbm.Point(coordinates: coordinates),
           padding: _getCameraPadding(),
           zoom: kDefaultCameraState.zoom + kPointSelectedCameraZoomOffset,
           bearing: kDefaultCameraState.bearing,
@@ -774,18 +762,12 @@ class _MapWidgetState extends State<MapWidget>
     for (var i = 0; i < route.waypoints.length; i++) {
       final waypoint = route.waypoints[i];
       final mbp = MapBoxPlace.fromRawJson(waypoint);
-
-      final Map<String?, Object?> coordinates = {
-        'coordinates': [
-          mbp.center?[0],
-          mbp.center?[1],
-        ],
-      };
+      final point = mbm.Position(mbp.center?[0] ?? 0, mbp.center?[1] ?? 0);
 
       if (i == 0) {
-        annotationHelper?.drawStartAnnotation(coordinates);
+        annotationHelper?.drawStartAnnotation(point);
       } else {
-        annotationHelper?.drawSingleAnnotation(coordinates);
+        annotationHelper?.drawSingleAnnotation(point);
       }
     }
   }
@@ -824,12 +806,11 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   mbm.CameraOptions _cameraForUserPosition(geo.Position? position) {
-    Map<String?, Object?>? center;
+    final mbm.Point center;
 
     if (position != null && position.latitude != 0 && position.longitude != 0) {
       center = mbm.Point(
-              coordinates: mbm.Position(position.longitude, position.latitude))
-          .toJson();
+          coordinates: mbm.Position(position.longitude, position.latitude));
     } else {
       center = kDefaultCameraState.center;
     }
@@ -848,8 +829,10 @@ class _MapWidgetState extends State<MapWidget>
   void _setNextOriginCoordinates(mbm.CameraOptions options) {
     if (options.center != null) {
       setState(() {
-        _nextOriginCoordinates =
-            CameraHelper.centerToCoordinatesLonLat(options.center!);
+        _nextOriginCoordinates = [
+          options.center?.coordinates.lng.toDouble() ?? 0,
+          options.center?.coordinates.lat.toDouble() ?? 0
+        ];
       });
     }
   }
@@ -888,12 +871,9 @@ class _MapWidgetState extends State<MapWidget>
         });
       }
 
-      final coordinates = <String, Object?>{
-        'coordinates': place.center?.cast<num>()
-      };
-
-      _flyToPlace(coordinates);
-      annotationHelper?.drawSingleAnnotation(coordinates);
+      _flyToPlace(mbm.Position(place.center?[0] ?? 0, place.center?[1] ?? 0));
+      annotationHelper?.drawSingleAnnotation(
+          mbm.Position(place.center?[0] ?? 0, place.center?[1] ?? 0));
     } else {
       annotationHelper?.deleteAllAnnotations();
     }
@@ -923,7 +903,38 @@ class _MapWidgetState extends State<MapWidget>
     _displayRoute(_selectedMode, waypointsJson);
   }
 
-  Future<void> _onMapTapListener(mbm.ScreenCoordinate coordinate) async {
+  Future<void> _onMapTapListener(mbm.MapContentGestureContext context) async {
+    final coordinate = context.point.coordinates;
+
+    if (_secondaryViewMode == ViewMode.ignoreArea) {
+      final cameraState = await _mapboxMap.getCameraState();
+      mbm.CircleAnnotation? closestAnnotation;
+      if (annotationHelper != null &&
+          annotationHelper!.ignoreAnnotations.isNotEmpty) {
+        closestAnnotation =
+            await AnnotationHelper.getCircleAnnotationByClickProximity(
+          annotationHelper!.ignoreAnnotations,
+          coordinate.lng,
+          coordinate.lat,
+          cameraState.zoom,
+        );
+        if (closestAnnotation != null) {
+          annotationHelper?.ignoreAnnotations.removeWhere(
+              (item) => item.geometry == closestAnnotation!.geometry);
+        }
+      }
+
+      if (closestAnnotation == null) {
+        await annotationHelper?.drawIgnoreAnnotation(coordinate);
+      }
+
+      if (annotationHelper != null &&
+          annotationHelper!.ignoreAnnotations.length > 2) {
+        annotationHelper?.drawPolygonAnnotation();
+      }
+      return;
+    }
+
     if (_viewMode != ViewMode.directions) {
       await annotationHelper?.deletePointAnnotations();
     }
@@ -934,8 +945,8 @@ class _MapWidgetState extends State<MapWidget>
 
       selectedRoute = await AnnotationHelper.getRouteByClickProximity(
         routesList,
-        coordinate.y,
-        coordinate.x,
+        coordinate.lng,
+        coordinate.lat,
         cameraState.zoom,
       );
 
@@ -952,27 +963,30 @@ class _MapWidgetState extends State<MapWidget>
     } else if (_viewMode == ViewMode.parks && _features != null) {
       final cameraState = await _mapboxMap.getCameraState();
       final closestFeature = await AnnotationHelper.getFeatureByClickProximity(
-          _features!, coordinate.y, coordinate.x, cameraState.zoom);
+          _features!, coordinate.lng, coordinate.lat, cameraState.zoom);
 
       if (closestFeature != null) {
         onManuallySelectFeature(closestFeature);
         return;
       } else {
         await _togglePanel(false);
-        _selectOriginOnMap([coordinate.y, coordinate.x]);
+        _selectOriginOnMap(
+            [coordinate.lng.toDouble(), coordinate.lat.toDouble()]);
         return;
       }
     } else if (_viewMode == ViewMode.shuffle) {
-      _selectOriginOnMap([coordinate.y, coordinate.x]);
+      _selectOriginOnMap(
+          [coordinate.lng.toDouble(), coordinate.lat.toDouble()]);
       return;
     }
 
-    MapBoxPlace place = MapBoxPlace(center: [coordinate.y, coordinate.x]);
+    MapBoxPlace place = MapBoxPlace(
+        center: [coordinate.lng.toDouble(), coordinate.lat.toDouble()]);
 
     _onSelectPlace(place);
 
-    Future<List<MapBoxPlace>?> futurePlaces =
-        geocoding.getAddress(Location(lat: coordinate.x, lng: coordinate.y));
+    Future<List<MapBoxPlace>?> futurePlaces = geocoding.getAddress(Location(
+        lat: coordinate.lat.toDouble(), lng: coordinate.lng.toDouble()));
 
     futurePlaces.then((places) {
       setState(() {
@@ -997,16 +1011,17 @@ class _MapWidgetState extends State<MapWidget>
       }
 
       placeName ??=
-          "(${coordinate.y.toStringAsFixed(4)}, ${coordinate.x.toStringAsFixed(4)})";
+          "(${coordinate.lng.toStringAsFixed(4)}, ${coordinate.lat.toStringAsFixed(4)})";
 
       MapBoxPlace updatedPlace = MapBoxPlace(
-          placeName: placeName, center: [coordinate.y, coordinate.x]);
+          placeName: placeName,
+          center: [coordinate.lng.toDouble(), coordinate.lat.toDouble()]);
       _onSelectPlace(updatedPlace, isPlaceDataUpdate: true);
       _setMapControlSettings();
     });
   }
 
-  void _onMapScrollListener(mbm.ScreenCoordinate c) async {
+  void _onMapScrollListener(mbm.MapContentGestureContext context) async {
     if (_isCameraLocked) {
       setState(() {
         _isCameraLocked = false;
@@ -1023,10 +1038,8 @@ class _MapWidgetState extends State<MapWidget>
       _nextOriginCoordinates = coordinates;
       _isOriginChanged = true;
     });
-    final Map<String?, Object?> jsonCoordinates = {
-      'coordinates': _nextOriginCoordinates,
-    };
-    annotationHelper?.drawOriginAnnotation(jsonCoordinates);
+    annotationHelper?.drawOriginAnnotation(
+        mbm.Position(_nextOriginCoordinates![0], _nextOriginCoordinates![1]));
   }
 
   void _onDirectionsBackClicked() {
@@ -1243,6 +1256,17 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
+  void _toggleIgnoreArea() {
+    if (_secondaryViewMode == ViewMode.ignoreArea) {
+      annotationHelper?.hideIgnoreAnnotations();
+      _setSecondaryViewMode(ViewMode.none);
+      _getDirectionsFromSettings();
+    } else {
+      annotationHelper?.showIgnoreAnnotations();
+      _setSecondaryViewMode(ViewMode.ignoreArea);
+    }
+  }
+
   Future<void> _togglePanel(bool isOpen) async {
     if (!_panelController.isAttached) {
       return;
@@ -1293,7 +1317,12 @@ class _MapWidgetState extends State<MapWidget>
         (_viewMode == ViewMode.search ||
             _manuallySelectedPlace ||
             _viewMode == ViewMode.directions) &&
-        _viewMode != ViewMode.parks;
+        _viewMode != ViewMode.parks &&
+        _secondaryViewMode != ViewMode.ignoreArea;
+  }
+
+  bool _shouldShowIgnoreAreaTooltip() {
+    return _secondaryViewMode == ViewMode.ignoreArea;
   }
 
   Future<void> _clearCameraPadding() async {
@@ -1335,6 +1364,12 @@ class _MapWidgetState extends State<MapWidget>
 
     _updateDirectionsFabHeight(_panelController.panelPosition);
     _setMapControlSettings();
+  }
+
+  Future<void> _setSecondaryViewMode(ViewMode newViewMode) async {
+    setState(() {
+      _secondaryViewMode = newViewMode;
+    });
   }
 
   @override
@@ -1524,6 +1559,35 @@ class _MapWidgetState extends State<MapWidget>
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
+                                    if (_shouldShowIgnoreAreaTooltip())
+                                      _showIgnoreAreaTooltip(),
+                                    Visibility(
+                                      visible:
+                                          _viewMode == ViewMode.directions &&
+                                              _selectedRoute != null,
+                                      child: Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                            16, 8, 16, 0),
+                                        child: IconButtonSmall(
+                                          text: _shouldShowIgnoreAreaTooltip()
+                                              ? 'Done'
+                                              : 'Avoid Area',
+                                          icon: _secondaryViewMode ==
+                                                  ViewMode.ignoreArea
+                                              ? Icons.check
+                                              : Icons.block,
+                                          onTap: _toggleIgnoreArea,
+                                          foregroundColor: _secondaryViewMode ==
+                                                  ViewMode.ignoreArea
+                                              ? Colors.white
+                                              : Colors.red,
+                                          backgroundColor:
+                                              _shouldShowIgnoreAreaTooltip()
+                                                  ? Colors.redAccent
+                                                  : Colors.white,
+                                        ),
+                                      ),
+                                    ),
                                     Padding(
                                       padding: const EdgeInsets.fromLTRB(
                                           16, 8, 16, 0),
@@ -1677,6 +1741,40 @@ class _MapWidgetState extends State<MapWidget>
         selectedDistanceMeters: _selectedDistanceMeters,
         onDistanceChanged: _queryForRoundTrip,
         center: _currentOriginCoordinates,
+      ),
+    );
+  }
+
+  Widget _showIgnoreAreaTooltip() {
+    return Padding(
+      key: _topWidgetKey,
+      padding: const EdgeInsets.all(8.0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: 5.0,
+            sigmaY: 5.0,
+          ),
+          child: Container(
+            width: MediaQuery.of(context).size.width - 16,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'Click to create/delete a point.\n\nAdd at least 3 points to create an area to ignore.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
