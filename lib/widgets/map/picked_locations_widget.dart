@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/util/blend_helper.dart';
-import 'package:trailblaze/widgets/map/icon_button_small.dart';
 import 'package:trailblaze/widgets/map/transportation_mode_widget.dart';
 
 import '../../data/transportation_mode.dart';
@@ -44,6 +43,9 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
   @override
   void initState() {
     super.initState();
+    if (widget.startingLocation != null && widget.endingLocation != null) {
+      _calculateControlBounds();
+    }
   }
 
   @override

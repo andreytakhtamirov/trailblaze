@@ -1,7 +1,7 @@
 import 'package:trailblaze/secrets/env_tokens.dart';
 import 'package:trailblaze/secrets/secrets.dart';
 
-const kBaseUrl = 'http://localhost:3000';
+const kBaseUrl = 'https://trailblaze.azurewebsites.net';
 
 final String kAppToken =
     const Env(kEncryptionKey, kInitializationVector).trailblazeAppToken;
