@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trailblaze/constants/map_constants.dart';
@@ -13,19 +11,22 @@ import 'package:turf/turf.dart' as turf;
 class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
   final mbm.PointAnnotationManager _annotationManager;
   final mbm.CircleAnnotationManager _circleAnnotationManager;
-  final mbm.CircleAnnotationManager _ignoreAnnotationManager;
+  final mbm.CircleAnnotationManager _avoidAnnotationManager;
   final mbm.PolygonAnnotationManager _polygonAnnotationManager;
+  final Function() onAvoidAnnotationClick;
+
   final List<mbm.PointAnnotationOptions> pointAnnotations = [];
   final List<mbm.CircleAnnotation> circleAnnotations = [];
-  final List<mbm.CircleAnnotation> ignoreAnnotations = [];
+  final List<mbm.CircleAnnotation> avoidAnnotations = [];
   final List<mbm.PolygonAnnotation> polygonAnnotations = [];
   mbm.CircleAnnotation? selectOriginAnnotation;
 
   AnnotationHelper(
     this._annotationManager,
     this._circleAnnotationManager,
-    this._ignoreAnnotationManager,
+    this._avoidAnnotationManager,
     this._polygonAnnotationManager,
+    this.onAvoidAnnotationClick,
   );
 
   static Future<tb.Feature?> getFeatureByClickProximity(
@@ -140,7 +141,7 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
     }
   }
 
-  Future<void> drawIgnoreAnnotation(mbm.Position coordinates) async {
+  Future<void> drawAvoidAnnotation(mbm.Position coordinates) async {
     var options = mbm.CircleAnnotationOptions(
       geometry: mbm.Point(coordinates: coordinates),
       circleStrokeColor: Colors.red.value,
@@ -148,28 +149,33 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
       circleStrokeWidth: kFeaturePinSize,
     );
 
-    final annotation = await _ignoreAnnotationManager.create(options);
-    ignoreAnnotations.add(annotation);
-    _ignoreAnnotationManager.addOnCircleAnnotationClickListener(this);
+    final annotation = await _avoidAnnotationManager.create(options);
+    avoidAnnotations.add(annotation);
+    _avoidAnnotationManager.addOnCircleAnnotationClickListener(this);
   }
 
   void drawPolygonAnnotation() async {
     await _polygonAnnotationManager.deleteAll();
-    final poly = getIgnorePolygon();
+    final poly = getAvoidPolygon();
     var options = mbm.PolygonAnnotationOptions(
-      geometry: poly,
+      geometry: poly!,
       fillColor: Colors.red.value,
-      fillOpacity: 0.5,
+      fillOpacity: 0.6,
       fillSortKey: 2,
+      fillOutlineColor: Colors.black.value,
     );
     final annotation = await _polygonAnnotationManager.create(options);
     polygonAnnotations.add(annotation);
   }
 
-  mbm.Polygon getIgnorePolygon() {
+  mbm.Polygon? getAvoidPolygon() {
+    if (avoidAnnotations.length < 3) {
+      return null;
+    }
+
     List<mbm.Position> coordinates = [];
-    for (int i = 0; i < ignoreAnnotations.length; i++) {
-      coordinates.add(ignoreAnnotations[i].geometry.coordinates);
+    for (int i = 0; i < avoidAnnotations.length; i++) {
+      coordinates.add(avoidAnnotations[i].geometry.coordinates);
     }
 
     return mbm.Polygon(coordinates: [DistanceHelper.buildPolygon(coordinates)]);
@@ -242,18 +248,19 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
     await _circleAnnotationManager.deleteAll();
   }
 
-  Future<void> deleteIgnoreAnnotations() async {
-    ignoreAnnotations.clear();
-    await _ignoreAnnotationManager.deleteAll();
+  Future<void> deleteAvoidArea() async {
+    avoidAnnotations.clear();
+    await _avoidAnnotationManager.deleteAll();
+    await _polygonAnnotationManager.deleteAll();
   }
 
-  Future<void> hideIgnoreAnnotations() async {
-    await _ignoreAnnotationManager.deleteAll();
+  Future<void> hideAvoidAnnotations() async {
+    await _avoidAnnotationManager.deleteAll();
   }
 
-  Future<void> showIgnoreAnnotations() async {
+  Future<void> showAvoidAnnotations() async {
     final List<mbm.CircleAnnotationOptions> options = [];
-    for (mbm.CircleAnnotation a in ignoreAnnotations) {
+    for (mbm.CircleAnnotation a in avoidAnnotations) {
       options.add(mbm.CircleAnnotationOptions(
         geometry: a.geometry,
         circleStrokeColor: Colors.red.value,
@@ -261,7 +268,7 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
         circleStrokeWidth: kFeaturePinSize,
       ));
     }
-    await _ignoreAnnotationManager.createMulti(options);
+    await _avoidAnnotationManager.createMulti(options);
   }
 
   Future<void> deleteOriginAnnotation() async {
@@ -277,7 +284,10 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
 
   @override
   void onCircleAnnotationClick(mbm.CircleAnnotation annotation) {
-    _ignoreAnnotationManager.delete(annotation);
+    onAvoidAnnotationClick();
+    _avoidAnnotationManager.delete(annotation);
     _polygonAnnotationManager.deleteAll();
+    avoidAnnotations
+        .removeWhere((item) => item.geometry == annotation.geometry);
   }
 }

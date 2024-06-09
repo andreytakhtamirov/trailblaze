@@ -26,6 +26,10 @@ class FormatHelper {
     return "${(distance != null ? distance / 1000 : 0).toStringAsFixed(!noRemainder ? 2 : 0)} km";
   }
 
+  static String formatSquareDistance(num? distance, {bool noRemainder = false}) {
+    return "${(distance != null ? distance / 1e6 : 0).toStringAsFixed(!noRemainder ? 2 : 0)} km\u00B2";
+  }
+
   static String formatLikesCount(int likes) {
     if (likes >= 1000000) {
       return "${(likes / 1000000).toStringAsFixed(1)}M";

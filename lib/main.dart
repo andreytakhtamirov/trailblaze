@@ -74,6 +74,9 @@ class MyApp extends StatelessWidget {
           indicatorColor: Color(0xFF75A56C),
           indicatorSize: TabBarIndicatorSize.tab,
         ),
+        sliderTheme: const SliderThemeData(
+          inactiveTrackColor: Color(0xFFBDD2DD),
+        ),
         // TODO textTheme
       ),
       home: const MainPage(),

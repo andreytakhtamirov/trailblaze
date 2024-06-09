@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:developer';
-import 'dart:ui';
+import 'dart:io';
 
+import 'package:turf/turf.dart' as turf;
 import 'package:dartz/dartz.dart' as dartz;
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -68,10 +68,10 @@ class _MapWidgetState extends State<MapWidget>
   TrailblazeRoute? _selectedRoute;
   bool _isContentLoading = false;
   bool _mapStyleTouchContext = false;
+  bool _routeControlsTouchContext = false;
   bool _manuallySelectedPlace = false;
   bool _pauseUiCallbacks = false;
   ViewMode _viewMode = ViewMode.search;
-  ViewMode _secondaryViewMode = ViewMode.none;
   ViewMode _previousViewMode = ViewMode.search;
   late Completer<void> _mapInitializedCompleter;
   AnnotationHelper? annotationHelper;
@@ -85,6 +85,8 @@ class _MapWidgetState extends State<MapWidget>
 
   bool _isOriginChanged = false;
   bool _isCameraLocked = false;
+  bool _isAvoidAnnotationClicked = false;
+
   List<double>? _currentOriginCoordinates;
   List<double>? _nextOriginCoordinates;
 
@@ -102,6 +104,9 @@ class _MapWidgetState extends State<MapWidget>
     viewportFraction: 0.7,
     keepPage: false,
   );
+
+  bool _isEditingAvoidArea = false;
+  num? _area;
 
   @override
   void initState() {
@@ -121,11 +126,17 @@ class _MapWidgetState extends State<MapWidget>
     });
 
     if (widget.routeToDisplay != null) {
-      _mapInitializedCompleter.future.then(
-        (value) => {
-          _loadRouteToDisplay(),
-        },
-      );
+      if (Platform.isAndroid) {
+        Future.delayed(const Duration(milliseconds: 50), () {
+          _mapInitializedCompleter.future.then((value) {
+            _loadRouteToDisplay();
+          });
+        });
+      } else {
+        _mapInitializedCompleter.future.then((value) {
+          _loadRouteToDisplay();
+        });
+      }
     }
   }
 
@@ -172,15 +183,20 @@ class _MapWidgetState extends State<MapWidget>
         await mapboxMap.annotations.createPointAnnotationManager();
     final circleAnnotationManager =
         await mapboxMap.annotations.createCircleAnnotationManager();
-    final ignoreAreaAnnotationManager =
+    final avoidAreaAnnotationManager =
         await mapboxMap.annotations.createCircleAnnotationManager();
     final polygonAnnotationManager =
         await mapboxMap.annotations.createPolygonAnnotationManager();
     annotationHelper = AnnotationHelper(
       pointAnnotationManager,
       circleAnnotationManager,
-      ignoreAreaAnnotationManager,
+      avoidAreaAnnotationManager,
       polygonAnnotationManager,
+      () {
+        setState(() {
+          _isAvoidAnnotationClicked = true;
+        });
+      },
     );
 
     _mapInitializedCompleter.complete();
@@ -403,70 +419,83 @@ class _MapWidgetState extends State<MapWidget>
     _getDirectionsFromSettings();
   }
 
-  void _setMapControlSettings() async {
-    double topOffset = _getTopOffset();
+  void _setMapControlSettings() {
+    Timer(const Duration(milliseconds: 300), () {
+      if (_isEditingAvoidArea) {
+        _mapboxMap.scaleBar
+            .updateSettings(mbm.ScaleBarSettings(enabled: false));
+        _mapboxMap.compass.updateSettings(mbm.CompassSettings(enabled: false));
+        return;
+      }
 
-    final mbm.CompassSettings compassSettings;
-    final mbm.ScaleBarSettings scaleBarSettings;
+      double topOffset = _getTopOffset();
 
-    if ((widget.isInteractiveMap &&
-            _viewMode != ViewMode.shuffle &&
-            _viewMode != ViewMode.directions) ||
-        _viewMode == ViewMode.parks) {
-      topOffset += kOptionsPillHeight;
-    }
+      final mbm.CompassSettings compassSettings;
+      final mbm.ScaleBarSettings scaleBarSettings;
 
-    if (!widget.forceTopBottomPadding) {
-      compassSettings = mbm.CompassSettings(
-          position: kDefaultCompassSettings.position,
-          marginTop: kDefaultCompassSettings.marginTop! + topOffset,
-          marginBottom: kDefaultCompassSettings.marginBottom,
-          marginLeft: kDefaultCompassSettings.marginLeft,
-          marginRight: kDefaultCompassSettings.marginRight);
-      scaleBarSettings = mbm.ScaleBarSettings(
-          isMetricUnits: kDefaultScaleBarSettings.isMetricUnits,
-          position: kDefaultScaleBarSettings.position,
-          marginTop: kDefaultScaleBarSettings.marginTop! + topOffset,
-          marginBottom: kDefaultScaleBarSettings.marginBottom,
-          marginLeft: kDefaultScaleBarSettings.marginLeft,
-          marginRight: kDefaultScaleBarSettings.marginRight);
-    } else {
-      compassSettings = mbm.CompassSettings(
-          position: kPostDetailsCompassSettings.position,
-          marginTop: kPostDetailsCompassSettings.marginTop! + topOffset,
-          marginBottom: kPostDetailsCompassSettings.marginBottom,
-          marginLeft: kPostDetailsCompassSettings.marginLeft,
-          marginRight: kPostDetailsCompassSettings.marginRight);
-      scaleBarSettings = mbm.ScaleBarSettings(
-          isMetricUnits: kPostDetailsScaleBarSettings.isMetricUnits,
-          position: kPostDetailsScaleBarSettings.position,
-          marginTop: kPostDetailsScaleBarSettings.marginTop! + topOffset,
-          marginBottom: kPostDetailsScaleBarSettings.marginBottom,
-          marginLeft: kPostDetailsScaleBarSettings.marginLeft,
-          marginRight: kPostDetailsScaleBarSettings.marginRight);
-    }
+      if ((widget.isInteractiveMap &&
+              _viewMode != ViewMode.shuffle &&
+              _viewMode != ViewMode.directions) ||
+          _viewMode == ViewMode.parks) {
+        topOffset += kOptionsPillHeight;
+      }
 
-    final num bottomOffset = _getMinPanelHeight();
+      if (!widget.forceTopBottomPadding) {
+        compassSettings = mbm.CompassSettings(
+            enabled: true,
+            position: kDefaultCompassSettings.position,
+            marginTop: kDefaultCompassSettings.marginTop! + topOffset,
+            marginBottom: kDefaultCompassSettings.marginBottom,
+            marginLeft: kDefaultCompassSettings.marginLeft,
+            marginRight: kDefaultCompassSettings.marginRight);
+        scaleBarSettings = mbm.ScaleBarSettings(
+            enabled: true,
+            isMetricUnits: kDefaultScaleBarSettings.isMetricUnits,
+            position: kDefaultScaleBarSettings.position,
+            marginTop: kDefaultScaleBarSettings.marginTop! + topOffset,
+            marginBottom: kDefaultScaleBarSettings.marginBottom,
+            marginLeft: kDefaultScaleBarSettings.marginLeft,
+            marginRight: kDefaultScaleBarSettings.marginRight);
+      } else {
+        compassSettings = mbm.CompassSettings(
+            enabled: true,
+            position: kPostDetailsCompassSettings.position,
+            marginTop: kPostDetailsCompassSettings.marginTop! + topOffset,
+            marginBottom: kPostDetailsCompassSettings.marginBottom,
+            marginLeft: kPostDetailsCompassSettings.marginLeft,
+            marginRight: kPostDetailsCompassSettings.marginRight);
+        scaleBarSettings = mbm.ScaleBarSettings(
+            enabled: true,
+            isMetricUnits: kPostDetailsScaleBarSettings.isMetricUnits,
+            position: kPostDetailsScaleBarSettings.position,
+            marginTop: kPostDetailsScaleBarSettings.marginTop! + topOffset,
+            marginBottom: kPostDetailsScaleBarSettings.marginBottom,
+            marginLeft: kPostDetailsScaleBarSettings.marginLeft,
+            marginRight: kPostDetailsScaleBarSettings.marginRight);
+      }
 
-    final mbm.AttributionSettings kDefaultAttributionSettings =
-        mbm.AttributionSettings(
-            position: mbm.OrnamentPosition.BOTTOM_LEFT,
-            marginTop: 0,
-            marginBottom: kAttributionBottomOffset + bottomOffset,
-            marginLeft: kAttributionLeftOffset,
-            marginRight: 0);
+      final num bottomOffset = _getMinPanelHeight();
 
-    final mbm.LogoSettings kDefaultLogoSettings = mbm.LogoSettings(
-        position: mbm.OrnamentPosition.BOTTOM_LEFT,
-        marginTop: 0,
-        marginBottom: kAttributionBottomOffset + bottomOffset,
-        marginLeft: kLogoLeftOffset,
-        marginRight: 0);
+      final mbm.AttributionSettings kDefaultAttributionSettings =
+          mbm.AttributionSettings(
+              position: mbm.OrnamentPosition.BOTTOM_LEFT,
+              marginTop: 0,
+              marginBottom: kAttributionBottomOffset + bottomOffset,
+              marginLeft: kAttributionLeftOffset,
+              marginRight: 0);
 
-    _mapboxMap.compass.updateSettings(compassSettings);
-    _mapboxMap.scaleBar.updateSettings(scaleBarSettings);
-    _mapboxMap.attribution.updateSettings(kDefaultAttributionSettings);
-    _mapboxMap.logo.updateSettings(kDefaultLogoSettings);
+      final mbm.LogoSettings kDefaultLogoSettings = mbm.LogoSettings(
+          position: mbm.OrnamentPosition.BOTTOM_LEFT,
+          marginTop: 0,
+          marginBottom: kAttributionBottomOffset + bottomOffset,
+          marginLeft: kLogoLeftOffset,
+          marginRight: 0);
+
+      _mapboxMap.compass.updateSettings(compassSettings);
+      _mapboxMap.scaleBar.updateSettings(scaleBarSettings);
+      _mapboxMap.attribution.updateSettings(kDefaultAttributionSettings);
+      _mapboxMap.logo.updateSettings(kDefaultLogoSettings);
+    });
   }
 
   double _getTopOffset() {
@@ -605,7 +634,7 @@ class _MapWidgetState extends State<MapWidget>
       waypoints,
       isRoundTrip: isRoundTrip,
       distanceMeters: distance,
-      ignoreArea: annotationHelper?.getIgnorePolygon(),
+      avoidArea: annotationHelper?.getAvoidPolygon(),
       influence: _influenceValue,
     );
 
@@ -693,9 +722,11 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   void _onFlyToRoute() async {
-    if (_selectedRoute != null) {
-      _flyToRoute(_selectedRoute!);
-    }
+    Timer(const Duration(milliseconds: 300), () {
+      if (_selectedRoute != null) {
+        _flyToRoute(_selectedRoute!);
+      }
+    });
   }
 
   Future<void> _mapFlyToOptions(mbm.CameraOptions options,
@@ -749,9 +780,14 @@ class _MapWidgetState extends State<MapWidget>
 
   Future<void> _drawRoute(TrailblazeRoute route) async {
     await annotationHelper?.deleteAllAnnotations();
-    await _mapboxMap.style.addSource(route.geoJsonSource);
+    try {
+      await _mapboxMap.style.addSource(route.geoJsonSource);
+    } catch (e) {
+      // Source might exist already
+    }
 
     try {
+      await _mapboxMap.style.removeStyleLayer(route.lineLayer.id);
       await _mapboxMap.style
           .addLayerAt(route.lineLayer, mbm.LayerPosition(below: "road-label"));
     } catch (e) {
@@ -903,35 +939,41 @@ class _MapWidgetState extends State<MapWidget>
     _displayRoute(_selectedMode, waypointsJson);
   }
 
+  void _clearAvoidArea() {
+    annotationHelper?.deleteAvoidArea();
+    setState(() {
+      _area = 0;
+    });
+  }
+
   Future<void> _onMapTapListener(mbm.MapContentGestureContext context) async {
     final coordinate = context.point.coordinates;
 
-    if (_secondaryViewMode == ViewMode.ignoreArea) {
-      final cameraState = await _mapboxMap.getCameraState();
-      mbm.CircleAnnotation? closestAnnotation;
-      if (annotationHelper != null &&
-          annotationHelper!.ignoreAnnotations.isNotEmpty) {
-        closestAnnotation =
-            await AnnotationHelper.getCircleAnnotationByClickProximity(
-          annotationHelper!.ignoreAnnotations,
-          coordinate.lng,
-          coordinate.lat,
-          cameraState.zoom,
-        );
-        if (closestAnnotation != null) {
-          annotationHelper?.ignoreAnnotations.removeWhere(
-              (item) => item.geometry == closestAnnotation!.geometry);
+    if (_isEditingAvoidArea) {
+      Timer(const Duration(milliseconds: 10), () async {
+        if (_isAvoidAnnotationClicked) {
+          // Action already handled by annotation callback.
+          setState(() {
+            _isAvoidAnnotationClicked = false;
+          });
+        } else {
+          await annotationHelper?.drawAvoidAnnotation(coordinate);
         }
-      }
 
-      if (closestAnnotation == null) {
-        await annotationHelper?.drawIgnoreAnnotation(coordinate);
-      }
+        if (annotationHelper != null &&
+            annotationHelper!.avoidAnnotations.length > 2) {
+          annotationHelper?.drawPolygonAnnotation();
+        }
 
-      if (annotationHelper != null &&
-          annotationHelper!.ignoreAnnotations.length > 2) {
-        annotationHelper?.drawPolygonAnnotation();
-      }
+        final mbm.Polygon? poly = annotationHelper?.getAvoidPolygon();
+        setState(() {
+          if (poly != null) {
+            _area = turf.area(poly); // Square km
+          } else {
+            _area = 0;
+          }
+        });
+      });
       return;
     }
 
@@ -954,7 +996,7 @@ class _MapWidgetState extends State<MapWidget>
       if (selectedRoute != null && selectedRoute != _selectedRoute) {
         _setSelectedRoute(selectedRoute);
         // We've handled the click event so
-        //  we can ignore all other things.
+        //  we can avoid all other things.
         return;
       }
 
@@ -1052,6 +1094,7 @@ class _MapWidgetState extends State<MapWidget>
 
     _setOriginToUserLocation();
     annotationHelper?.deleteCircleAnnotations();
+    _clearAvoidArea();
     _setMapControlSettings();
   }
 
@@ -1068,6 +1111,7 @@ class _MapWidgetState extends State<MapWidget>
     setState(() {
       _selectedMode = mode.value;
       _influenceValue = influenceValue;
+      _routeControlsTouchContext = false;
     });
 
     _getDirectionsFromSettings();
@@ -1133,15 +1177,27 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
-  void onTapOutsideMapStyle(PointerDownEvent event) {
+  void _onTapOutsideMapStyle(PointerDownEvent event) {
     setState(() {
       _mapStyleTouchContext = false;
     });
   }
 
-  void onTapInsideMapStyle(PointerDownEvent event) {
+  void _onTapInsideMapStyle(PointerDownEvent event) {
     setState(() {
       _mapStyleTouchContext = true;
+    });
+  }
+
+  void _onCollapseRouteControls() {
+    setState(() {
+      _routeControlsTouchContext = false;
+    });
+  }
+
+  void _onExpandRouteControls() {
+    setState(() {
+      _routeControlsTouchContext = true;
     });
   }
 
@@ -1150,7 +1206,7 @@ class _MapWidgetState extends State<MapWidget>
     await _setViewMode(ViewMode.directions);
 
     if (_selectedMode == TransportationMode.none.value) {
-      // Prompt user to select mode
+      _onExpandRouteControls();
       return;
     }
 
@@ -1256,14 +1312,19 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
-  void _toggleIgnoreArea() {
-    if (_secondaryViewMode == ViewMode.ignoreArea) {
-      annotationHelper?.hideIgnoreAnnotations();
-      _setSecondaryViewMode(ViewMode.none);
-      _getDirectionsFromSettings();
+  void _onMapControlChanged(bool isEditingAvoidArea) {
+    setState(() {
+      _isEditingAvoidArea = isEditingAvoidArea;
+    });
+
+    if (_isEditingAvoidArea) {
+      annotationHelper?.showAvoidAnnotations();
     } else {
-      annotationHelper?.showIgnoreAnnotations();
-      _setSecondaryViewMode(ViewMode.ignoreArea);
+      annotationHelper?.hideAvoidAnnotations();
+      _getDirectionsFromSettings();
+      setState(() {
+        _routeControlsTouchContext = false;
+      });
     }
   }
 
@@ -1317,12 +1378,7 @@ class _MapWidgetState extends State<MapWidget>
         (_viewMode == ViewMode.search ||
             _manuallySelectedPlace ||
             _viewMode == ViewMode.directions) &&
-        _viewMode != ViewMode.parks &&
-        _secondaryViewMode != ViewMode.ignoreArea;
-  }
-
-  bool _shouldShowIgnoreAreaTooltip() {
-    return _secondaryViewMode == ViewMode.ignoreArea;
+        _viewMode != ViewMode.parks;
   }
 
   Future<void> _clearCameraPadding() async {
@@ -1364,12 +1420,6 @@ class _MapWidgetState extends State<MapWidget>
 
     _updateDirectionsFabHeight(_panelController.panelPosition);
     _setMapControlSettings();
-  }
-
-  Future<void> _setSecondaryViewMode(ViewMode newViewMode) async {
-    setState(() {
-      _secondaryViewMode = newViewMode;
-    });
   }
 
   @override
@@ -1559,41 +1609,23 @@ class _MapWidgetState extends State<MapWidget>
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    if (_shouldShowIgnoreAreaTooltip())
-                                      _showIgnoreAreaTooltip(),
                                     Visibility(
-                                      visible:
-                                          _viewMode == ViewMode.directions &&
-                                              _selectedRoute != null,
+                                      visible: _isEditingAvoidArea,
                                       child: Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                            16, 8, 16, 0),
-                                        child: IconButtonSmall(
-                                          text: _shouldShowIgnoreAreaTooltip()
-                                              ? 'Done'
-                                              : 'Avoid Area',
-                                          icon: _secondaryViewMode ==
-                                                  ViewMode.ignoreArea
-                                              ? Icons.check
-                                              : Icons.block,
-                                          onTap: _toggleIgnoreArea,
-                                          foregroundColor: _secondaryViewMode ==
-                                                  ViewMode.ignoreArea
-                                              ? Colors.white
-                                              : Colors.red,
-                                          backgroundColor:
-                                              _shouldShowIgnoreAreaTooltip()
-                                                  ? Colors.redAccent
-                                                  : Colors.white,
-                                        ),
-                                      ),
+                                          padding: const EdgeInsets.fromLTRB(
+                                              16, 8, 16, 0),
+                                          child: IconButtonSmall(
+                                            text: 'Clear Area',
+                                            icon: Icons.delete_outline_rounded,
+                                            onTap: _clearAvoidArea,
+                                          )),
                                     ),
                                     Padding(
                                       padding: const EdgeInsets.fromLTRB(
                                           16, 8, 16, 0),
                                       child: TapRegion(
-                                        onTapOutside: onTapOutsideMapStyle,
-                                        onTapInside: onTapInsideMapStyle,
+                                        onTapOutside: _onTapOutsideMapStyle,
+                                        onTapInside: _onTapInsideMapStyle,
                                         child: MapStyleSelector(
                                           onStyleChanged: _onStyleChanged,
                                           hasTouchContext:
@@ -1715,13 +1747,21 @@ class _MapWidgetState extends State<MapWidget>
             : CrossFadeState.showFirst,
         firstChild: PlaceSearchBar(
             onSelected: _onSelectPlace, selectedPlace: _selectedPlace),
-        secondChild: InkWell(
-          onTap: _showEditDirectionsScreen,
+        secondChild: TapRegion(
+          onTapOutside: (_) {
+            _onCollapseRouteControls();
+          },
           child: PickedLocationsWidget(
             onBackClicked: _onDirectionsBackClicked,
             onOptionsChanged: _onRouteSettingsChanged,
+            onMapControlChanged: _onMapControlChanged,
+            onEditWaypoints: _showEditDirectionsScreen,
+            onExpand: _onExpandRouteControls,
+            onCollapse: _onCollapseRouteControls,
             startingLocation: _startingLocation,
             endingLocation: _selectedPlace,
+            hasTouchContext: _routeControlsTouchContext,
+            avoidArea: _area,
             waypoints: const [],
             selectedMode: getTransportationModeFromString(_selectedMode),
           ),
@@ -1741,40 +1781,6 @@ class _MapWidgetState extends State<MapWidget>
         selectedDistanceMeters: _selectedDistanceMeters,
         onDistanceChanged: _queryForRoundTrip,
         center: _currentOriginCoordinates,
-      ),
-    );
-  }
-
-  Widget _showIgnoreAreaTooltip() {
-    return Padding(
-      key: _topWidgetKey,
-      padding: const EdgeInsets.all(8.0),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: 5.0,
-            sigmaY: 5.0,
-          ),
-          child: Container(
-            width: MediaQuery.of(context).size.width - 16,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'Click to create/delete a point.\n\nAdd at least 3 points to create an area to ignore.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -155,5 +155,4 @@ enum ViewMode {
   directions,
   parks,
   shuffle,
-  ignoreArea,
 }

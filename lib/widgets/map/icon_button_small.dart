@@ -8,6 +8,7 @@ class IconButtonSmall extends StatelessWidget {
   final double iconFontSize;
   final double textFontSize;
   final bool isNew;
+  final bool hasBorder;
   final Function() onTap;
 
   final kBorderRadius = 16.0;
@@ -22,6 +23,7 @@ class IconButtonSmall extends StatelessWidget {
     this.backgroundColor = Colors.white,
     this.foregroundColor = Colors.black,
     this.isNew = false,
+    this.hasBorder = false,
   }) : super(key: key);
 
   @override
@@ -43,6 +45,11 @@ class IconButtonSmall extends StatelessWidget {
                 borderRadius: BorderRadius.circular(kBorderRadius),
               ),
             ),
+            side: MaterialStateProperty.resolveWith<BorderSide?>(
+              (states) => hasBorder
+                  ? const BorderSide(color: Colors.grey, width: 1.0)
+                  : null,
+            ),
           ),
           icon: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -61,25 +68,25 @@ class IconButtonSmall extends StatelessWidget {
           ),
         ),
         if (isNew)
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.red,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: const Text(
-              'New',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'New',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -91,6 +98,7 @@ class IconButtonSmall extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(kBorderRadius),
           color: backgroundColor,
+          border: hasBorder ? Border.all(color: Colors.grey, width: 1.0) : null,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

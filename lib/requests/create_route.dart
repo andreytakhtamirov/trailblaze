@@ -11,7 +11,7 @@ Future<Either<int, Map<String, dynamic>?>> createGraphhopperRoute(
     String profile, List<dynamic> waypoints,
     {bool isRoundTrip = false,
     double? distanceMeters,
-    Polygon? ignoreArea,
+    Polygon? avoidArea,
     num? influence}) async {
   const endpoint = '$kBaseUrl/v1/routes/create-route-graphhopper';
 
@@ -20,7 +20,7 @@ Future<Either<int, Map<String, dynamic>?>> createGraphhopperRoute(
     'profile': profile,
     'waypoints': waypoints,
     'influence': influence,
-    'ignore_area': ignoreArea,
+    'ignore_area': avoidArea,
     if (isRoundTrip) 'distance': distanceMeters,
   });
 
