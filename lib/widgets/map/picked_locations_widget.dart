@@ -18,7 +18,7 @@ class PickedLocationsWidget extends StatefulWidget {
   final List<String> waypoints;
   final TransportationMode selectedMode;
   final bool hasTouchContext;
-  final num? avoidArea;
+  final num avoidArea;
   final void Function() onEditWaypoints;
   final void Function() onClearAvoidArea;
   final void Function() onExpand;
@@ -155,7 +155,7 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
                     children: [
                       Container(
                         width: 200,
-                        height: 30,
+                        height: 27,
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.vertical(
@@ -171,7 +171,7 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
                           !widget.hasTouchContext
                               ? Icons.arrow_drop_down
                               : Icons.arrow_drop_up,
-                          size: 52,
+                          size: 44,
                         ),
                       ),
                     ],
@@ -281,6 +281,23 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
             ],
           ),
         ),
+        Visibility(
+          visible: widget.avoidArea > 0,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _avoidingAreaText(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black.withAlpha(220),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -329,8 +346,8 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
           child: Column(
             children: [
-              _showBlendSlider(showTitle: true),
               _showIgnoreArea(),
+              _showBlendSlider(showTitle: true),
               TransportationModeWidget(
                   onSelected: (mode) =>
                       {widget.onOptionsChanged(mode, _selectedDistance)},
@@ -387,9 +404,9 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: _slider(),
             ),
-            // For debugging
+            // For debugging bounds (Blend)
             // Visibility(
-            //   visible: showTitle
+            //   visible: showTitle,
             //   child: Row(
             //     crossAxisAlignment: CrossAxisAlignment.center,
             //     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -429,49 +446,56 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
     );
   }
 
-  String? _actionButtonLabel() {
+  String _actionButtonLabel() {
     if (!_isEditingAvoidArea && widget.avoidArea == 0) {
-      return 'Avoid Area';
+      return 'Set Area to Avoid';
     } else if (_isEditingAvoidArea) {
       return 'Done';
     } else {
-      return null;
+      return _avoidingAreaText();
     }
+  }
+
+  String _avoidingAreaText() {
+    return 'Avoiding ${FormatHelper.formatSquareDistance(widget.avoidArea)}';
   }
 
   Widget _showIgnoreArea() {
     return Visibility(
       visible: widget.selectedMode != TransportationMode.none,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(top: 4),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: !_isEditingAvoidArea
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.center,
           children: [
             Flexible(
-                flex: _actionButtonLabel() == null ? 3 : 1,
-                child: Text(
-                    'Avoiding ${FormatHelper.formatSquareDistance(widget.avoidArea)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold))),
-            const SizedBox(width: 16),
-            Flexible(
-              flex: 1,
+              flex: 2,
               child: IconButtonSmall(
-                icon: !_isEditingAvoidArea ? Icons.edit : Icons.check,
+                icon: !_isEditingAvoidArea
+                    ? widget.avoidArea == 0
+                        ? Icons.block
+                        : Icons.edit
+                    : Icons.check,
                 text: _actionButtonLabel(),
-                foregroundColor: Colors.black,
-                backgroundColor: Colors.white,
+                foregroundColor:
+                    !_isEditingAvoidArea ? Colors.black : Colors.white,
+                backgroundColor: !_isEditingAvoidArea
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.tertiary,
                 onTap: () => {
                   setState(() {
                     _isEditingAvoidArea = !_isEditingAvoidArea;
                   }),
                   widget.onMapControlChanged(_isEditingAvoidArea),
                 },
+                iconBeforeText: widget.avoidArea == 0 ? true : false,
+                iconFontSize: widget.avoidArea == 0 ? 24 : 18,
                 hasBorder: true,
               ),
             ),
-            widget.avoidArea != null &&
-                    widget.avoidArea != 0 &&
-                    !_isEditingAvoidArea
+            widget.avoidArea != 0 && !_isEditingAvoidArea
                 ? Flexible(
                     flex: 1,
                     child: Padding(

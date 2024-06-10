@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class IconButtonSmall extends StatelessWidget {
@@ -11,6 +10,7 @@ class IconButtonSmall extends StatelessWidget {
   final bool isNew;
   final bool hasBorder;
   final bool isEnabled;
+  final bool iconBeforeText;
 
   final Function() onTap;
 
@@ -28,14 +28,15 @@ class IconButtonSmall extends StatelessWidget {
     this.isNew = false,
     this.hasBorder = false,
     this.isEnabled = true,
+    this.iconBeforeText = true,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return text != null ? textIconButton(isEnabled) : iconButton(isEnabled);
+    return text != null ? _textIconButton(isEnabled) : _iconButton(isEnabled);
   }
 
-  Widget textIconButton(bool isEnabled) {
+  Widget _textIconButton(bool isEnabled) {
     return Stack(
       children: [
         Opacity(
@@ -57,21 +58,8 @@ class IconButtonSmall extends StatelessWidget {
                     : null,
               ),
             ),
-            icon: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Icon(
-                icon,
-                color: isEnabled ? foregroundColor : foregroundColor.withOpacity(0.4),
-                size: iconFontSize,
-              ),
-            ),
-            label: Text(
-              text!,
-              style: TextStyle(
-                  color: isEnabled ? foregroundColor : foregroundColor.withOpacity(0.4),
-                  fontSize: textFontSize,
-                  fontWeight: FontWeight.bold),
-            ),
+            icon: iconBeforeText ? _icon() : _label(),
+            label: iconBeforeText ? _label() : _icon(),
           ),
         ),
         if (isNew)
@@ -98,7 +86,28 @@ class IconButtonSmall extends StatelessWidget {
     );
   }
 
-  Widget iconButton(bool isEnabled) {
+  Widget _icon() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Icon(
+        icon,
+        color: isEnabled ? foregroundColor : foregroundColor.withOpacity(0.4),
+        size: iconFontSize,
+      ),
+    );
+  }
+
+  Widget _label() {
+    return Text(
+      text!,
+      style: TextStyle(
+          color: isEnabled ? foregroundColor : foregroundColor.withOpacity(0.4),
+          fontSize: textFontSize,
+          fontWeight: FontWeight.bold),
+    );
+  }
+
+  Widget _iconButton(bool isEnabled) {
     return InkWell(
       onTap: isEnabled ? onTap : null,
       child: Opacity(

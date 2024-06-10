@@ -106,7 +106,7 @@ class _MapWidgetState extends State<MapWidget>
   );
 
   bool _isEditingAvoidArea = false;
-  num? _area;
+  num _area = 0;
   bool _isAvoidActionUndoable = false;
   bool _isAvoidActionRedoable = false;
   int _numAvoidAnnotations = 0;
@@ -183,13 +183,13 @@ class _MapWidgetState extends State<MapWidget>
     });
 
     final pointAnnotationManager =
-        await mapboxMap.annotations.createPointAnnotationManager();
+        await mapboxMap.annotations.createPointAnnotationManager(id: 'point-layer');
     final circleAnnotationManager =
-        await mapboxMap.annotations.createCircleAnnotationManager();
+        await mapboxMap.annotations.createCircleAnnotationManager(id: 'circle-layer');
     final avoidAreaAnnotationManager =
-        await mapboxMap.annotations.createCircleAnnotationManager();
+        await mapboxMap.annotations.createCircleAnnotationManager(id: 'avoid-layer');
     final polygonAnnotationManager =
-        await mapboxMap.annotations.createPolygonAnnotationManager();
+        await mapboxMap.annotations.createPolygonAnnotationManager(id: 'poly-layer', below: 'avoid-layer');
     annotationHelper = AnnotationHelper(
       pointAnnotationManager,
       circleAnnotationManager,
@@ -791,6 +791,11 @@ class _MapWidgetState extends State<MapWidget>
 
     try {
       await _mapboxMap.style.removeStyleLayer(route.lineLayer.id);
+    } catch (e) {
+      // Route layer might have been removed already.
+    }
+
+    try {
       await _mapboxMap.style
           .addLayerAt(route.lineLayer, mbm.LayerPosition(below: "road-label"));
     } catch (e) {
@@ -979,7 +984,7 @@ class _MapWidgetState extends State<MapWidget>
     final mbm.Polygon? poly = annotationHelper?.getAvoidPolygon();
     setState(() {
       if (poly != null) {
-        _area = turf.area(poly); // Square km
+        _area = turf.area(poly) ?? 0; // Square km
       } else {
         _area = 0;
       }
