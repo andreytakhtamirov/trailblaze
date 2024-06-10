@@ -300,6 +300,10 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
     _avoidAnnotationChanges.redo();
   }
 
+  void clearAvoidActionHistory() {
+    _avoidAnnotationChanges.clearHistory();
+  }
+
   bool canUndoAvoidAction() {
     return _avoidAnnotationChanges.canUndo;
   }

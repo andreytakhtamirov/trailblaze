@@ -99,7 +99,7 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
                                 });
                               },
                             ),
-                            leading: const Icon(Icons.add_location_alt),
+                            leading: const Icon(Icons.location_city_rounded),
                             trailing: const Icon(Icons.drag_handle),
                           ),
                         ),
@@ -107,22 +107,33 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
                   ),
                 ),
               ),
-              MaterialButton(
-                onPressed: () {
-                  setState(() {
-                    _locations.insert(_locations.length - 1,
-                        MapBoxPlace(placeName: 'Point of Interest'));
-                  });
-                },
-                color: Colors.blueGrey,
-                child: const Text(
-                  'Add point of interest',
-                  style: TextStyle(color: Colors.white),
+              Opacity(
+                opacity: _locations.length < 2 ? 1.0 : 0.5,
+                child: MaterialButton(
+                  shape: const StadiumBorder(),
+                  onPressed: () {
+                    if (_locations.length > 1) {
+                      UiHelper.showSnackBar(
+                          context, 'Currently limited to start/end',
+                          extraMarginBottom: true);
+                      return;
+                    }
+                    setState(() {
+                      _locations.insert(_locations.length,
+                          MapBoxPlace(placeName: 'Point of Interest'));
+                    });
+                  },
+                  color: const Color(0xFFBDD2DD),
+                  child: const Text(
+                    'Add point of interest',
+                    style: TextStyle(color: Colors.black),
+                  ),
                 ),
               ),
               MaterialButton(
+                shape: const StadiumBorder(),
                 onPressed: _onSave,
-                color: Colors.indigo,
+                color: Theme.of(context).colorScheme.primary,
                 child: const Text(
                   "Save",
                   style: TextStyle(

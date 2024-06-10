@@ -93,6 +93,10 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
     _minDistance = minMaxList[0].toDouble();
     _maxDistance = minMaxList[1].toDouble();
 
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _minDistanceBounds =
           -(math.log(_minDistance) / math.log(10)).ceilToDouble();

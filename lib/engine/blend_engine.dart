@@ -91,12 +91,14 @@ class BlendEngine {
   }
 
   void release() {
-    try {
-      _session?.release();
-    } catch (e) {
-      // Object may not have been fully initialized before being released.
-      log('$e');
-    }
-    _session = null;
+    Timer(const Duration(seconds: 1), () {
+      try {
+        _session?.release();
+      } catch (e) {
+        // Object may not have been fully initialized before being released.
+        log('$e');
+      }
+      _session = null;
+    });
   }
 }

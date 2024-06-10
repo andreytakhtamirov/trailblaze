@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:turf/turf.dart' as turf;
 import 'package:dartz/dartz.dart' as dartz;
 import 'package:flutter/material.dart';
@@ -376,14 +375,14 @@ class _MapWidgetState extends State<MapWidget>
 
     setState(() {
       _isContentLoading = true;
+      _selectedDistanceMeters = (_selectedDistanceMeters ?? kDefaultFeatureDistanceMeters)
+          .clamp(kMinFeatureDistanceMeters, kMaxFeatureDistanceMeters);
     });
 
     if (context.mounted) {
       final featuresPromise = FeatureManager.loadFeatures(
           context,
-          (_selectedDistanceMeters ?? kDefaultFeatureDistanceMeters)
-              .clamp(kMinFeatureDistanceMeters, kMaxFeatureDistanceMeters)
-              .toInt(),
+          (_selectedDistanceMeters ?? kDefaultFeatureDistanceMeters).toInt(),
           _nextOriginCoordinates!);
 
       setState(() {
@@ -1124,6 +1123,7 @@ class _MapWidgetState extends State<MapWidget>
 
     _setOriginToUserLocation();
     annotationHelper?.deleteCircleAnnotations();
+    annotationHelper?.clearAvoidActionHistory();
     _clearAvoidArea();
     _setMapControlSettings();
   }
