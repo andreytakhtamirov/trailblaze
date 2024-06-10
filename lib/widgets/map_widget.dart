@@ -185,7 +185,7 @@ class _MapWidgetState extends State<MapWidget>
     final pointAnnotationManager =
         await mapboxMap.annotations.createPointAnnotationManager(id: 'point-layer');
     final circleAnnotationManager =
-        await mapboxMap.annotations.createCircleAnnotationManager(id: 'circle-layer');
+        await mapboxMap.annotations.createCircleAnnotationManager(id: 'circle-layer', below: 'point-layer');
     final avoidAreaAnnotationManager =
         await mapboxMap.annotations.createCircleAnnotationManager(id: 'avoid-layer');
     final polygonAnnotationManager =
