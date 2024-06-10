@@ -20,6 +20,7 @@ class PickedLocationsWidget extends StatefulWidget {
   final bool hasTouchContext;
   final num? avoidArea;
   final void Function() onEditWaypoints;
+  final void Function() onClearAvoidArea;
   final void Function() onExpand;
   final void Function() onCollapse;
   final void Function() onBackClicked;
@@ -35,6 +36,7 @@ class PickedLocationsWidget extends StatefulWidget {
     required this.hasTouchContext,
     required this.avoidArea,
     required this.onEditWaypoints,
+    required this.onClearAvoidArea,
     required this.onExpand,
     required this.onCollapse,
     required this.onBackClicked,
@@ -423,6 +425,16 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
     );
   }
 
+  String? _actionButtonLabel() {
+    if (!_isEditingAvoidArea && widget.avoidArea == 0) {
+      return 'Avoid Area';
+    } else if (_isEditingAvoidArea) {
+      return 'Done';
+    } else {
+      return null;
+    }
+  }
+
   Widget _showIgnoreArea() {
     return Visibility(
       visible: widget.selectedMode != TransportationMode.none,
@@ -432,16 +444,17 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Flexible(
+                flex: _actionButtonLabel() == null ? 3 : 1,
                 child: Text(
                     'Avoiding ${FormatHelper.formatSquareDistance(widget.avoidArea)}',
                     style: const TextStyle(fontWeight: FontWeight.bold))),
             const SizedBox(width: 16),
             Flexible(
+              flex: 1,
               child: IconButtonSmall(
                 icon: !_isEditingAvoidArea ? Icons.edit : Icons.check,
-                text: !_isEditingAvoidArea ? 'Avoid Area' : 'Done',
-                foregroundColor:
-                    _isEditingAvoidArea ? Colors.black : Colors.red,
+                text: _actionButtonLabel(),
+                foregroundColor: Colors.black,
                 backgroundColor: Colors.white,
                 onTap: () => {
                   setState(() {
@@ -452,6 +465,26 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
                 hasBorder: true,
               ),
             ),
+            widget.avoidArea != null &&
+                    widget.avoidArea != 0 &&
+                    !_isEditingAvoidArea
+                ? Flexible(
+                    flex: 1,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: IconButtonSmall(
+                        icon: Icons.delete,
+                        foregroundColor: Colors.redAccent,
+                        backgroundColor: Colors.white,
+                        onTap: () => {
+                          widget.onClearAvoidArea(),
+                          widget.onMapControlChanged(false),
+                        },
+                        hasBorder: true,
+                      ),
+                    ),
+                  )
+                : const SizedBox(),
           ],
         ),
       ),

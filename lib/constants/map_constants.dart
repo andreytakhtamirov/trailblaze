@@ -150,7 +150,6 @@ final LogoSettings kDefaultLogoSettings = LogoSettings(
     marginRight: 0);
 
 enum ViewMode {
-  none, // Default for secondary view mode
   search,
   directions,
   parks,

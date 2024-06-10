@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import 'package:turf/turf.dart' as turf;
 import 'package:dartz/dartz.dart' as dartz;
 import 'package:flutter/material.dart';
@@ -107,6 +108,9 @@ class _MapWidgetState extends State<MapWidget>
 
   bool _isEditingAvoidArea = false;
   num? _area;
+  bool _isAvoidActionUndoable = false;
+  bool _isAvoidActionRedoable = false;
+  int _numAvoidAnnotations = 0;
 
   @override
   void initState() {
@@ -944,6 +948,43 @@ class _MapWidgetState extends State<MapWidget>
     setState(() {
       _area = 0;
     });
+    _onAvoidAnnotationsUpdate();
+  }
+
+  void _undoAvoidArea() async {
+    annotationHelper?.undoLastAction();
+    _onAvoidAnnotationsUpdate();
+    _updateAvoidPoly();
+  }
+
+  void _redoAvoidArea() async {
+    annotationHelper?.redoLastAction();
+    _onAvoidAnnotationsUpdate();
+    _updateAvoidPoly();
+  }
+
+  void _updateAvoidPoly() {
+    if (annotationHelper != null &&
+        annotationHelper!.avoidAnnotations.length > 2) {
+      annotationHelper?.drawPolygonAnnotation();
+    }
+  }
+
+  void _onAvoidAnnotationsUpdate() {
+    setState(() {
+      _numAvoidAnnotations = annotationHelper?.avoidAnnotations.length ?? 0;
+      _isAvoidActionUndoable = annotationHelper?.canUndoAvoidAction() ?? false;
+      _isAvoidActionRedoable = annotationHelper?.canRedoAvoidAction() ?? false;
+    });
+
+    final mbm.Polygon? poly = annotationHelper?.getAvoidPolygon();
+    setState(() {
+      if (poly != null) {
+        _area = turf.area(poly); // Square km
+      } else {
+        _area = 0;
+      }
+    });
   }
 
   Future<void> _onMapTapListener(mbm.MapContentGestureContext context) async {
@@ -957,22 +998,11 @@ class _MapWidgetState extends State<MapWidget>
             _isAvoidAnnotationClicked = false;
           });
         } else {
-          await annotationHelper?.drawAvoidAnnotation(coordinate);
+          await annotationHelper?.showAvoidAnnotation(coordinate);
         }
 
-        if (annotationHelper != null &&
-            annotationHelper!.avoidAnnotations.length > 2) {
-          annotationHelper?.drawPolygonAnnotation();
-        }
-
-        final mbm.Polygon? poly = annotationHelper?.getAvoidPolygon();
-        setState(() {
-          if (poly != null) {
-            _area = turf.area(poly); // Square km
-          } else {
-            _area = 0;
-          }
-        });
+        _updateAvoidPoly();
+        _onAvoidAnnotationsUpdate();
       });
       return;
     }
@@ -1318,7 +1348,8 @@ class _MapWidgetState extends State<MapWidget>
     });
 
     if (_isEditingAvoidArea) {
-      annotationHelper?.showAvoidAnnotations();
+      annotationHelper
+          ?.showAvoidAnnotations(annotationHelper?.avoidAnnotations ?? []);
     } else {
       annotationHelper?.hideAvoidAnnotations();
       _getDirectionsFromSettings();
@@ -1604,8 +1635,32 @@ class _MapWidgetState extends State<MapWidget>
                                     ? 54
                                     : 0),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Visibility(
+                                  visible: _isEditingAvoidArea,
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.fromLTRB(32, 12, 0, 0),
+                                    child: Row(
+                                      children: [
+                                        IconButtonSmall(
+                                          icon: Icons.undo_rounded,
+                                          onTap: _undoAvoidArea,
+                                          isEnabled: _isAvoidActionUndoable,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        IconButtonSmall(
+                                          icon: Icons.redo_rounded,
+                                          onTap: _redoAvoidArea,
+                                          isEnabled: _isAvoidActionRedoable,
+                                        ),
+                                        const SizedBox(width: 4),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
@@ -1616,8 +1671,10 @@ class _MapWidgetState extends State<MapWidget>
                                               16, 8, 16, 0),
                                           child: IconButtonSmall(
                                             text: 'Clear Area',
-                                            icon: Icons.delete_outline_rounded,
+                                            icon: Icons.delete_outline,
                                             onTap: _clearAvoidArea,
+                                            isEnabled: _numAvoidAnnotations != 0,
+                                            foregroundColor: Colors.red,
                                           )),
                                     ),
                                     Padding(
@@ -1756,6 +1813,7 @@ class _MapWidgetState extends State<MapWidget>
             onOptionsChanged: _onRouteSettingsChanged,
             onMapControlChanged: _onMapControlChanged,
             onEditWaypoints: _showEditDirectionsScreen,
+            onClearAvoidArea: _clearAvoidArea,
             onExpand: _onExpandRouteControls,
             onCollapse: _onCollapseRouteControls,
             startingLocation: _startingLocation,

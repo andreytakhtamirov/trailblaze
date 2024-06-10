@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class IconButtonSmall extends StatelessWidget {
@@ -9,6 +10,8 @@ class IconButtonSmall extends StatelessWidget {
   final double textFontSize;
   final bool isNew;
   final bool hasBorder;
+  final bool isEnabled;
+
   final Function() onTap;
 
   final kBorderRadius = 16.0;
@@ -24,47 +27,51 @@ class IconButtonSmall extends StatelessWidget {
     this.foregroundColor = Colors.black,
     this.isNew = false,
     this.hasBorder = false,
+    this.isEnabled = true,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return text != null ? textIconButton() : iconButton();
+    return text != null ? textIconButton(isEnabled) : iconButton(isEnabled);
   }
 
-  Widget textIconButton() {
+  Widget textIconButton(bool isEnabled) {
     return Stack(
       children: [
-        ElevatedButton.icon(
-          onPressed: onTap,
-          style: ButtonStyle(
-            backgroundColor: MaterialStateProperty.all<Color>(
-              backgroundColor,
-            ),
-            shape: MaterialStateProperty.all<OutlinedBorder>(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(kBorderRadius),
+        Opacity(
+          opacity: isEnabled ? 1.0 : 0.9,
+          child: ElevatedButton.icon(
+            onPressed: onTap,
+            style: ButtonStyle(
+              backgroundColor: MaterialStateProperty.all<Color>(
+                backgroundColor,
+              ),
+              shape: MaterialStateProperty.all<OutlinedBorder>(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(kBorderRadius),
+                ),
+              ),
+              side: MaterialStateProperty.resolveWith<BorderSide?>(
+                (states) => hasBorder
+                    ? const BorderSide(color: Colors.grey, width: 1.0)
+                    : null,
               ),
             ),
-            side: MaterialStateProperty.resolveWith<BorderSide?>(
-              (states) => hasBorder
-                  ? const BorderSide(color: Colors.grey, width: 1.0)
-                  : null,
+            icon: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Icon(
+                icon,
+                color: isEnabled ? foregroundColor : foregroundColor.withOpacity(0.4),
+                size: iconFontSize,
+              ),
             ),
-          ),
-          icon: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Icon(
-              icon,
-              color: foregroundColor,
-              size: iconFontSize,
+            label: Text(
+              text!,
+              style: TextStyle(
+                  color: isEnabled ? foregroundColor : foregroundColor.withOpacity(0.4),
+                  fontSize: textFontSize,
+                  fontWeight: FontWeight.bold),
             ),
-          ),
-          label: Text(
-            text!,
-            style: TextStyle(
-                color: foregroundColor,
-                fontSize: textFontSize,
-                fontWeight: FontWeight.bold),
           ),
         ),
         if (isNew)
@@ -91,27 +98,30 @@ class IconButtonSmall extends StatelessWidget {
     );
   }
 
-  Widget iconButton() {
+  Widget iconButton(bool isEnabled) {
     return InkWell(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(kBorderRadius),
-          color: backgroundColor,
-          border: hasBorder ? Border.all(color: Colors.grey, width: 1.0) : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Icon(
-                icon,
-                color: foregroundColor,
-                size: iconFontSize,
+      onTap: isEnabled ? onTap : null,
+      child: Opacity(
+        opacity: isEnabled ? 1.0 : 0.9,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(kBorderRadius),
+            color: backgroundColor,
+            border: hasBorder ? Border.all(color: Colors.grey, width: 1.0) : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Icon(
+                  icon,
+                  color: isEnabled ? foregroundColor : foregroundColor.withOpacity(0.4),
+                  size: iconFontSize,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
