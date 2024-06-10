@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
@@ -90,7 +91,14 @@ class BlendEngine {
   }
 
   void release() {
-    _session?.release();
-    _session = null;
+    Timer(const Duration(seconds: 1), () {
+      try {
+        _session?.release();
+      } catch (e) {
+        // Object may not have been fully initialized before being released.
+        log('$e');
+      }
+      _session = null;
+    });
   }
 }

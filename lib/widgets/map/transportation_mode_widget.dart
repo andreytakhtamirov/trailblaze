@@ -72,38 +72,38 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildTransportationModeWidget(
-                TransportationMode.walking, Icons.directions_walk, false),
-            _buildTransportationModeWidget(
-                TransportationMode.cycling, Icons.directions_bike, false),
-            _buildTransportationModeWidget(TransportationMode.gravel_cycling,
-                TrailblazeIcons.kDirectionsBikeGravel, true),
-          ],
-        ),
-        // Don't show parks+ option for now. Need to design a better UI to select these modes.
-        // Row(
-        //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        //   children: [
-        //     _buildTransportationModeWidget(
-        //       TransportationMode.walking_plus,
-        //       TrailblazeIcons.kDirectionsWalkParks,
-        //       false,
-        //       minIconHeight: 36,
-        //     ),
-        //     _buildTransportationModeWidget(
-        //       TransportationMode.cycling_plus,
-        //       TrailblazeIcons.kDirectionsBikeParks,
-        //       false,
-        //       minIconHeight: 36,
-        //     ),
-        //   ],
-        // ),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey, width: 1.0),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: _buildTransportationModeWidget(
+                    TransportationMode.walking, Icons.directions_walk, false),
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: _buildTransportationModeWidget(
+                    TransportationMode.cycling, Icons.directions_bike, false),
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: _buildTransportationModeWidget(
+                    TransportationMode.gravel_cycling,
+                    TrailblazeIcons.kDirectionsBikeGravel,
+                    true),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -111,7 +111,10 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
       TransportationMode mode, IconData icon, bool isCustomIcon,
       {double minIconHeight = 24}) {
     final isSelected = _selectedMode == mode;
-    minIconHeight += isCustomIcon ? 8 : 0; // Custom icon needs to be larger
+    minIconHeight += (isCustomIcon ? 8 : 0) +
+        (widget.isMinifiedView ? 16 : 0); // Custom icon needs to be larger
+    final double verticalPadding =
+        (widget.isMinifiedView ? 0 : 4) + (isCustomIcon ? 0 : 4);
 
     return GestureDetector(
       onTap: () {
@@ -120,21 +123,19 @@ class _TransportationModeWidgetState extends State<TransportationModeWidget> {
       child: Stack(
         children: [
           AnimatedContainer(
-            padding:
-                const EdgeInsets.symmetric(vertical: 8.0, horizontal: 24.0),
+            padding: EdgeInsets.symmetric(vertical: verticalPadding),
             decoration: BoxDecoration(
               border: isSelected
                   ? Border.all(color: Colors.redAccent)
                   : _isBlinking
                       ? Border.all(color: Colors.orange)
                       : Border.all(color: Colors.white),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(16),
             ),
             duration: const Duration(milliseconds: 300),
-            child: Column(
-              children: [
-                Icon(icon, size: widget.isMinifiedView ? 42 : minIconHeight),
-              ],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [Icon(icon, size: minIconHeight)],
             ),
           ),
         ],

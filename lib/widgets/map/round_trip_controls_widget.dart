@@ -73,7 +73,7 @@ class RoundTripControlsWidget extends StatelessWidget {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
                 child: TransportationModeWidget(
                     onSelected: (mode) => {onModeChanged(mode, null)},
                     initialMode: selectedMode,
@@ -94,35 +94,6 @@ class RoundTripControlsWidget extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Widget _buildLocationTile({required String title, String? subtitle}) {
-    bool isDense = subtitle == null;
-    return ListTile(
-        dense: isDense,
-        visualDensity: VisualDensity.comfortable,
-        title: Text(
-          title,
-          maxLines: selectedMode == TransportationMode.none ? 5 : 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 14.0,
-            fontWeight: !isDense ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        subtitle: !isDense
-            ? Padding(
-                padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
-                child: Text(
-                  subtitle,
-                  maxLines: selectedMode == TransportationMode.none ? 5 : 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16.0,
-                  ),
-                ),
-              )
-            : null);
   }
 
   Widget _buildControls(BuildContext context) {

@@ -8,8 +8,16 @@ import 'package:url_launcher/url_launcher.dart';
 
 class UiHelper {
   static showSnackBar(BuildContext context, String message,
-      {int durationSeconds = 2}) {
+      {int durationSeconds = 2, bool extraMarginBottom = false}) {
     SnackBar snackBar = SnackBar(
+      behavior: extraMarginBottom ? SnackBarBehavior.floating : null,
+      margin: extraMarginBottom
+          ? const EdgeInsets.only(
+              bottom: 100,
+              right: 40,
+              left: 40,
+            )
+          : null,
       content: Text(message),
       duration: Duration(seconds: durationSeconds),
     );
