@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -35,7 +36,7 @@ class ExportHelper {
         builder.element('time', nest: DateTime.now().toUtc().toIso8601String());
       });
       builder.element('trk', nest: () {
-        builder.element('name', nest: 'GraphHopper Track');
+        builder.element('name', nest: 'Trailblaze Track');
         builder.element('trkseg', nest: () {
           for (int i = 0; i < coordinates.length; i++) {
             builder.element('trkpt', attributes: {
@@ -53,7 +54,8 @@ class ExportHelper {
     return gpxDocument.toXmlString();
   }
 
-  static Future<void> shareGpxFile(String gpxContent, String routeName) async {
+  static Future<void> shareGpxFile(
+      String gpxContent, String routeName, Rect? position) async {
     try {
       final directory = await getTemporaryDirectory();
 
@@ -84,7 +86,8 @@ class ExportHelper {
         await file.writeAsString(gpxContent);
       }
 
-      await Share.shareXFiles([XFile(path)], subject: 'Route to $routeName');
+      await Share.shareXFiles([XFile(path)],
+          subject: 'Route to $routeName', sharePositionOrigin: position);
       await file.delete();
     } catch (e) {
       log('Error sharing GPX file: $e');

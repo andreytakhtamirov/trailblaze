@@ -84,6 +84,7 @@ class _MapWidgetState extends State<MapWidget>
   double? _selectedDistanceMeters = kDefaultFeatureDistanceMeters;
   geo.Position? _userLocation;
   final GlobalKey _topWidgetKey = GlobalKey();
+  final GlobalKey _shareWidgetKey = GlobalKey();
   double _panelPosition = 0;
 
   bool _isOriginChanged = false;
@@ -861,7 +862,10 @@ class _MapWidgetState extends State<MapWidget>
 
     final lastWaypoint =
         MapBoxPlace.fromRawJson(_selectedRoute!.waypoints.last);
-    await ExportHelper.shareGpxFile(gpx, lastWaypoint.placeName ?? '');
+    final box =
+        (_shareWidgetKey.currentContext?.findRenderObject() as RenderBox);
+    await ExportHelper.shareGpxFile(gpx, lastWaypoint.placeName ?? '',
+        box.localToGlobal(Offset.zero) & box.size);
   }
 
   Future<void> _goToUserLocation({bool isAnimated = true}) async {
@@ -1825,6 +1829,7 @@ class _MapWidgetState extends State<MapWidget>
               right: 4,
               bottom: _panelOptionsHeight - 10,
               child: PopupMenuButton(
+                key: _shareWidgetKey,
                 enabled: _selectedRoute?.coordinates?.length ==
                     _selectedRoute?.elevationMetrics?.length,
                 icon: const Icon(Icons.ios_share),
