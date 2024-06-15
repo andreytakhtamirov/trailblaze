@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:trailblaze/util/export_helper.dart';
+import 'package:trailblaze/util/format_helper.dart';
 import 'package:turf/turf.dart' as turf;
 import 'package:dartz/dartz.dart' as dartz;
 import 'package:flutter/material.dart';
@@ -78,6 +80,7 @@ class _MapWidgetState extends State<MapWidget>
   List<tb.Feature>? _features;
   tb.Feature? _selectedFeature;
   double _fabHeight = kPanelFabHeight;
+  double _panelOptionsHeight = kPanelFabHeight;
   double? _selectedDistanceMeters = kDefaultFeatureDistanceMeters;
   geo.Position? _userLocation;
   final GlobalKey _topWidgetKey = GlobalKey();
@@ -182,14 +185,15 @@ class _MapWidgetState extends State<MapWidget>
       ];
     });
 
-    final pointAnnotationManager =
-        await mapboxMap.annotations.createPointAnnotationManager(id: 'point-layer');
-    final circleAnnotationManager =
-        await mapboxMap.annotations.createCircleAnnotationManager(id: 'circle-layer', below: 'point-layer');
-    final avoidAreaAnnotationManager =
-        await mapboxMap.annotations.createCircleAnnotationManager(id: 'avoid-layer');
-    final polygonAnnotationManager =
-        await mapboxMap.annotations.createPolygonAnnotationManager(id: 'poly-layer', below: 'avoid-layer');
+    final pointAnnotationManager = await mapboxMap.annotations
+        .createPointAnnotationManager(id: 'point-layer');
+    final circleAnnotationManager = await mapboxMap.annotations
+        .createCircleAnnotationManager(
+            id: 'circle-layer', below: 'point-layer');
+    final avoidAreaAnnotationManager = await mapboxMap.annotations
+        .createCircleAnnotationManager(id: 'avoid-layer');
+    final polygonAnnotationManager = await mapboxMap.annotations
+        .createPolygonAnnotationManager(id: 'poly-layer', below: 'avoid-layer');
     annotationHelper = AnnotationHelper(
       pointAnnotationManager,
       circleAnnotationManager,
@@ -375,8 +379,9 @@ class _MapWidgetState extends State<MapWidget>
 
     setState(() {
       _isContentLoading = true;
-      _selectedDistanceMeters = (_selectedDistanceMeters ?? kDefaultFeatureDistanceMeters)
-          .clamp(kMinFeatureDistanceMeters, kMaxFeatureDistanceMeters);
+      _selectedDistanceMeters =
+          (_selectedDistanceMeters ?? kDefaultFeatureDistanceMeters)
+              .clamp(kMinFeatureDistanceMeters, kMaxFeatureDistanceMeters);
     });
 
     if (context.mounted) {
@@ -842,6 +847,23 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
+  Future<void> _onExportRoute() async {
+    if (_selectedRoute == null ||
+        _selectedRoute!.coordinates == null ||
+        _selectedRoute!.elevationMetrics == null) {
+      UiHelper.showSnackBar(context, 'Unable to export route.',
+          extraMarginBottom: true);
+      return;
+    }
+    final coordinates = _selectedRoute!.coordinates!;
+    final elevation = _selectedRoute!.elevationMetrics!;
+    final gpx = ExportHelper.generateGpx(coordinates, elevation);
+
+    final lastWaypoint =
+        MapBoxPlace.fromRawJson(_selectedRoute!.waypoints.last);
+    await ExportHelper.shareGpxFile(gpx, lastWaypoint.placeName ?? '');
+  }
+
   Future<void> _goToUserLocation({bool isAnimated = true}) async {
     geo.Position? position = await _getCurrentPosition();
     mbm.CameraOptions options = _cameraForUserPosition(position);
@@ -935,8 +957,9 @@ class _MapWidgetState extends State<MapWidget>
         waypoints.add(_selectedPlace!);
       }
     } else if (_viewMode == ViewMode.shuffle) {
-      waypoints.add(
-          CameraHelper.getMapBoxPlaceFromLonLat(_currentOriginCoordinates));
+      waypoints.add(CameraHelper.getMapBoxPlaceFromLonLat(
+          _currentOriginCoordinates,
+          '${FormatHelper.formatDistance(_selectedDistanceMeters, noRemainder: true)} round trip'));
     }
 
     List<dynamic> waypointsJson = [];
@@ -1500,6 +1523,9 @@ class _MapWidgetState extends State<MapWidget>
             onPanelSlide: (double pos) {
               setState(() {
                 _panelPosition = pos;
+                _panelOptionsHeight =
+                    pos * (_getMaxPanelHeight() - _getMinPanelHeight()) +
+                        kPanelFabHeight;
               });
               if (_viewMode == ViewMode.directions ||
                   _viewMode == ViewMode.shuffle) {
@@ -1678,7 +1704,8 @@ class _MapWidgetState extends State<MapWidget>
                                             text: 'Clear Area',
                                             icon: Icons.delete_outline,
                                             onTap: _clearAvoidArea,
-                                            isEnabled: _numAvoidAnnotations != 0,
+                                            isEnabled:
+                                                _numAvoidAnnotations != 0,
                                             foregroundColor: Colors.red,
                                           )),
                                     ),
@@ -1791,6 +1818,24 @@ class _MapWidgetState extends State<MapWidget>
                 onTap: _onDirectionsClicked,
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+          if (_selectedRoute != null)
+            Positioned(
+              right: 4,
+              bottom: _panelOptionsHeight - 10,
+              child: PopupMenuButton(
+                enabled: _selectedRoute?.coordinates?.length ==
+                    _selectedRoute?.elevationMetrics?.length,
+                icon: const Icon(Icons.ios_share),
+                itemBuilder: (BuildContext context) {
+                  return [
+                    PopupMenuItem(
+                      onTap: _onExportRoute,
+                      child: const Text("Export to GPX"),
+                    )
+                  ];
+                },
               ),
             ),
         ],

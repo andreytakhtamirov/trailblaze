@@ -100,8 +100,8 @@ class CameraHelper {
     );
   }
 
-  static MapBoxPlace getMapBoxPlaceFromLonLat(List<double>? coordinates) {
-    return MapBoxPlace(placeName: "Camera Bounds", center: coordinates);
+  static MapBoxPlace getMapBoxPlaceFromLonLat(List<double>? coordinates, String placeName) {
+    return MapBoxPlace(placeName: placeName, center: coordinates);
   }
 
   static Future<double> distanceFromMap(
