@@ -453,6 +453,7 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                   if (!widget.hideSaveRoute && credentials != null)
                     Expanded(
                       child: IconButtonSmall(
+                        iconFontSize: 20,
                         text: _saveRouteButtonText(),
                         icon: _saveRouteButtonIcon(),
                         foregroundColor: _saveRouteButtonForeground(),

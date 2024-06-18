@@ -32,53 +32,58 @@ class MyApp extends StatelessWidget {
       // Uncomment when taking screenshots for app store.
       // debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: const ColorScheme(
-          primary: Color(0xFF255368),
-          brightness: Brightness.light,
-          onPrimary: Color(0xFFF3FBFF),
-          secondary: Color(0xFFFF9800),
-          onSecondary: Color(0xFF88B181),
-          tertiary: Color(0xFF75A56C),
-          onTertiary: Color(0xFFE8951B),
-          error: Color(0xFFCE1515),
-          onError: Color(0xFF000000),
-          background: Color(0xFFFFFFFF),
-          onBackground: Color(0xFF000000),
-          surface: Color(0xFFF6FCFF),
-          onSurface: Color(0xFF000000),
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF255368),
-          foregroundColor: Color(0xFFFFFFFF),
-        ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Color(0xFFF6FCFF),
-          selectedItemColor: Color(0xFF2AA4D7),
-          unselectedItemColor: Color(0xFF66666B),
-          showSelectedLabels: true,
-          showUnselectedLabels: true,
-          type: BottomNavigationBarType.fixed,
-          unselectedLabelStyle: TextStyle(
-            fontWeight: FontWeight.w600,
+          colorScheme: const ColorScheme(
+            primary: Color(0xFF255368),
+            brightness: Brightness.light,
+            onPrimary: Color(0xFFF3FBFF),
+            secondary: Color(0xFFFF9800),
+            onSecondary: Color(0xFF88B181),
+            tertiary: Color(0xFF75A56C),
+            onTertiary: Color(0xFFE8951B),
+            error: Color(0xFFCE1515),
+            onError: Color(0xFF000000),
+            background: Color(0xFFFFFFFF),
+            onBackground: Color(0xFF000000),
+            surface: Color(0xFFF6FCFF),
+            onSurface: Color(0xFF000000),
           ),
-          selectedLabelStyle: TextStyle(
-            fontWeight: FontWeight.bold,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF255368),
+            foregroundColor: Color(0xFFFFFFFF),
           ),
-        ),
-        iconTheme: const IconThemeData(
-          color: Colors.black87,
-        ),
-        tabBarTheme: const TabBarTheme(
-          labelColor: Color(0xFF75A56C),
-          unselectedLabelColor: Color(0xFF98989D),
-          indicatorColor: Color(0xFF75A56C),
-          indicatorSize: TabBarIndicatorSize.tab,
-        ),
-        sliderTheme: const SliderThemeData(
-          inactiveTrackColor: Color(0xFFBDD2DD),
-        ),
-        // TODO textTheme
-      ),
+          bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+            backgroundColor: Color(0xFFF6FCFF),
+            selectedItemColor: Color(0xFF2AA4D7),
+            unselectedItemColor: Color(0xFF66666B),
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            type: BottomNavigationBarType.fixed,
+            unselectedLabelStyle: TextStyle(
+              fontWeight: FontWeight.w600,
+            ),
+            selectedLabelStyle: TextStyle(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          iconTheme: const IconThemeData(
+            color: Colors.black87,
+          ),
+          tabBarTheme: const TabBarTheme(
+            labelColor: Color(0xFF75A56C),
+            unselectedLabelColor: Color(0xFF98989D),
+            indicatorColor: Color(0xFF75A56C),
+            indicatorSize: TabBarIndicatorSize.tab,
+          ),
+          sliderTheme: const SliderThemeData(
+            inactiveTrackColor: Color(0xFFBDD2DD),
+          ),
+          popupMenuTheme: const PopupMenuThemeData(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+            ),
+          )
+          // TODO textTheme
+          ),
       home: const MainPage(),
     );
   }
