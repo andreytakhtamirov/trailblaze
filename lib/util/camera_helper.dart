@@ -4,32 +4,24 @@ import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 
 class CameraHelper {
-  static Map<String?, Object?> interpolatePoints(
-    Map<String?, Object?> centerStart,
-    Map<String?, Object?> centerEnd,
+  static Position interpolatePoints(
+    Position centerStart,
+    Position centerEnd,
     double fraction,
   ) {
-    List<dynamic>? startCoordinates =
-        centerStart['coordinates'] as List<dynamic>?;
-    List<dynamic>? endCoordinates = centerEnd['coordinates'] as List<dynamic>?;
+    double lat = centerStart.lat + (centerEnd.lat - centerStart.lat) * fraction;
+    double lng = centerStart.lng + (centerEnd.lng - centerStart.lng) * fraction;
 
-    if (startCoordinates != null && endCoordinates != null) {
-      double lat = startCoordinates[1] +
-          (endCoordinates[1] - startCoordinates[1]) * fraction;
-      double lng = startCoordinates[0] +
-          (endCoordinates[0] - startCoordinates[0]) * fraction;
-
-      return {
-        'coordinates': [lng, lat],
-      };
-    } else {
-      // Handle null or invalid coordinates
-      return {};
-    }
+    return Position(lng, lat);
   }
 
-  static Future<CameraOptions> cameraOptionsForCoordinates(MapboxMap mapboxMap,
-      List<Map<String?, Object?>> coordinatesList, MbxEdgeInsets? padding, double maxHeight, double maxWidth) {
+  static Future<CameraOptions> cameraOptionsForCoordinates(
+    MapboxMap mapboxMap,
+    List<Point> points,
+    MbxEdgeInsets? padding,
+    double maxHeight,
+    double maxWidth,
+  ) {
     final customPadding = MbxEdgeInsets(
       top: (padding?.top ?? 0) + kFeaturesCameraState.padding.top,
       left: (padding?.left ?? 0) + kFeaturesCameraState.padding.left,
@@ -39,7 +31,8 @@ class CameraHelper {
 
     // For small screen devices where padding might be larger than the screen.
     if (customPadding.top + customPadding.bottom >= maxHeight) {
-      final ratio = maxHeight / (customPadding.top + customPadding.bottom + 100);
+      final ratio =
+          maxHeight / (customPadding.top + customPadding.bottom + 100);
       customPadding.top *= ratio;
       customPadding.bottom *= ratio;
     }
@@ -48,8 +41,8 @@ class CameraHelper {
       customPadding.left -= kFeaturesCameraState.padding.left;
     }
 
-    return mapboxMap.cameraForCoordinates(
-        coordinatesList, customPadding, null, null);
+    return mapboxMap.cameraForCoordinatesPadding(
+        points, CameraOptions(), customPadding, null, null);
   }
 
   static Future<CameraOptions> cameraOptionsForRoute(
@@ -80,7 +73,8 @@ class CameraHelper {
 
     // For small screen devices where padding might be larger than the screen.
     if (customPadding.top + customPadding.bottom >= maxHeight) {
-      final ratio = maxHeight / (customPadding.top + customPadding.bottom + 100);
+      final ratio =
+          maxHeight / (customPadding.top + customPadding.bottom + 100);
       customPadding.top *= ratio;
       customPadding.bottom *= ratio;
     }
@@ -106,14 +100,8 @@ class CameraHelper {
     );
   }
 
-  static MapBoxPlace getMapBoxPlaceFromLonLat(List<double>? coordinates) {
-    return MapBoxPlace(placeName: "Camera Bounds", center: coordinates);
-  }
-
-  static List<double>? centerToCoordinatesLonLat(Map<String?, Object?> center) {
-    return (center['coordinates'] is List<dynamic>)
-        ? List<double>.from(center['coordinates'] as List<dynamic>)
-        : null;
+  static MapBoxPlace getMapBoxPlaceFromLonLat(List<double>? coordinates, String placeName) {
+    return MapBoxPlace(placeName: placeName, center: coordinates);
   }
 
   static Future<double> distanceFromMap(
@@ -121,7 +109,7 @@ class CameraHelper {
     final camera = await map.getCameraState();
     final zoom = camera.zoom;
     final distance = await map.projection.getMetersPerPixelAtLatitude(
-            centerToCoordinatesLonLat(camera.center)![1], zoom) *
+            camera.center.coordinates.lat.toDouble(), zoom) *
         screenSize;
     return distance;
   }

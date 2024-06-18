@@ -10,9 +10,9 @@ class MapLightWidget extends StatelessWidget {
     required this.onScrollListener,
   }) : super(key: key);
 
-  final void Function(mbm.ScreenCoordinate coordinate) onMapTapListener;
+  final void Function(mbm.MapContentGestureContext context) onMapTapListener;
   final void Function(mbm.MapboxMap mapboxMap) onMapCreated;
-  final void Function(mbm.ScreenCoordinate coordinate) onScrollListener;
+  final void Function(mbm.MapContentGestureContext context) onScrollListener;
 
   @override
   Widget build(BuildContext context) {

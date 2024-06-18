@@ -47,21 +47,21 @@ final double kFeatureItemHeight = kScreenHeight / 6;
 const double kDefaultMapZoom = 12;
 
 final CameraState kDefaultCameraState = CameraState(
-    center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
+    center: Point(coordinates: Position(-80.520852, 43.463355)),
     padding: MbxEdgeInsets(top: 100.0, left: 0.0, bottom: 100.0, right: 0.0),
     zoom: kDefaultMapZoom,
     bearing: 0,
     pitch: 0);
 
 final CameraState kRouteCameraState = CameraState(
-    center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
+    center: Point(coordinates: Position(-80.520852, 43.463355)),
     padding: MbxEdgeInsets(top: 150, left: 40, bottom: 150, right: 40),
     zoom: kDefaultMapZoom,
     bearing: 0,
     pitch: 0);
 
 final CameraState kPostDetailsCameraState = CameraState(
-    center: Point(coordinates: Position(-80.520852, 43.463355)).toJson(),
+    center: Point(coordinates: Position(-80.520852, 43.463355)),
     padding: MbxEdgeInsets(top: 40, left: 80, bottom: 240, right: 80),
     zoom: kDefaultMapZoom,
     bearing: 0,

@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
 
+import 'package:trailblaze/util/export_helper.dart';
+import 'package:trailblaze/util/format_helper.dart';
+import 'package:turf/turf.dart' as turf;
 import 'package:dartz/dartz.dart' as dartz;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -61,10 +65,12 @@ class _MapWidgetState extends State<MapWidget>
   MapBoxPlace? _selectedPlace;
   MapBoxPlace _startingLocation = MapBoxPlace(placeName: "My Location");
   String _selectedMode = kDefaultTransportationMode.value;
+  num? _influenceValue;
   List<TrailblazeRoute> routesList = [];
   TrailblazeRoute? _selectedRoute;
   bool _isContentLoading = false;
   bool _mapStyleTouchContext = false;
+  bool _routeControlsTouchContext = false;
   bool _manuallySelectedPlace = false;
   bool _pauseUiCallbacks = false;
   ViewMode _viewMode = ViewMode.search;
@@ -74,13 +80,17 @@ class _MapWidgetState extends State<MapWidget>
   List<tb.Feature>? _features;
   tb.Feature? _selectedFeature;
   double _fabHeight = kPanelFabHeight;
+  double _panelOptionsHeight = kPanelFabHeight;
   double? _selectedDistanceMeters = kDefaultFeatureDistanceMeters;
   geo.Position? _userLocation;
   final GlobalKey _topWidgetKey = GlobalKey();
+  final GlobalKey _shareWidgetKey = GlobalKey();
   double _panelPosition = 0;
 
   bool _isOriginChanged = false;
   bool _isCameraLocked = false;
+  bool _isAvoidAnnotationClicked = false;
+
   List<double>? _currentOriginCoordinates;
   List<double>? _nextOriginCoordinates;
 
@@ -98,6 +108,12 @@ class _MapWidgetState extends State<MapWidget>
     viewportFraction: 0.7,
     keepPage: false,
   );
+
+  bool _isEditingAvoidArea = false;
+  num _area = 0;
+  bool _isAvoidActionUndoable = false;
+  bool _isAvoidActionRedoable = false;
+  int _numAvoidAnnotations = 0;
 
   @override
   void initState() {
@@ -117,11 +133,17 @@ class _MapWidgetState extends State<MapWidget>
     });
 
     if (widget.routeToDisplay != null) {
-      _mapInitializedCompleter.future.then(
-        (value) => {
-          _loadRouteToDisplay(),
-        },
-      );
+      if (Platform.isAndroid) {
+        Future.delayed(const Duration(milliseconds: 50), () {
+          _mapInitializedCompleter.future.then((value) {
+            _loadRouteToDisplay();
+          });
+        });
+      } else {
+        _mapInitializedCompleter.future.then((value) {
+          _loadRouteToDisplay();
+        });
+      }
     }
   }
 
@@ -158,16 +180,32 @@ class _MapWidgetState extends State<MapWidget>
 
     final camera = await _mapboxMap.getCameraState();
     setState(() {
-      _currentOriginCoordinates =
-          CameraHelper.centerToCoordinatesLonLat(camera.center);
+      _currentOriginCoordinates = [
+        camera.center.coordinates.lng.toDouble(),
+        camera.center.coordinates.lat.toDouble()
+      ];
     });
 
-    final circleAnnotationManager =
-        await mapboxMap.annotations.createCircleAnnotationManager();
-    final pointAnnotationManager =
-        await mapboxMap.annotations.createPointAnnotationManager();
-    annotationHelper =
-        AnnotationHelper(pointAnnotationManager, circleAnnotationManager);
+    final pointAnnotationManager = await mapboxMap.annotations
+        .createPointAnnotationManager(id: 'point-layer');
+    final circleAnnotationManager = await mapboxMap.annotations
+        .createCircleAnnotationManager(
+            id: 'circle-layer', below: 'point-layer');
+    final avoidAreaAnnotationManager = await mapboxMap.annotations
+        .createCircleAnnotationManager(id: 'avoid-layer');
+    final polygonAnnotationManager = await mapboxMap.annotations
+        .createPolygonAnnotationManager(id: 'poly-layer', below: 'avoid-layer');
+    annotationHelper = AnnotationHelper(
+      pointAnnotationManager,
+      circleAnnotationManager,
+      avoidAreaAnnotationManager,
+      polygonAnnotationManager,
+      () {
+        setState(() {
+          _isAvoidAnnotationClicked = true;
+        });
+      },
+    );
 
     _mapInitializedCompleter.complete();
   }
@@ -213,18 +251,10 @@ class _MapWidgetState extends State<MapWidget>
     final currentFeature = _features![pageScrollProgress.floor()];
     final nextFeature = _features![pageScrollProgress.ceil()];
 
-    final Map<String?, Object?> currentCameraCenter = {
-      'coordinates': [
-        currentFeature.center['lon'],
-        currentFeature.center['lat']
-      ],
-    };
-    final Map<String?, Object?> nextCameraCenter = {
-      'coordinates': [
-        nextFeature.center['lon'],
-        nextFeature.center['lat'],
-      ],
-    };
+    final currentCameraCenter = mbm.Position(
+        currentFeature.center['lon'], currentFeature.center['lat']);
+    final nextCameraCenter =
+        mbm.Position(nextFeature.center['lon'], nextFeature.center['lat']);
 
     final change = pageScrollProgress - pageScrollProgress.floor();
     final newCenter = CameraHelper.interpolatePoints(
@@ -236,7 +266,7 @@ class _MapWidgetState extends State<MapWidget>
       zoom: cameraState.zoom < 10 || cameraState.zoom > 14
           ? kDefaultCameraState.zoom
           : cameraState.zoom,
-      center: newCenter,
+      center: mbm.Point(coordinates: newCenter),
       bearing: cameraState.bearing,
       padding: camera.padding,
       pitch: cameraState.pitch,
@@ -261,13 +291,8 @@ class _MapWidgetState extends State<MapWidget>
 
       // Fly to place after map is fully initialized to not interfere with animations.
       _mapInitializedCompleter.future.then((_) {
-        final Map<String?, Object?> coordinates = {
-          'coordinates': [
-            f.center['lon'],
-            f.center['lat'],
-          ],
-        };
-        annotationHelper?.drawSingleAnnotation(coordinates);
+        annotationHelper?.drawSingleAnnotation(
+            mbm.Position(f.center['lon'], f.center['lat']));
       });
     }
   }
@@ -275,40 +300,29 @@ class _MapWidgetState extends State<MapWidget>
   Future<void> _updateFeatures() async {
     if (_features == null) return;
 
-    final List<Map<String?, Object?>> coordinatesList = [];
+    final List<mbm.Point> coordinatesList = [];
     for (var f in _features!) {
-      final Map<String?, Object?> coordinates = {
-        'coordinates': [
-          f.center['lon'],
-          f.center['lat'],
-        ],
-      };
-      coordinatesList.add(coordinates);
+      coordinatesList.add(mbm.Point(
+          coordinates: mbm.Position(f.center['lon'], f.center['lat'])));
     }
 
     annotationHelper?.drawCircleAnnotationMulti(coordinatesList);
     await _flyToFeatures(coordinatesList: coordinatesList);
   }
 
-  Future<void> _flyToFeatures(
-      {List<Map<String?, Object?>>? coordinatesList}) async {
+  Future<void> _flyToFeatures({List<mbm.Point>? coordinatesList}) async {
     await _clearCameraPadding();
     if (coordinatesList == null) {
       coordinatesList = [];
       for (var f in _features!) {
-        final Map<String?, Object?> coordinates = {
-          'coordinates': [
-            f.center['lon'],
-            f.center['lat'],
-          ],
-        };
-        coordinatesList.add(coordinates);
+        coordinatesList.add(mbm.Point(
+            coordinates: mbm.Position(f.center['lon'], f.center['lat'])));
       }
     }
 
     if (coordinatesList.length == 1) {
       // Only one feature so just fly to it.
-      _flyToPlace(coordinatesList.first);
+      _flyToPlace(coordinatesList.first.coordinates);
       return;
     }
 
@@ -366,14 +380,15 @@ class _MapWidgetState extends State<MapWidget>
 
     setState(() {
       _isContentLoading = true;
+      _selectedDistanceMeters =
+          (_selectedDistanceMeters ?? kDefaultFeatureDistanceMeters)
+              .clamp(kMinFeatureDistanceMeters, kMaxFeatureDistanceMeters);
     });
 
     if (context.mounted) {
       final featuresPromise = FeatureManager.loadFeatures(
           context,
-          (_selectedDistanceMeters ?? kDefaultFeatureDistanceMeters)
-              .clamp(kMinFeatureDistanceMeters, kMaxFeatureDistanceMeters)
-              .toInt(),
+          (_selectedDistanceMeters ?? kDefaultFeatureDistanceMeters).toInt(),
           _nextOriginCoordinates!);
 
       setState(() {
@@ -413,70 +428,83 @@ class _MapWidgetState extends State<MapWidget>
     _getDirectionsFromSettings();
   }
 
-  void _setMapControlSettings() async {
-    double topOffset = _getTopOffset();
+  void _setMapControlSettings() {
+    Timer(const Duration(milliseconds: 300), () {
+      if (_isEditingAvoidArea) {
+        _mapboxMap.scaleBar
+            .updateSettings(mbm.ScaleBarSettings(enabled: false));
+        _mapboxMap.compass.updateSettings(mbm.CompassSettings(enabled: false));
+        return;
+      }
 
-    final mbm.CompassSettings compassSettings;
-    final mbm.ScaleBarSettings scaleBarSettings;
+      double topOffset = _getTopOffset();
 
-    if ((widget.isInteractiveMap &&
-            _viewMode != ViewMode.shuffle &&
-            _viewMode != ViewMode.directions) ||
-        _viewMode == ViewMode.parks) {
-      topOffset += kOptionsPillHeight;
-    }
+      final mbm.CompassSettings compassSettings;
+      final mbm.ScaleBarSettings scaleBarSettings;
 
-    if (!widget.forceTopBottomPadding) {
-      compassSettings = mbm.CompassSettings(
-          position: kDefaultCompassSettings.position,
-          marginTop: kDefaultCompassSettings.marginTop! + topOffset,
-          marginBottom: kDefaultCompassSettings.marginBottom,
-          marginLeft: kDefaultCompassSettings.marginLeft,
-          marginRight: kDefaultCompassSettings.marginRight);
-      scaleBarSettings = mbm.ScaleBarSettings(
-          isMetricUnits: kDefaultScaleBarSettings.isMetricUnits,
-          position: kDefaultScaleBarSettings.position,
-          marginTop: kDefaultScaleBarSettings.marginTop! + topOffset,
-          marginBottom: kDefaultScaleBarSettings.marginBottom,
-          marginLeft: kDefaultScaleBarSettings.marginLeft,
-          marginRight: kDefaultScaleBarSettings.marginRight);
-    } else {
-      compassSettings = mbm.CompassSettings(
-          position: kPostDetailsCompassSettings.position,
-          marginTop: kPostDetailsCompassSettings.marginTop! + topOffset,
-          marginBottom: kPostDetailsCompassSettings.marginBottom,
-          marginLeft: kPostDetailsCompassSettings.marginLeft,
-          marginRight: kPostDetailsCompassSettings.marginRight);
-      scaleBarSettings = mbm.ScaleBarSettings(
-          isMetricUnits: kPostDetailsScaleBarSettings.isMetricUnits,
-          position: kPostDetailsScaleBarSettings.position,
-          marginTop: kPostDetailsScaleBarSettings.marginTop! + topOffset,
-          marginBottom: kPostDetailsScaleBarSettings.marginBottom,
-          marginLeft: kPostDetailsScaleBarSettings.marginLeft,
-          marginRight: kPostDetailsScaleBarSettings.marginRight);
-    }
+      if ((widget.isInteractiveMap &&
+              _viewMode != ViewMode.shuffle &&
+              _viewMode != ViewMode.directions) ||
+          _viewMode == ViewMode.parks) {
+        topOffset += kOptionsPillHeight;
+      }
 
-    final num bottomOffset = _getMinPanelHeight();
+      if (!widget.forceTopBottomPadding) {
+        compassSettings = mbm.CompassSettings(
+            enabled: true,
+            position: kDefaultCompassSettings.position,
+            marginTop: kDefaultCompassSettings.marginTop! + topOffset,
+            marginBottom: kDefaultCompassSettings.marginBottom,
+            marginLeft: kDefaultCompassSettings.marginLeft,
+            marginRight: kDefaultCompassSettings.marginRight);
+        scaleBarSettings = mbm.ScaleBarSettings(
+            enabled: true,
+            isMetricUnits: kDefaultScaleBarSettings.isMetricUnits,
+            position: kDefaultScaleBarSettings.position,
+            marginTop: kDefaultScaleBarSettings.marginTop! + topOffset,
+            marginBottom: kDefaultScaleBarSettings.marginBottom,
+            marginLeft: kDefaultScaleBarSettings.marginLeft,
+            marginRight: kDefaultScaleBarSettings.marginRight);
+      } else {
+        compassSettings = mbm.CompassSettings(
+            enabled: true,
+            position: kPostDetailsCompassSettings.position,
+            marginTop: kPostDetailsCompassSettings.marginTop! + topOffset,
+            marginBottom: kPostDetailsCompassSettings.marginBottom,
+            marginLeft: kPostDetailsCompassSettings.marginLeft,
+            marginRight: kPostDetailsCompassSettings.marginRight);
+        scaleBarSettings = mbm.ScaleBarSettings(
+            enabled: true,
+            isMetricUnits: kPostDetailsScaleBarSettings.isMetricUnits,
+            position: kPostDetailsScaleBarSettings.position,
+            marginTop: kPostDetailsScaleBarSettings.marginTop! + topOffset,
+            marginBottom: kPostDetailsScaleBarSettings.marginBottom,
+            marginLeft: kPostDetailsScaleBarSettings.marginLeft,
+            marginRight: kPostDetailsScaleBarSettings.marginRight);
+      }
 
-    final mbm.AttributionSettings kDefaultAttributionSettings =
-        mbm.AttributionSettings(
-            position: mbm.OrnamentPosition.BOTTOM_LEFT,
-            marginTop: 0,
-            marginBottom: kAttributionBottomOffset + bottomOffset,
-            marginLeft: kAttributionLeftOffset,
-            marginRight: 0);
+      final num bottomOffset = _getMinPanelHeight();
 
-    final mbm.LogoSettings kDefaultLogoSettings = mbm.LogoSettings(
-        position: mbm.OrnamentPosition.BOTTOM_LEFT,
-        marginTop: 0,
-        marginBottom: kAttributionBottomOffset + bottomOffset,
-        marginLeft: kLogoLeftOffset,
-        marginRight: 0);
+      final mbm.AttributionSettings kDefaultAttributionSettings =
+          mbm.AttributionSettings(
+              position: mbm.OrnamentPosition.BOTTOM_LEFT,
+              marginTop: 0,
+              marginBottom: kAttributionBottomOffset + bottomOffset,
+              marginLeft: kAttributionLeftOffset,
+              marginRight: 0);
 
-    _mapboxMap.compass.updateSettings(compassSettings);
-    _mapboxMap.scaleBar.updateSettings(scaleBarSettings);
-    _mapboxMap.attribution.updateSettings(kDefaultAttributionSettings);
-    _mapboxMap.logo.updateSettings(kDefaultLogoSettings);
+      final mbm.LogoSettings kDefaultLogoSettings = mbm.LogoSettings(
+          position: mbm.OrnamentPosition.BOTTOM_LEFT,
+          marginTop: 0,
+          marginBottom: kAttributionBottomOffset + bottomOffset,
+          marginLeft: kLogoLeftOffset,
+          marginRight: 0);
+
+      _mapboxMap.compass.updateSettings(compassSettings);
+      _mapboxMap.scaleBar.updateSettings(scaleBarSettings);
+      _mapboxMap.attribution.updateSettings(kDefaultAttributionSettings);
+      _mapboxMap.logo.updateSettings(kDefaultLogoSettings);
+    });
   }
 
   double _getTopOffset() {
@@ -542,19 +570,17 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   Future<mbm.CameraOptions> _getCameraOptions(
-      {Map<String?, Object?>? overrideCenter}) async {
+      {mbm.Point? overrideCenter}) async {
     geo.Position? position = await _getCurrentPosition();
 
-    Map<String?, Object?>? center;
+    mbm.Point center;
 
     if (overrideCenter == null) {
       if (position != null &&
           position.latitude != 0 &&
           position.longitude != 0) {
         center = mbm.Point(
-                coordinates:
-                    mbm.Position(position.longitude, position.latitude))
-            .toJson();
+            coordinates: mbm.Position(position.longitude, position.latitude));
       } else {
         center = kDefaultCameraState.center;
       }
@@ -612,23 +638,14 @@ class _MapWidgetState extends State<MapWidget>
     });
 
     final dartz.Either<int, Map<String, dynamic>?> routeResponse;
-    bool isGraphhopperRoute;
-    if ((isRoundTrip &&
-            (profile == TransportationMode.cycling.value ||
-                profile == TransportationMode.gravel_cycling.value ||
-                profile == TransportationMode.walking.value)) ||
-        profile == TransportationMode.gravel_cycling.value) {
-      isGraphhopperRoute = true;
-      routeResponse = await createGraphhopperRoute(
-        profile,
-        waypoints,
-        isRoundTrip: isRoundTrip,
-        distanceMeters: distance,
-      );
-    } else {
-      isGraphhopperRoute = false;
-      routeResponse = await createRoute(profile, waypoints);
-    }
+    routeResponse = await createGraphhopperRoute(
+      profile,
+      waypoints,
+      isRoundTrip: isRoundTrip,
+      distanceMeters: distance,
+      avoidArea: annotationHelper?.getAvoidPolygon(),
+      influence: _influenceValue,
+    );
 
     setState(() {
       _isContentLoading = false;
@@ -675,7 +692,7 @@ class _MapWidgetState extends State<MapWidget>
         waypoints,
         routeData?['routeOptions'],
         isActive: isFirstRoute,
-        isGraphhopperRoute: isGraphhopperRoute,
+        isGraphhopperRoute: true,
       );
 
       _drawRoute(route);
@@ -714,9 +731,11 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   void _onFlyToRoute() async {
-    if (_selectedRoute != null) {
-      _flyToRoute(_selectedRoute!);
-    }
+    Timer(const Duration(milliseconds: 300), () {
+      if (_selectedRoute != null) {
+        _flyToRoute(_selectedRoute!);
+      }
+    });
   }
 
   Future<void> _mapFlyToOptions(mbm.CameraOptions options,
@@ -729,10 +748,10 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
-  Future<void> _flyToPlace(Map<String?, dynamic> coordinates) {
+  Future<void> _flyToPlace(mbm.Position coordinates) {
     return _mapFlyToOptions(
       mbm.CameraOptions(
-          center: coordinates,
+          center: mbm.Point(coordinates: coordinates),
           padding: _getCameraPadding(),
           zoom: kDefaultCameraState.zoom + kPointSelectedCameraZoomOffset,
           bearing: kDefaultCameraState.bearing,
@@ -770,7 +789,17 @@ class _MapWidgetState extends State<MapWidget>
 
   Future<void> _drawRoute(TrailblazeRoute route) async {
     await annotationHelper?.deleteAllAnnotations();
-    await _mapboxMap.style.addSource(route.geoJsonSource);
+    try {
+      await _mapboxMap.style.addSource(route.geoJsonSource);
+    } catch (e) {
+      // Source might exist already
+    }
+
+    try {
+      await _mapboxMap.style.removeStyleLayer(route.lineLayer.id);
+    } catch (e) {
+      // Route layer might have been removed already.
+    }
 
     try {
       await _mapboxMap.style
@@ -783,18 +812,12 @@ class _MapWidgetState extends State<MapWidget>
     for (var i = 0; i < route.waypoints.length; i++) {
       final waypoint = route.waypoints[i];
       final mbp = MapBoxPlace.fromRawJson(waypoint);
-
-      final Map<String?, Object?> coordinates = {
-        'coordinates': [
-          mbp.center?[0],
-          mbp.center?[1],
-        ],
-      };
+      final point = mbm.Position(mbp.center?[0] ?? 0, mbp.center?[1] ?? 0);
 
       if (i == 0) {
-        annotationHelper?.drawStartAnnotation(coordinates);
+        annotationHelper?.drawStartAnnotation(point);
       } else {
-        annotationHelper?.drawSingleAnnotation(coordinates);
+        annotationHelper?.drawSingleAnnotation(point);
       }
     }
   }
@@ -825,6 +848,26 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
+  Future<void> _onExportRoute() async {
+    if (_selectedRoute == null ||
+        _selectedRoute!.coordinates == null ||
+        _selectedRoute!.elevationMetrics == null) {
+      UiHelper.showSnackBar(context, 'Unable to export route.',
+          extraMarginBottom: true);
+      return;
+    }
+    final coordinates = _selectedRoute!.coordinates!;
+    final elevation = _selectedRoute!.elevationMetrics!;
+    final gpx = ExportHelper.generateGpx(coordinates, elevation);
+
+    final lastWaypoint =
+        MapBoxPlace.fromRawJson(_selectedRoute!.waypoints.last);
+    final box =
+        (_shareWidgetKey.currentContext?.findRenderObject() as RenderBox);
+    await ExportHelper.shareGpxFile(gpx, lastWaypoint.placeName ?? '',
+        box.localToGlobal(Offset.zero) & box.size);
+  }
+
   Future<void> _goToUserLocation({bool isAnimated = true}) async {
     geo.Position? position = await _getCurrentPosition();
     mbm.CameraOptions options = _cameraForUserPosition(position);
@@ -833,12 +876,11 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   mbm.CameraOptions _cameraForUserPosition(geo.Position? position) {
-    Map<String?, Object?>? center;
+    final mbm.Point center;
 
     if (position != null && position.latitude != 0 && position.longitude != 0) {
       center = mbm.Point(
-              coordinates: mbm.Position(position.longitude, position.latitude))
-          .toJson();
+          coordinates: mbm.Position(position.longitude, position.latitude));
     } else {
       center = kDefaultCameraState.center;
     }
@@ -857,8 +899,10 @@ class _MapWidgetState extends State<MapWidget>
   void _setNextOriginCoordinates(mbm.CameraOptions options) {
     if (options.center != null) {
       setState(() {
-        _nextOriginCoordinates =
-            CameraHelper.centerToCoordinatesLonLat(options.center!);
+        _nextOriginCoordinates = [
+          options.center?.coordinates.lng.toDouble() ?? 0,
+          options.center?.coordinates.lat.toDouble() ?? 0
+        ];
       });
     }
   }
@@ -897,12 +941,9 @@ class _MapWidgetState extends State<MapWidget>
         });
       }
 
-      final coordinates = <String, Object?>{
-        'coordinates': place.center?.cast<num>()
-      };
-
-      _flyToPlace(coordinates);
-      annotationHelper?.drawSingleAnnotation(coordinates);
+      _flyToPlace(mbm.Position(place.center?[0] ?? 0, place.center?[1] ?? 0));
+      annotationHelper?.drawSingleAnnotation(
+          mbm.Position(place.center?[0] ?? 0, place.center?[1] ?? 0));
     } else {
       annotationHelper?.deleteAllAnnotations();
     }
@@ -920,8 +961,9 @@ class _MapWidgetState extends State<MapWidget>
         waypoints.add(_selectedPlace!);
       }
     } else if (_viewMode == ViewMode.shuffle) {
-      waypoints.add(
-          CameraHelper.getMapBoxPlaceFromLonLat(_currentOriginCoordinates));
+      waypoints.add(CameraHelper.getMapBoxPlaceFromLonLat(
+          _currentOriginCoordinates,
+          '${FormatHelper.formatDistance(_selectedDistanceMeters, noRemainder: true)} round trip'));
     }
 
     List<dynamic> waypointsJson = [];
@@ -932,7 +974,70 @@ class _MapWidgetState extends State<MapWidget>
     _displayRoute(_selectedMode, waypointsJson);
   }
 
-  Future<void> _onMapTapListener(mbm.ScreenCoordinate coordinate) async {
+  void _clearAvoidArea() {
+    annotationHelper?.deleteAvoidArea();
+    setState(() {
+      _area = 0;
+    });
+    _onAvoidAnnotationsUpdate();
+  }
+
+  void _undoAvoidArea() async {
+    annotationHelper?.undoLastAction();
+    _onAvoidAnnotationsUpdate();
+    _updateAvoidPoly();
+  }
+
+  void _redoAvoidArea() async {
+    annotationHelper?.redoLastAction();
+    _onAvoidAnnotationsUpdate();
+    _updateAvoidPoly();
+  }
+
+  void _updateAvoidPoly() {
+    if (annotationHelper != null &&
+        annotationHelper!.avoidAnnotations.length > 2) {
+      annotationHelper?.drawPolygonAnnotation();
+    }
+  }
+
+  void _onAvoidAnnotationsUpdate() {
+    setState(() {
+      _numAvoidAnnotations = annotationHelper?.avoidAnnotations.length ?? 0;
+      _isAvoidActionUndoable = annotationHelper?.canUndoAvoidAction() ?? false;
+      _isAvoidActionRedoable = annotationHelper?.canRedoAvoidAction() ?? false;
+    });
+
+    final mbm.Polygon? poly = annotationHelper?.getAvoidPolygon();
+    setState(() {
+      if (poly != null) {
+        _area = turf.area(poly) ?? 0; // Square km
+      } else {
+        _area = 0;
+      }
+    });
+  }
+
+  Future<void> _onMapTapListener(mbm.MapContentGestureContext context) async {
+    final coordinate = context.point.coordinates;
+
+    if (_isEditingAvoidArea) {
+      Timer(const Duration(milliseconds: 10), () async {
+        if (_isAvoidAnnotationClicked) {
+          // Action already handled by annotation callback.
+          setState(() {
+            _isAvoidAnnotationClicked = false;
+          });
+        } else {
+          await annotationHelper?.showAvoidAnnotation(coordinate);
+        }
+
+        _updateAvoidPoly();
+        _onAvoidAnnotationsUpdate();
+      });
+      return;
+    }
+
     if (_viewMode != ViewMode.directions) {
       await annotationHelper?.deletePointAnnotations();
     }
@@ -943,8 +1048,8 @@ class _MapWidgetState extends State<MapWidget>
 
       selectedRoute = await AnnotationHelper.getRouteByClickProximity(
         routesList,
-        coordinate.y,
-        coordinate.x,
+        coordinate.lng,
+        coordinate.lat,
         cameraState.zoom,
       );
 
@@ -952,7 +1057,7 @@ class _MapWidgetState extends State<MapWidget>
       if (selectedRoute != null && selectedRoute != _selectedRoute) {
         _setSelectedRoute(selectedRoute);
         // We've handled the click event so
-        //  we can ignore all other things.
+        //  we can avoid all other things.
         return;
       }
 
@@ -961,27 +1066,30 @@ class _MapWidgetState extends State<MapWidget>
     } else if (_viewMode == ViewMode.parks && _features != null) {
       final cameraState = await _mapboxMap.getCameraState();
       final closestFeature = await AnnotationHelper.getFeatureByClickProximity(
-          _features!, coordinate.y, coordinate.x, cameraState.zoom);
+          _features!, coordinate.lng, coordinate.lat, cameraState.zoom);
 
       if (closestFeature != null) {
         onManuallySelectFeature(closestFeature);
         return;
       } else {
         await _togglePanel(false);
-        _selectOriginOnMap([coordinate.y, coordinate.x]);
+        _selectOriginOnMap(
+            [coordinate.lng.toDouble(), coordinate.lat.toDouble()]);
         return;
       }
     } else if (_viewMode == ViewMode.shuffle) {
-      _selectOriginOnMap([coordinate.y, coordinate.x]);
+      _selectOriginOnMap(
+          [coordinate.lng.toDouble(), coordinate.lat.toDouble()]);
       return;
     }
 
-    MapBoxPlace place = MapBoxPlace(center: [coordinate.y, coordinate.x]);
+    MapBoxPlace place = MapBoxPlace(
+        center: [coordinate.lng.toDouble(), coordinate.lat.toDouble()]);
 
     _onSelectPlace(place);
 
-    Future<List<MapBoxPlace>?> futurePlaces =
-        geocoding.getAddress(Location(lat: coordinate.x, lng: coordinate.y));
+    Future<List<MapBoxPlace>?> futurePlaces = geocoding.getAddress(Location(
+        lat: coordinate.lat.toDouble(), lng: coordinate.lng.toDouble()));
 
     futurePlaces.then((places) {
       setState(() {
@@ -1006,16 +1114,17 @@ class _MapWidgetState extends State<MapWidget>
       }
 
       placeName ??=
-          "(${coordinate.y.toStringAsFixed(4)}, ${coordinate.x.toStringAsFixed(4)})";
+          "(${coordinate.lng.toStringAsFixed(4)}, ${coordinate.lat.toStringAsFixed(4)})";
 
       MapBoxPlace updatedPlace = MapBoxPlace(
-          placeName: placeName, center: [coordinate.y, coordinate.x]);
+          placeName: placeName,
+          center: [coordinate.lng.toDouble(), coordinate.lat.toDouble()]);
       _onSelectPlace(updatedPlace, isPlaceDataUpdate: true);
       _setMapControlSettings();
     });
   }
 
-  void _onMapScrollListener(mbm.ScreenCoordinate c) async {
+  void _onMapScrollListener(mbm.MapContentGestureContext context) async {
     if (_isCameraLocked) {
       setState(() {
         _isCameraLocked = false;
@@ -1032,10 +1141,8 @@ class _MapWidgetState extends State<MapWidget>
       _nextOriginCoordinates = coordinates;
       _isOriginChanged = true;
     });
-    final Map<String?, Object?> jsonCoordinates = {
-      'coordinates': _nextOriginCoordinates,
-    };
-    annotationHelper?.drawOriginAnnotation(jsonCoordinates);
+    annotationHelper?.drawOriginAnnotation(
+        mbm.Position(_nextOriginCoordinates![0], _nextOriginCoordinates![1]));
   }
 
   void _onDirectionsBackClicked() {
@@ -1048,6 +1155,8 @@ class _MapWidgetState extends State<MapWidget>
 
     _setOriginToUserLocation();
     annotationHelper?.deleteCircleAnnotations();
+    annotationHelper?.clearAvoidActionHistory();
+    _clearAvoidArea();
     _setMapControlSettings();
   }
 
@@ -1060,9 +1169,11 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
-  void _onTransportationModeChanged(TransportationMode mode) {
+  void _onRouteSettingsChanged(TransportationMode mode, num? influenceValue) {
     setState(() {
       _selectedMode = mode.value;
+      _influenceValue = influenceValue;
+      _routeControlsTouchContext = false;
     });
 
     _getDirectionsFromSettings();
@@ -1128,15 +1239,27 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
-  void onTapOutsideMapStyle(PointerDownEvent event) {
+  void _onTapOutsideMapStyle(PointerDownEvent event) {
     setState(() {
       _mapStyleTouchContext = false;
     });
   }
 
-  void onTapInsideMapStyle(PointerDownEvent event) {
+  void _onTapInsideMapStyle(PointerDownEvent event) {
     setState(() {
       _mapStyleTouchContext = true;
+    });
+  }
+
+  void _onCollapseRouteControls() {
+    setState(() {
+      _routeControlsTouchContext = false;
+    });
+  }
+
+  void _onExpandRouteControls() {
+    setState(() {
+      _routeControlsTouchContext = true;
     });
   }
 
@@ -1145,7 +1268,7 @@ class _MapWidgetState extends State<MapWidget>
     await _setViewMode(ViewMode.directions);
 
     if (_selectedMode == TransportationMode.none.value) {
-      // Prompt user to select mode
+      _onExpandRouteControls();
       return;
     }
 
@@ -1248,6 +1371,23 @@ class _MapWidgetState extends State<MapWidget>
         });
       }
       _queryForRoundTrip();
+    }
+  }
+
+  void _onMapControlChanged(bool isEditingAvoidArea) {
+    setState(() {
+      _isEditingAvoidArea = isEditingAvoidArea;
+    });
+
+    if (_isEditingAvoidArea) {
+      annotationHelper
+          ?.showAvoidAnnotations(annotationHelper?.avoidAnnotations ?? []);
+    } else {
+      annotationHelper?.hideAvoidAnnotations();
+      _getDirectionsFromSettings();
+      setState(() {
+        _routeControlsTouchContext = false;
+      });
     }
   }
 
@@ -1387,6 +1527,9 @@ class _MapWidgetState extends State<MapWidget>
             onPanelSlide: (double pos) {
               setState(() {
                 _panelPosition = pos;
+                _panelOptionsHeight =
+                    pos * (_getMaxPanelHeight() - _getMinPanelHeight()) +
+                        kPanelFabHeight;
               });
               if (_viewMode == ViewMode.directions ||
                   _viewMode == ViewMode.shuffle) {
@@ -1527,17 +1670,55 @@ class _MapWidgetState extends State<MapWidget>
                                     ? 54
                                     : 0),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Visibility(
+                                  visible: _isEditingAvoidArea,
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.fromLTRB(32, 12, 0, 0),
+                                    child: Row(
+                                      children: [
+                                        IconButtonSmall(
+                                          icon: Icons.undo_rounded,
+                                          onTap: _undoAvoidArea,
+                                          isEnabled: _isAvoidActionUndoable,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        IconButtonSmall(
+                                          icon: Icons.redo_rounded,
+                                          onTap: _redoAvoidArea,
+                                          isEnabled: _isAvoidActionRedoable,
+                                        ),
+                                        const SizedBox(width: 4),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
+                                    Visibility(
+                                      visible: _isEditingAvoidArea,
+                                      child: Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                              16, 8, 16, 0),
+                                          child: IconButtonSmall(
+                                            text: 'Clear Area',
+                                            icon: Icons.delete_outline,
+                                            onTap: _clearAvoidArea,
+                                            isEnabled:
+                                                _numAvoidAnnotations != 0,
+                                            foregroundColor: Colors.red,
+                                          )),
+                                    ),
                                     Padding(
                                       padding: const EdgeInsets.fromLTRB(
                                           16, 8, 16, 0),
                                       child: TapRegion(
-                                        onTapOutside: onTapOutsideMapStyle,
-                                        onTapInside: onTapInsideMapStyle,
+                                        onTapOutside: _onTapOutsideMapStyle,
+                                        onTapInside: _onTapInsideMapStyle,
                                         child: MapStyleSelector(
                                           onStyleChanged: _onStyleChanged,
                                           hasTouchContext:
@@ -1643,6 +1824,25 @@ class _MapWidgetState extends State<MapWidget>
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
+          if (_selectedRoute != null)
+            Positioned(
+              right: 4,
+              bottom: _panelOptionsHeight - 10,
+              child: PopupMenuButton(
+                key: _shareWidgetKey,
+                enabled: _selectedRoute?.coordinates?.length ==
+                    _selectedRoute?.elevationMetrics?.length,
+                icon: const Icon(Icons.ios_share),
+                itemBuilder: (BuildContext context) {
+                  return [
+                    PopupMenuItem(
+                      onTap: _onExportRoute,
+                      child: const Text("Export to GPX"),
+                    )
+                  ];
+                },
+              ),
+            ),
         ],
       ),
     );
@@ -1659,13 +1859,22 @@ class _MapWidgetState extends State<MapWidget>
             : CrossFadeState.showFirst,
         firstChild: PlaceSearchBar(
             onSelected: _onSelectPlace, selectedPlace: _selectedPlace),
-        secondChild: InkWell(
-          onTap: _showEditDirectionsScreen,
+        secondChild: TapRegion(
+          onTapOutside: (_) {
+            _onCollapseRouteControls();
+          },
           child: PickedLocationsWidget(
             onBackClicked: _onDirectionsBackClicked,
-            onModeChanged: _onTransportationModeChanged,
+            onOptionsChanged: _onRouteSettingsChanged,
+            onMapControlChanged: _onMapControlChanged,
+            onEditWaypoints: _showEditDirectionsScreen,
+            onClearAvoidArea: _clearAvoidArea,
+            onExpand: _onExpandRouteControls,
+            onCollapse: _onCollapseRouteControls,
             startingLocation: _startingLocation,
             endingLocation: _selectedPlace,
+            hasTouchContext: _routeControlsTouchContext,
+            avoidArea: _area,
             waypoints: const [],
             selectedMode: getTransportationModeFromString(_selectedMode),
           ),
@@ -1680,7 +1889,7 @@ class _MapWidgetState extends State<MapWidget>
       duration: const Duration(milliseconds: 300),
       child: RoundTripControlsWidget(
         onBackClicked: _onDirectionsBackClicked,
-        onModeChanged: _onTransportationModeChanged,
+        onModeChanged: _onRouteSettingsChanged,
         selectedMode: getTransportationModeFromString(_selectedMode),
         selectedDistanceMeters: _selectedDistanceMeters,
         onDistanceChanged: _queryForRoundTrip,

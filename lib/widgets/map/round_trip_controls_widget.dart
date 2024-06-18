@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/constants/ui_control_constants.dart';
 import 'package:trailblaze/screens/distance_selector_screen.dart';
 import 'package:trailblaze/util/firebase_helper.dart';
@@ -12,7 +11,7 @@ import '../../data/transportation_mode.dart';
 class RoundTripControlsWidget extends StatelessWidget {
   final TransportationMode selectedMode;
   final void Function() onBackClicked;
-  final void Function(TransportationMode) onModeChanged;
+  final void Function(TransportationMode, double?) onModeChanged;
   final double? selectedDistanceMeters;
   final List<double>? center;
   final Function({double? distanceMeters}) onDistanceChanged;
@@ -74,9 +73,9 @@ class RoundTripControlsWidget extends StatelessWidget {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
                 child: TransportationModeWidget(
-                    onSelected: onModeChanged,
+                    onSelected: (mode) => {onModeChanged(mode, null)},
                     initialMode: selectedMode,
                     isMinifiedView: selectedMode == TransportationMode.none),
               ),
@@ -95,35 +94,6 @@ class RoundTripControlsWidget extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Widget _buildLocationTile({required String title, String? subtitle}) {
-    bool isDense = subtitle == null;
-    return ListTile(
-        dense: isDense,
-        visualDensity: VisualDensity.comfortable,
-        title: Text(
-          title,
-          maxLines: selectedMode == TransportationMode.none ? 5 : 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 14.0,
-            fontWeight: !isDense ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        subtitle: !isDense
-            ? Padding(
-                padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
-                child: Text(
-                  subtitle,
-                  maxLines: selectedMode == TransportationMode.none ? 5 : 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16.0,
-                  ),
-                ),
-              )
-            : null);
   }
 
   Widget _buildControls(BuildContext context) {
