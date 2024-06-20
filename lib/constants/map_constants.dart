@@ -97,7 +97,7 @@ final kFeaturesPaneOffset = kPanelMaxHeight;
 
 final CompassSettings kDefaultCompassSettings = CompassSettings(
     position: OrnamentPosition.TOP_LEFT,
-    marginTop: kMapUiTopOffset + kCompassTopOffset + kAndroidTopOffset * 2,
+    marginTop: kMapUiTopOffset + kCompassTopOffset + kAndroidTopOffset * 4,
     marginBottom: 0,
     marginLeft: kMapUiPadding,
     marginRight: 0);
