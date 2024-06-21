@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart' as geo;
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/constants/ui_control_constants.dart';
@@ -24,7 +24,7 @@ class FeaturesPanel extends StatelessWidget {
   final PanelController panelController;
   final PageController pageController;
   final List<Feature>? features;
-  final geo.Position? userLocation;
+  final mbm.Position? userLocation;
   final double? selectedDistanceMeters;
   final Function(int page) onFeaturePageChanged;
   final Function(double distance) onDistanceChanged;
@@ -116,7 +116,7 @@ class FeaturesPanel extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => DistanceSelectorScreen(
-                      center: [userLocation!.longitude, userLocation!.latitude],
+                      center: [userLocation!.lng.toDouble(), userLocation!.lat.toDouble()],
                       initialDistanceMeters: selectedDistanceMeters ??
                           kDefaultFeatureDistanceMeters,
                       minDistanceKm: kMinFeatureDistanceMeters / 1000,

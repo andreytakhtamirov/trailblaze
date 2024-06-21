@@ -24,7 +24,7 @@ class PickedLocationsWidget extends StatefulWidget {
   final void Function() onExpand;
   final void Function() onCollapse;
   final void Function() onBackClicked;
-  final void Function(TransportationMode, num) onOptionsChanged;
+  final void Function(TransportationMode, num, bool isSilent) onOptionsChanged;
   final void Function(bool) onMapControlChanged;
 
   const PickedLocationsWidget({
@@ -106,6 +106,7 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
           .floorToDouble(); // Initially select the mean of the min and max.
     });
     _onSliderChanged(_selectedValue);
+    _onSliderChangeEnd(_selectedValue, isSilentUpdate: true);
   }
 
   void _onSliderChanged(double value) {
@@ -115,8 +116,8 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
     });
   }
 
-  void _onSliderChangeEnd(value) async {
-    widget.onOptionsChanged(widget.selectedMode, _selectedDistance);
+  void _onSliderChangeEnd(double value, {bool isSilentUpdate = false}) async {
+    widget.onOptionsChanged(widget.selectedMode, _selectedDistance, isSilentUpdate);
   }
 
   int _determineCurrentState() {
@@ -350,7 +351,7 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
               _showBlendSlider(showTitle: true),
               TransportationModeWidget(
                   onSelected: (mode) =>
-                      {widget.onOptionsChanged(mode, _selectedDistance)},
+                      {widget.onOptionsChanged(mode, _selectedDistance, false)},
                   initialMode: widget.selectedMode,
                   isMinifiedView:
                       widget.selectedMode == TransportationMode.none),
