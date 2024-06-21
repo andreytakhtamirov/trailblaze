@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:trailblaze/data/feature.dart';
-import 'package:geolocator/geolocator.dart' as geo;
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:turf/turf.dart' as turf;
 
 class FeatureItem extends StatelessWidget {
   final Feature feature;
-  final geo.Position? userLocation;
+  final turf.Position? userLocation;
   final void Function() onClicked;
 
   const FeatureItem({
@@ -21,12 +19,11 @@ class FeatureItem extends StatelessWidget {
       return "";
     }
 
-    final point1Coord = mbm.Point(
-      coordinates:
-          mbm.Position(userLocation!.longitude, userLocation!.latitude),
+    final point1Coord = turf.Point(
+      coordinates: turf.Position(userLocation!.lng, userLocation!.lat),
     );
-    final point2Coord = mbm.Point(
-      coordinates: mbm.Position(feature.center['lon'], feature.center['lat']),
+    final point2Coord = turf.Point(
+      coordinates: turf.Position(feature.center['lon'], feature.center['lat']),
     );
 
     final distance = turf.distance(point1Coord, point2Coord);
@@ -68,7 +65,8 @@ class FeatureItem extends StatelessWidget {
                                 child: FittedBox(
                                   child: Icon(
                                     Icons.forest_rounded,
-                                    color: Theme.of(context).colorScheme.tertiary,
+                                    color:
+                                        Theme.of(context).colorScheme.tertiary,
                                   ),
                                 ),
                               ),

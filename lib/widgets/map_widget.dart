@@ -68,6 +68,7 @@ class _MapWidgetState extends State<MapWidget>
   num? _influenceValue;
   List<TrailblazeRoute> routesList = [];
   TrailblazeRoute? _selectedRoute;
+  bool _fetchRouteOnNextUpdate = false;
   bool _isContentLoading = false;
   bool _mapStyleTouchContext = false;
   bool _routeControlsTouchContext = false;
@@ -82,7 +83,7 @@ class _MapWidgetState extends State<MapWidget>
   double _fabHeight = kPanelFabHeight;
   double _panelOptionsHeight = kPanelFabHeight;
   double? _selectedDistanceMeters = kDefaultFeatureDistanceMeters;
-  geo.Position? _userLocation;
+  mbm.Position? _userLocation;
   final GlobalKey _topWidgetKey = GlobalKey();
   final GlobalKey _shareWidgetKey = GlobalKey();
   double _panelPosition = 0;
@@ -563,7 +564,7 @@ class _MapWidgetState extends State<MapWidget>
 
     setState(() {
       _startingLocation = myLocation;
-      _userLocation = position;
+      _userLocation = mbm.Position(position.longitude, position.latitude);
     });
 
     return position;
@@ -1169,14 +1170,22 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
-  void _onRouteSettingsChanged(TransportationMode mode, num? influenceValue) {
+  void _onRouteSettingsChanged(
+      TransportationMode mode, num? influenceValue, bool isSilent) {
     setState(() {
       _selectedMode = mode.value;
       _influenceValue = influenceValue;
       _routeControlsTouchContext = false;
     });
 
-    _getDirectionsFromSettings();
+    if (!isSilent || _fetchRouteOnNextUpdate) {
+      if (_fetchRouteOnNextUpdate) {
+        setState(() {
+          _fetchRouteOnNextUpdate = false;
+        });
+      }
+      _getDirectionsFromSettings();
+    }
   }
 
   Future<void> _showEditDirectionsScreen() async {
@@ -1196,7 +1205,7 @@ class _MapWidgetState extends State<MapWidget>
       return;
     }
 
-    final List<dynamic> waypoints = result['waypoints'];
+    //final List<dynamic> waypoints = result['waypoints']; TODO not implemented
     final MapBoxPlace startingLocation = result['startingLocation'];
     final MapBoxPlace endingLocation = result['endingLocation'];
 
@@ -1206,7 +1215,10 @@ class _MapWidgetState extends State<MapWidget>
 
     annotationHelper?.deleteAllAnnotations();
     _onSelectPlace(endingLocation);
-    _displayRoute(_selectedMode, waypoints);
+
+    setState(() {
+      _fetchRouteOnNextUpdate = true;
+    });
   }
 
   void _onStyleChanged(String newStyleId) async {
@@ -1889,7 +1901,9 @@ class _MapWidgetState extends State<MapWidget>
       duration: const Duration(milliseconds: 300),
       child: RoundTripControlsWidget(
         onBackClicked: _onDirectionsBackClicked,
-        onModeChanged: _onRouteSettingsChanged,
+        onModeChanged: (TransportationMode mode, double? distance) {
+          _onRouteSettingsChanged(mode, distance, false);
+        },
         selectedMode: getTransportationModeFromString(_selectedMode),
         selectedDistanceMeters: _selectedDistanceMeters,
         onDistanceChanged: _queryForRoundTrip,

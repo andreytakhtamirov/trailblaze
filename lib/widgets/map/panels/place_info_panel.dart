@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:mapbox_search/mapbox_search.dart';
+import 'package:trailblaze/util/distance_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
-import 'package:turf/turf.dart' as turf;
 
 class PlaceInfoPanel extends StatefulWidget {
   const PlaceInfoPanel({
@@ -12,7 +11,7 @@ class PlaceInfoPanel extends StatefulWidget {
     this.userLocation,
   }) : super(key: key);
   final MapBoxPlace? selectedPlace;
-  final Position? userLocation;
+  final mbm.Position? userLocation;
 
   @override
   State<PlaceInfoPanel> createState() => _PlaceInfoPanelState();
@@ -26,16 +25,13 @@ class _PlaceInfoPanelState extends State<PlaceInfoPanel> {
       return null;
     }
 
-    final point1Coord = mbm.Point(
-      coordinates: mbm.Position(
-          widget.userLocation!.latitude, widget.userLocation!.longitude),
-    );
-    final point2Coord = mbm.Point(
-      coordinates: mbm.Position(
-          widget.selectedPlace!.center![1], widget.selectedPlace!.center![0]),
-    );
-
-    return turf.distance(point1Coord, point2Coord, turf.Unit.meters);
+    return DistanceHelper.euclideanDistance(
+        mbm.Point(
+            coordinates: mbm.Position(widget.selectedPlace?.center?[0] ?? 0,
+                widget.selectedPlace?.center?[1] ?? 0)),
+        mbm.Point(
+          coordinates: widget.userLocation!,
+        ));
   }
 
   @override
