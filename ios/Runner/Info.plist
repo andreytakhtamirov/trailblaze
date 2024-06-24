@@ -57,9 +57,9 @@
 		<string>MKDirectionsModePedestrian</string>
 	</array>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Location permissions are needed to show your location on the map.</string>
+	<string>The app uses your location to find nearby parks and determine the starting point for routes.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Location permissions are needed to show your location on the map.</string>
+	<string>The app uses your location to find nearby parks and determine the starting point for routes.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Photo Library permissions are needed to select a profile picture.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
