@@ -3,6 +3,11 @@
 
 A route-planning app that finds the scenic way to get to places. 
 
+<img width="190" alt="route preview" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/d2b5d956-3972-49fe-80af-8cf96e5e9149">&nbsp;&nbsp;
+<img width="190" alt="route info" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/281f7fee-834e-4b81-9818-9d38f97e6380">&nbsp;&nbsp;
+<img width="190" alt="features view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/622ec0d7-58eb-4799-90c2-534a8a327ac6">&nbsp;&nbsp;
+<img width="190" alt="pin view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/2c136947-de79-4216-b809-dd27772be4c4">
+<img width="190" alt="pin view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/d1199edb-a188-4687-9489-e9f52f81d8d1">
 
 ## Releases
 Available on the [App Store](https://apps.apple.com/ca/app/trailblaze/id6450859439) for iOS
@@ -11,23 +16,34 @@ Android release and development builds:
 [![Latest Release](https://img.shields.io/github/v/release/andreytakhtamirov/trailblaze-flutter?include_prereleases&style=flat)](https://github.com/andreytakhtamirov/trailblaze-flutter/releases/latest)
 
 
-## Features
-- Find new routes to your favorite places with directions for walking and cycling.
-- Explore nearby parks within your chosen travel distance.
-- See details about your trip, including distance, time, and surface information.
-- 🏔️🚴 **[BETA] Routing for gravel cycling, prioritizing unpaved trails (available only in North America)**.
-- Sign in and customize your profile.
+## Key Features:
+- Find new routes to your favourite destinations with directions for walking and cycling.
+- Take advantage of optimized routing for gravel cycling, prioritizing unpaved trails/roads.
+- Customize your route by selecting the ideal mix of trails and specifying an area to avoid.
+
+## Additional Features:
+- Explore nearby parks within your preferred travel distance.
+- View trip details such as distance, estimated time, and surface information.
+- Sign in to personalize and manage your profile, including saving routes for future adventures.
+- Export routes to GPX.
+- Route Explorer: Choose a distance and discover nearby loops.
 
 <br>
 
-- *[COMING SOON] Discover page with routes from other users.*
-- *[COMING SOON] Save and share your own routes.*
 
-## Screenshots
-<img width="400" alt="route preview" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/91a2d70a-c1ab-48fe-ac2d-877f2ad9612c">
-<img width="400" alt="route info" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/2885f8c0-15c0-4864-bdfb-d1ece401a47e">
-<img width="400" alt="features view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/416f73eb-add5-48fe-aefe-6df4f8009013">
-<img width="400" alt="pin view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/c09c51a1-a023-44aa-b3fe-2f45fd9f52c1">
+## Coming Soon
+- *Discover page with routes from other users.*
+- Save and share your own routes.*
+
+<br>
+<br>
+
+📜 [Terms](https://github.com/andreytakhtamirov/trailblaze-flutter/blob/main/terms_and_conditions.md#terms-and-conditions)
+
+🛡️ [Privacy Policy](https://github.com/andreytakhtamirov/trailblaze-flutter//blob/main/privacy_policy.md#privacy-policy)
+
+<br>
+<br>
 
 ## Building
 
@@ -72,5 +88,3 @@ Trailblaze was a 4-month long capstone project completed by Andrey Takhtamirov, 
 Both projects are now open-sourced and available here:
 - https://dev.azure.com/trailblaze/trailblaze/_git/trailblaze-android
 - https://dev.azure.com/trailblaze/trailblaze/_git/trailblaze-server
-
-There you may also find the DevOps methods used throughout the process.
