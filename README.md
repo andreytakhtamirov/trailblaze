@@ -3,11 +3,11 @@
 
 A route-planning app that finds the scenic way to get to places. 
 
-<img width="190" alt="route preview" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/d2b5d956-3972-49fe-80af-8cf96e5e9149">&nbsp;&nbsp;
-<img width="190" alt="route info" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/281f7fee-834e-4b81-9818-9d38f97e6380">&nbsp;&nbsp;
-<img width="190" alt="features view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/622ec0d7-58eb-4799-90c2-534a8a327ac6">&nbsp;&nbsp;
-<img width="190" alt="pin view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/2c136947-de79-4216-b809-dd27772be4c4">
-<img width="190" alt="pin view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/d1199edb-a188-4687-9489-e9f52f81d8d1">
+<img width="19%" alt="route preview" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/d2b5d956-3972-49fe-80af-8cf96e5e9149">&nbsp;
+<img width="19%" alt="route info" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/281f7fee-834e-4b81-9818-9d38f97e6380">&nbsp;
+<img width="19%" alt="features view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/622ec0d7-58eb-4799-90c2-534a8a327ac6">&nbsp;
+<img width="19%" alt="pin view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/2c136947-de79-4216-b809-dd27772be4c4">&nbsp;
+<img width="19%" alt="pin view" src="https://github.com/andreytakhtamirov/trailblaze-flutter/assets/70922688/d1199edb-a188-4687-9489-e9f52f81d8d1">&nbsp;
 
 ## Releases
 Available on the [App Store](https://apps.apple.com/ca/app/trailblaze/id6450859439) for iOS
