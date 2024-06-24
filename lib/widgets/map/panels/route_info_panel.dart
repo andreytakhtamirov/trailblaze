@@ -29,11 +29,13 @@ class RouteInfoPanel extends ConsumerStatefulWidget {
     Key? key,
     required this.route,
     required this.panelHeight,
+    required this.onPreviewMetric,
     this.hideSaveRoute = false,
   }) : super(key: key);
   final TrailblazeRoute? route;
   final bool hideSaveRoute;
   final double panelHeight;
+  final void Function(MetricType type, dynamic data) onPreviewMetric;
 
   @override
   ConsumerState<RouteInfoPanel> createState() => _RouteInfoPanelState();
@@ -288,7 +290,7 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
   }
 
   ExpandableNotifier _buildExpandablePanel(
-      String title, SfCartesianChart chart) {
+      String title, SfCartesianChart chart, Function() onDetailsTap) {
     return ExpandableNotifier(
       controller: _expandableController,
       child: ScrollOnExpand(
@@ -306,12 +308,28 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
           ),
           header: Padding(
             padding: const EdgeInsets.fromLTRB(8, 24, 8, 4),
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15.0,
-                fontWeight: FontWeight.w500,
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15.0,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                InkWell(
+                  onTap: onDetailsTap,
+                  child: Text(
+                    'Preview »',
+                    style: TextStyle(
+                      fontSize: 15.0,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           collapsed: const SizedBox(),
@@ -525,10 +543,18 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                       _buildExpandablePanel(
                         'Elevation',
                         _buildElevationChart(kChartPalette1),
+                        () {
+                          widget.onPreviewMetric(MetricType.elevation,
+                              widget.route?.elevationMetrics);
+                        },
                       ),
                       _buildExpandablePanel(
                         'Surface Types',
                         _buildChart(_getStackedBarSurfaces(), kChartPalette1),
+                        () {
+                          widget.onPreviewMetric(
+                              MetricType.surface, widget.route?.surfaceMetrics);
+                        },
                       ),
                       // Not supported in every mode
                       widget.route!.highwayMetrics != null
@@ -536,6 +562,10 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                               'Highway Types',
                               _buildChart(
                                   _getStackedBarHighway(), kChartPalette2),
+                              () {
+                                widget.onPreviewMetric(MetricType.highway,
+                                    widget.route?.highwayMetrics);
+                              },
                             )
                           : const SizedBox(),
                     ],

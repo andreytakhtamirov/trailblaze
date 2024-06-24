@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -122,5 +123,32 @@ class TrailblazeRoute {
       lineLayer.lineColor = Colors.grey.value;
       lineLayer.lineOpacity = kRouteInactiveLineOpacity;
     }
+  }
+
+  List<Map<String, List<List<num>>>> getSurfacePolylines() {
+    List<Map<String, List<List<num>>>> polylines = _generatePolylinesWithSurface(
+        coordinates!, routeJson['details']['surface']);
+
+    for (var polyline in polylines) {
+      log('Polyline: ${polyline}');
+    }
+
+    return polylines;
+  }
+
+  List<Map<String, List<List<num>>>> _generatePolylinesWithSurface(
+      List<List<num>> coordinates, List<dynamic> surfaceDetails) {
+    List<Map<String, List<List<num>>>> polylines = [];
+
+    for (var detail in surfaceDetails) {
+      int startIndex = detail[0];
+      int endIndex = detail[1];
+      String surfaceType = detail[2];
+
+      List<List<num>> segment = coordinates.sublist(startIndex, endIndex + 1);
+      polylines.add({surfaceType: segment});
+    }
+
+    return polylines;
   }
 }

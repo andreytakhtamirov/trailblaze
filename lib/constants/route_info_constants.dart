@@ -25,3 +25,9 @@ List<Color> kChartPalette2 = const <Color>[
   Color.fromRGBO(255, 240, 219, 1),
   Color.fromRGBO(238, 238, 238, 1)
 ];
+
+enum MetricType {
+  elevation,
+  surface,
+  highway,
+}

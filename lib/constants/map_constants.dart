@@ -154,4 +154,5 @@ enum ViewMode {
   directions,
   parks,
   shuffle,
+  metricDetails,
 }

@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:trailblaze/constants/route_info_constants.dart';
 import 'package:trailblaze/util/export_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
+import 'package:trailblaze/util/polyline_helper.dart';
 import 'package:turf/turf.dart' as turf;
 import 'package:dartz/dartz.dart' as dartz;
 import 'package:flutter/material.dart';
@@ -632,7 +634,7 @@ class _MapWidgetState extends State<MapWidget>
     bool isRoundTrip = waypoints.length == 1;
     final double? distance = isRoundTrip ? _selectedDistanceMeters : null;
 
-    _removeRouteLayers();
+    await _removeRouteLayers();
 
     setState(() {
       _isContentLoading = true;
@@ -823,11 +825,11 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
-  void _removeRouteLayers() async {
+  Future<void> _removeRouteLayers() async {
     final copyList = [...routesList];
     routesList.clear();
     for (var route in copyList) {
-      _removeRouteLayer(route);
+      await _removeRouteLayer(route);
     }
   }
 
@@ -1147,7 +1149,11 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   void _onDirectionsBackClicked() {
-    _setViewMode(_previousViewMode);
+    if (_previousViewMode != ViewMode.metricDetails) {
+      _setViewMode(_previousViewMode);
+    } else {
+      _setViewMode(ViewMode.search);
+    }
     setState(() {
       _selectedRoute = null;
       _fabHeight = kPanelFabHeight;
@@ -1484,9 +1490,10 @@ class _MapWidgetState extends State<MapWidget>
       setState(() {
         _pauseUiCallbacks = false;
       });
-    } else if (_previousViewMode == ViewMode.directions ||
-        _previousViewMode == ViewMode.shuffle) {
-      _removeRouteLayers();
+    } else if ((_previousViewMode == ViewMode.directions ||
+            _previousViewMode == ViewMode.shuffle) &&
+        _viewMode != ViewMode.metricDetails) {
+      await _removeRouteLayers();
     }
 
     if (_viewMode == ViewMode.parks) {
@@ -1509,6 +1516,7 @@ class _MapWidgetState extends State<MapWidget>
         _viewMode != ViewMode.directions);
     final bool isDirectionsButtonVisible = _viewMode != ViewMode.directions &&
         _viewMode != ViewMode.shuffle &&
+        _viewMode != ViewMode.metricDetails &&
         _selectedPlace != null &&
         !_isOriginChanged;
     final bool isRefreshButtonVisible =
@@ -1938,6 +1946,34 @@ class _MapWidgetState extends State<MapWidget>
               route: _selectedRoute,
               hideSaveRoute: !widget.isInteractiveMap,
               panelHeight: _panelPosition,
+              onPreviewMetric: (type, data) async {
+                _setViewMode(ViewMode.metricDetails);
+
+                switch (type) {
+                  case MetricType.elevation:
+                    final List<num> d = data as List<num>;
+                    for (num p in d) {
+                      log('elevation data: $p');
+                    }
+                  case MetricType.surface:
+                    final Map<String, num> d = data as Map<String, num>;
+                    for (MapEntry<String, num> surface in d.entries) {
+                      log('elevation data: $surface');
+                    }
+                    final polylines = _selectedRoute!.getSurfacePolylines();
+                    int index = 0;
+                    for (var p in polylines) {
+                      if (!['asphalt', 'paved', 'concrete', 'missing', 'paving_stones'].contains(p.keys.first)) {
+                        await drawLine(p, ++index);
+                      }
+                    }
+                  case MetricType.highway:
+                    final Map<String, num> d = data as Map<String, num>;
+                    for (MapEntry<String, num> highway in d.entries) {
+                      log('elevation data: $highway');
+                    }
+                }
+              },
             ),
           ];
         } else if (_selectedPlace != null) {
@@ -1953,6 +1989,35 @@ class _MapWidgetState extends State<MapWidget>
     }
 
     return panels ?? [];
+  }
+
+  Future<void> drawLine(Map<String, List<List<num>>> polyline, int index) async {
+    final key = polyline.keys.first;
+    try {
+      await _mapboxMap.style
+          .addSource(PolylineHelper.buildGeoJsonSource(polyline[key]!, index));
+    } catch (e) {
+      // Source might exist already
+    }
+
+    final lineLayer = PolylineHelper.buildLineLayer(index);
+
+    try {
+      await _mapboxMap.style.removeStyleLayer(lineLayer.sourceId);
+    } catch (e) {
+      // Layer might have been removed already.
+    }
+
+    await _mapboxMap.style.addLayer(lineLayer);
+    log("DRAW $key");
+
+    // try {
+    //   await _mapboxMap.style.addLayerAt(lineLayer,
+    //       mbm.LayerPosition(below: "road-label", above: 'route-layer-id'));
+    // } catch (e) {
+    //   // "road-label" may not have been created yet or doesn't exist.
+    //   await _mapboxMap.style.addLayer(lineLayer);
+    // }
   }
 
   @override
