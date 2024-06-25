@@ -27,7 +27,30 @@ List<Color> kChartPalette2 = const <Color>[
 ];
 
 enum MetricType {
-  elevation,
-  surface,
-  highway,
+  elevation('Elevation'),
+  surface('Surface'),
+  roadClass('Road Class');
+
+  final String value;
+
+  static MetricType fromValue(String value) {
+    switch (value) {
+      case 'Elevation':
+        return MetricType.elevation;
+      case 'Surface':
+        return MetricType.surface;
+      case 'Road Class':
+        return MetricType.roadClass;
+      default:
+        throw ArgumentError('Unknown MetricType');
+    }
+  }
+
+  const MetricType(this.value);
 }
+
+final kAllMetricTypes = [
+  MetricType.elevation.value,
+  MetricType.surface.value,
+  MetricType.roadClass.value,
+];

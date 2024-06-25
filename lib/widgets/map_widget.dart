@@ -6,6 +6,7 @@ import 'package:trailblaze/constants/route_info_constants.dart';
 import 'package:trailblaze/util/export_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/util/polyline_helper.dart';
+import 'package:trailblaze/widgets/map/metrics_widget.dart';
 import 'package:turf/turf.dart' as turf;
 import 'package:dartz/dartz.dart' as dartz;
 import 'package:flutter/material.dart';
@@ -118,6 +119,9 @@ class _MapWidgetState extends State<MapWidget>
   bool _isAvoidActionRedoable = false;
   int _numAvoidAnnotations = 0;
 
+  MetricType _metricType = MetricType.elevation;
+  String? _metricKey;
+
   @override
   void initState() {
     super.initState();
@@ -194,6 +198,8 @@ class _MapWidgetState extends State<MapWidget>
     final circleAnnotationManager = await mapboxMap.annotations
         .createCircleAnnotationManager(
             id: 'circle-layer', below: 'point-layer');
+    final metricAnnotationManager = await mapboxMap.annotations
+        .createCircleAnnotationManager(id: 'metric-layer');
     final avoidAreaAnnotationManager = await mapboxMap.annotations
         .createCircleAnnotationManager(id: 'avoid-layer');
     final polygonAnnotationManager = await mapboxMap.annotations
@@ -201,6 +207,7 @@ class _MapWidgetState extends State<MapWidget>
     annotationHelper = AnnotationHelper(
       pointAnnotationManager,
       circleAnnotationManager,
+      metricAnnotationManager,
       avoidAreaAnnotationManager,
       polygonAnnotationManager,
       () {
@@ -447,7 +454,8 @@ class _MapWidgetState extends State<MapWidget>
 
       if ((widget.isInteractiveMap &&
               _viewMode != ViewMode.shuffle &&
-              _viewMode != ViewMode.directions) ||
+              _viewMode != ViewMode.directions &&
+              _viewMode != ViewMode.metricDetails) ||
           _viewMode == ViewMode.parks) {
         topOffset += kOptionsPillHeight;
       }
@@ -521,7 +529,8 @@ class _MapWidgetState extends State<MapWidget>
     if (_shouldShowDirectionsWidget() && _viewMode == ViewMode.search) {
       topOffset = kSearchBarHeight + 8;
     } else if (_viewMode == ViewMode.directions ||
-        _viewMode == ViewMode.shuffle) {
+        _viewMode == ViewMode.shuffle ||
+        _viewMode == ViewMode.metricDetails) {
       topOffset = height;
     }
 
@@ -779,6 +788,13 @@ class _MapWidgetState extends State<MapWidget>
       // Update selected route (red)
       await _updateRouteSelected(_selectedRoute!, true);
       _flyToRoute(_selectedRoute!);
+
+      if (_viewMode == ViewMode.metricDetails) {
+        setState(() {
+          _metricKey = null;
+        });
+        _cleanMetricAnnotations();
+      }
     }
   }
 
@@ -1041,11 +1057,13 @@ class _MapWidgetState extends State<MapWidget>
       return;
     }
 
-    if (_viewMode != ViewMode.directions) {
+    if (_viewMode != ViewMode.directions ||
+        _viewMode == ViewMode.metricDetails) {
       await annotationHelper?.deletePointAnnotations();
     }
 
-    if (_viewMode == ViewMode.directions) {
+    if (_viewMode == ViewMode.directions ||
+        _viewMode == ViewMode.metricDetails) {
       TrailblazeRoute? selectedRoute;
       final cameraState = await _mapboxMap.getCameraState();
 
@@ -1426,6 +1444,8 @@ class _MapWidgetState extends State<MapWidget>
       return kPanelMaxHeight;
     } else if (_viewMode == ViewMode.search) {
       return 0;
+    } else if (_viewMode == ViewMode.metricDetails) {
+      return 0;
     } else if (_viewMode == ViewMode.parks) {
       return kPanelFeaturesMaxHeight;
     } else {
@@ -1438,6 +1458,8 @@ class _MapWidgetState extends State<MapWidget>
       return kPanelMinContentHeight;
     } else if (_viewMode == ViewMode.search ||
         (_viewMode == ViewMode.directions && _selectedRoute == null)) {
+      return 0;
+    } else if (_viewMode == ViewMode.metricDetails) {
       return 0;
     } else if ((_viewMode == ViewMode.directions ||
             _viewMode == ViewMode.shuffle) &&
@@ -1459,7 +1481,8 @@ class _MapWidgetState extends State<MapWidget>
         (_viewMode == ViewMode.search ||
             _manuallySelectedPlace ||
             _viewMode == ViewMode.directions) &&
-        _viewMode != ViewMode.parks;
+        _viewMode != ViewMode.parks &&
+        _viewMode != ViewMode.metricDetails;
   }
 
   Future<void> _clearCameraPadding() async {
@@ -1504,15 +1527,60 @@ class _MapWidgetState extends State<MapWidget>
     _setMapControlSettings();
   }
 
+  void _onPreviewMetric(MetricType type) async {
+    await _togglePanel(false);
+    await _setViewMode(ViewMode.metricDetails);
+
+    setState(() {
+      _metricType = type;
+      _metricKey = null;
+    });
+
+    _onFlyToRoute();
+  }
+
+  void _onMetricChanged(MetricType type, String? key) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _metricType = type;
+        _metricKey = key;
+      });
+
+      if (_metricKey == null) {
+        // Type has changed
+        _cleanMetricAnnotations();
+        _flyToRoute(_selectedRoute!);
+      } else {
+        _drawMetric(_metricType, _metricKey!);
+      }
+    });
+  }
+
+  void _closeMetricView() {
+    _setViewMode(ViewMode.directions);
+    _cleanMetricAnnotations();
+    setState(() {
+      _isCameraLocked = false;
+    });
+    _togglePanel(true);
+  }
+
+  void _cleanMetricAnnotations() {
+    _deleteMetricLines();
+    annotationHelper?.deleteMetricAnnotation();
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
     final bool isParksButtonVisible = (widget.isInteractiveMap &&
             _viewMode != ViewMode.shuffle &&
+            _viewMode != ViewMode.metricDetails &&
             _viewMode != ViewMode.directions) ||
         _viewMode == ViewMode.parks;
     final bool isShuffleButtonVisible = (widget.isInteractiveMap &&
         _viewMode != ViewMode.shuffle &&
+        _viewMode != ViewMode.metricDetails &&
         _viewMode != ViewMode.directions);
     final bool isDirectionsButtonVisible = _viewMode != ViewMode.directions &&
         _viewMode != ViewMode.shuffle &&
@@ -1524,6 +1592,8 @@ class _MapWidgetState extends State<MapWidget>
 
     final bool shouldShowShuffleWidget =
         widget.isInteractiveMap && _viewMode == ViewMode.shuffle;
+
+    final bool shouldShowMetricsWidget = _viewMode == ViewMode.metricDetails;
 
     final nonStaticBottomOffset = _getBottomOffset(wantStatic: false);
 
@@ -1682,6 +1752,8 @@ class _MapWidgetState extends State<MapWidget>
                               _showDirectionsWidget()
                             else if (shouldShowShuffleWidget)
                               _showShuffleWidget()
+                            else if (shouldShowMetricsWidget)
+                              _showMetricsWidget()
                             else
                               const SizedBox(),
                             SizedBox(
@@ -1844,7 +1916,7 @@ class _MapWidgetState extends State<MapWidget>
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
-          if (_selectedRoute != null)
+          if (_selectedRoute != null && _viewMode == ViewMode.directions)
             Positioned(
               right: 4,
               bottom: _panelOptionsHeight - 10,
@@ -1920,6 +1992,24 @@ class _MapWidgetState extends State<MapWidget>
     );
   }
 
+  Widget _showMetricsWidget() {
+    return AnimatedContainer(
+      key: _topWidgetKey,
+      duration: const Duration(milliseconds: 300),
+      child: MetricsWidget(
+        route: _selectedRoute,
+        metricType: _metricType,
+        metricKey: _metricKey,
+        onBackClicked: _closeMetricView,
+        onMetricChanged: _onMetricChanged,
+        onDrawPoint: (coordinates) {
+          annotationHelper?.drawSingleMetricAnnotation(
+              context, mbm.Position(coordinates[0], coordinates[1]));
+        },
+      ),
+    );
+  }
+
   List<Widget> _panels(bool panel) {
     List<Widget>? panels;
 
@@ -1946,34 +2036,7 @@ class _MapWidgetState extends State<MapWidget>
               route: _selectedRoute,
               hideSaveRoute: !widget.isInteractiveMap,
               panelHeight: _panelPosition,
-              onPreviewMetric: (type, data) async {
-                _setViewMode(ViewMode.metricDetails);
-
-                switch (type) {
-                  case MetricType.elevation:
-                    final List<num> d = data as List<num>;
-                    for (num p in d) {
-                      log('elevation data: $p');
-                    }
-                  case MetricType.surface:
-                    final Map<String, num> d = data as Map<String, num>;
-                    for (MapEntry<String, num> surface in d.entries) {
-                      log('elevation data: $surface');
-                    }
-                    final polylines = _selectedRoute!.getSurfacePolylines();
-                    int index = 0;
-                    for (var p in polylines) {
-                      if (!['asphalt', 'paved', 'concrete', 'missing', 'paving_stones'].contains(p.keys.first)) {
-                        await drawLine(p, ++index);
-                      }
-                    }
-                  case MetricType.highway:
-                    final Map<String, num> d = data as Map<String, num>;
-                    for (MapEntry<String, num> highway in d.entries) {
-                      log('elevation data: $highway');
-                    }
-                }
-              },
+              onPreviewMetric: _onPreviewMetric,
             ),
           ];
         } else if (_selectedPlace != null) {
@@ -1991,33 +2054,79 @@ class _MapWidgetState extends State<MapWidget>
     return panels ?? [];
   }
 
-  Future<void> drawLine(Map<String, List<List<num>>> polyline, int index) async {
-    final key = polyline.keys.first;
+  Future<void> _drawMetric(MetricType type, String targetKey) async {
+    final Map<String, List<List<List<num>>>> polylines;
+    switch (type) {
+      case MetricType.elevation:
+        return;
+      case MetricType.surface:
+        polylines = _selectedRoute!.surfacePolylines!;
+        break;
+      case MetricType.roadClass:
+        polylines = _selectedRoute!.roadClassPolylines!;
+        break;
+    }
+
+    final p = polylines[targetKey]!;
+    await _drawLine(p, targetKey);
+    await _flyToMetric(p, targetKey);
+  }
+
+  Future<void> _drawLine(List<List<List<num>>> polylines, String key) async {
+    await _deleteMetricLines();
+
     try {
       await _mapboxMap.style
-          .addSource(PolylineHelper.buildGeoJsonSource(polyline[key]!, index));
+          .addSource(PolylineHelper.buildGeoJsonSource(polylines, key));
     } catch (e) {
       // Source might exist already
     }
 
-    final lineLayer = PolylineHelper.buildLineLayer(index);
+    await _mapboxMap.style.addLayerAt(PolylineHelper.buildLineLayer(key),
+        mbm.LayerPosition(below: "road-label"));
+  }
 
-    try {
-      await _mapboxMap.style.removeStyleLayer(lineLayer.sourceId);
-    } catch (e) {
-      // Layer might have been removed already.
+  Future<void> _deleteMetricLines() async {
+    final layers = await _mapboxMap.style.getStyleLayers();
+
+    for (mbm.StyleObjectInfo? l in layers) {
+      if (l!.id.startsWith(kMetricLayerIdPrefix)) {
+        try {
+          await _mapboxMap.style.removeStyleLayer(l.id);
+        } catch (e) {
+          // Layer might have been removed already.
+        }
+      }
     }
 
-    await _mapboxMap.style.addLayer(lineLayer);
-    log("DRAW $key");
+    final sources = await _mapboxMap.style.getStyleSources();
+    for (mbm.StyleObjectInfo? l in sources) {
+      if (l!.id.startsWith(kMetricLayerIdPrefix)) {
+        try {
+          await _mapboxMap.style.removeStyleSource(l.id);
+        } catch (e) {
+          // Layer might have been removed already.
+        }
+      }
+    }
+  }
 
-    // try {
-    //   await _mapboxMap.style.addLayerAt(lineLayer,
-    //       mbm.LayerPosition(below: "road-label", above: 'route-layer-id'));
-    // } catch (e) {
-    //   // "road-label" may not have been created yet or doesn't exist.
-    //   await _mapboxMap.style.addLayer(lineLayer);
-    // }
+  Future<void> _flyToMetric(List<List<List<num>>> polylines, String key) async {
+    final height = mounted ? MediaQuery.of(context).size.height : 0.0;
+    final width = mounted ? MediaQuery.of(context).size.width : 0.0;
+
+    final cameraForRoute = await CameraHelper.cameraOptionsForGeometry(
+      _mapboxMap,
+      PolylineHelper.buildFlatLineString(polylines, key),
+      _getCameraPadding(),
+      height,
+      width,
+      extraPadding: widget.forceTopBottomPadding,
+    );
+    await _mapFlyToOptions(cameraForRoute, isAnimated: true);
+    setState(() {
+      _isCameraLocked = false;
+    });
   }
 
   @override

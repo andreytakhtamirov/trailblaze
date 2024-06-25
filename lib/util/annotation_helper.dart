@@ -19,6 +19,7 @@ class AnnotationAction {
 class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
   final mbm.PointAnnotationManager _annotationManager;
   final mbm.CircleAnnotationManager _circleAnnotationManager;
+  final mbm.CircleAnnotationManager _metricAnnotationManager;
   final mbm.CircleAnnotationManager _avoidAnnotationManager;
   final mbm.PolygonAnnotationManager _polygonAnnotationManager;
   final Function() onAvoidAnnotationClick;
@@ -31,9 +32,12 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
 
   late final SimpleStack _avoidAnnotationChanges;
 
+  mbm.CircleAnnotation? _metricAnnotation;
+
   AnnotationHelper(
     this._annotationManager,
     this._circleAnnotationManager,
+    this._metricAnnotationManager,
     this._avoidAnnotationManager,
     this._polygonAnnotationManager,
     this.onAvoidAnnotationClick,
@@ -260,6 +264,28 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
 
     final annotation = await _circleAnnotationManager.create(options);
     circleAnnotations.add(annotation);
+  }
+
+  void drawSingleMetricAnnotation(
+      BuildContext context, mbm.Position coordinates) async {
+    if (_metricAnnotation == null) {
+      var options = mbm.CircleAnnotationOptions(
+        geometry: mbm.Point(coordinates: coordinates),
+        circleRadius: 10,
+        circleStrokeColor: Theme.of(context).colorScheme.primary.value,
+        circleColor: Colors.white.value,
+        circleStrokeWidth: 4,
+      );
+      _metricAnnotation = await _metricAnnotationManager.create(options);
+    } else {
+      _metricAnnotation!.geometry = mbm.Point(coordinates: coordinates);
+      await _metricAnnotationManager.update(_metricAnnotation!);
+    }
+  }
+
+  void deleteMetricAnnotation() async {
+    _metricAnnotation = null;
+    await _metricAnnotationManager.deleteAll();
   }
 
   Future<mbm.PointAnnotation?> showAnnotation(

@@ -5,7 +5,6 @@ import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:polyline_codec/polyline_codec.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -18,6 +17,7 @@ import 'package:trailblaze/managers/credential_manager.dart';
 import 'package:trailblaze/managers/profile_manager.dart';
 import 'package:trailblaze/requests/route_metrics.dart';
 import 'package:trailblaze/requests/user_profile.dart';
+import 'package:trailblaze/util/chart_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:trailblaze/util/static_image_helper.dart';
@@ -35,7 +35,7 @@ class RouteInfoPanel extends ConsumerStatefulWidget {
   final TrailblazeRoute? route;
   final bool hideSaveRoute;
   final double panelHeight;
-  final void Function(MetricType type, dynamic data) onPreviewMetric;
+  final void Function(MetricType type) onPreviewMetric;
 
   @override
   ConsumerState<RouteInfoPanel> createState() => _RouteInfoPanelState();
@@ -179,113 +179,6 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
           _savedRouteId = null;
         }),
       },
-    );
-  }
-
-  SfCartesianChart _buildElevationChart(List<Color> palette) {
-    final metrics = widget.route!.elevationMetrics!;
-    final distance = widget.route!.distance;
-
-    num maxElevation =
-        metrics.reduce((value, value2) => value > value2 ? value : value2);
-    num minElevation =
-        metrics.reduce((value, value2) => value < value2 ? value : value2);
-
-    // Add padding below/above for visibility.
-    minElevation -= minElevation * 0.05;
-    maxElevation += maxElevation * 0.05;
-
-    return SfCartesianChart(
-      trackballBehavior: _elevationTrackball,
-      primaryXAxis: NumericAxis(
-        minimum: 0,
-        maximum: distance.toDouble(),
-        labelFormat: '{value}m',
-        numberFormat: NumberFormat.compact(),
-      ),
-      primaryYAxis: NumericAxis(
-        minimum: minElevation.toDouble(),
-        maximum: maxElevation.toDouble(),
-        interval: (maxElevation - minElevation) / 3,
-        numberFormat: NumberFormat.compact(),
-        labelFormat: '{value}m',
-      ),
-      series: <CartesianSeries<num, num>>[
-        AreaSeries<num, num>(
-          dataSource: metrics,
-          xValueMapper: (p, _) => distance / (metrics.length - 1) * _,
-          yValueMapper: (p, _) => p,
-          color: const Color.fromRGBO(8, 142, 255, 1),
-        ),
-      ],
-      palette: palette,
-      margin: const EdgeInsets.fromLTRB(0, 0, 24, 0),
-    );
-  }
-
-  List<CartesianSeries<num, String>> _getStackedBarSurfaces() {
-    final surfaceMetrics = widget.route!.surfaceMetrics!;
-
-    List<StackedBarSeries<num, String>> series =
-        <StackedBarSeries<num, String>>[];
-
-    for (var point in surfaceMetrics.entries) {
-      series.add(StackedBarSeries<num, String>(
-        dataSource: [point.value],
-        name: point.key,
-        xValueMapper: (p, _) => '',
-        yValueMapper: (p, _) => p,
-        legendItemText: point.key,
-        legendIconType: LegendIconType.circle,
-      ));
-    }
-
-    return series;
-  }
-
-  List<CartesianSeries<num, String>> _getStackedBarHighway() {
-    final surfaceMetrics = widget.route!.highwayMetrics!;
-
-    List<StackedBarSeries<num, String>> series =
-        <StackedBarSeries<num, String>>[];
-
-    for (var point in surfaceMetrics.entries) {
-      series.add(StackedBarSeries<num, String>(
-        dataSource: [point.value],
-        name: point.key,
-        xValueMapper: (p, _) => '',
-        yValueMapper: (p, _) => p,
-        legendItemText: point.key,
-        legendIconType: LegendIconType.circle,
-      ));
-    }
-
-    return series;
-  }
-
-  SfCartesianChart _buildChart(
-      List<CartesianSeries> series, List<Color> palette) {
-    return SfCartesianChart(
-      tooltipBehavior: TooltipBehavior(
-        activationMode: ActivationMode.singleTap,
-        enable: true,
-      ),
-      primaryXAxis: CategoryAxis(),
-      primaryYAxis: NumericAxis(
-        labelFormat: '{value}m',
-        numberFormat: NumberFormat.compact(),
-        maximum: widget.route!.distance.toDouble() +
-            widget.route!.distance.toDouble() * 0.05,
-      ),
-      series: series,
-      palette: palette,
-      legend: Legend(
-        isVisible: true,
-        position: LegendPosition.bottom,
-        alignment: ChartAlignment.center,
-        shouldAlwaysShowScrollbar: true,
-      ),
-      margin: const EdgeInsets.fromLTRB(24, 0, 24, 0),
     );
   }
 
@@ -542,29 +435,26 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                     children: [
                       _buildExpandablePanel(
                         'Elevation',
-                        _buildElevationChart(kChartPalette1),
+                        ChartHelper.buildElevationChart(
+                            widget.route!, _elevationTrackball),
                         () {
-                          widget.onPreviewMetric(MetricType.elevation,
-                              widget.route?.elevationMetrics);
+                          widget.onPreviewMetric(MetricType.elevation);
                         },
                       ),
                       _buildExpandablePanel(
-                        'Surface Types',
-                        _buildChart(_getStackedBarSurfaces(), kChartPalette1),
+                        'Surface Type',
+                        ChartHelper.buildSurfaceChart(widget.route!),
                         () {
-                          widget.onPreviewMetric(
-                              MetricType.surface, widget.route?.surfaceMetrics);
+                          widget.onPreviewMetric(MetricType.surface);
                         },
                       ),
                       // Not supported in every mode
-                      widget.route!.highwayMetrics != null
+                      widget.route!.roadClassMetrics != null
                           ? _buildExpandablePanel(
-                              'Highway Types',
-                              _buildChart(
-                                  _getStackedBarHighway(), kChartPalette2),
+                              'Road Class',
+                              ChartHelper.buildRoadClassChart(widget.route!),
                               () {
-                                widget.onPreviewMetric(MetricType.highway,
-                                    widget.route?.highwayMetrics);
+                                widget.onPreviewMetric(MetricType.roadClass);
                               },
                             )
                           : const SizedBox(),

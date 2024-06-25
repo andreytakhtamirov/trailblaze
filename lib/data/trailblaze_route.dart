@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
@@ -19,11 +18,15 @@ class TrailblazeRoute {
   late final num duration;
   late final Map<String?, dynamic> routeOptions;
   List<num>? elevationMetrics;
-  Map<String, num>? surfaceMetrics;
-  Map<String, num>? highwayMetrics;
   dynamic routeJson;
   List<dynamic> waypoints;
   List<List<num>>? coordinates;
+
+  Map<String, num>? surfaceMetrics;
+  Map<String, List<List<List<num>>>>? surfacePolylines;
+
+  Map<String, num>? roadClassMetrics;
+  Map<String, List<List<List<num>>>>? roadClassPolylines;
 
   TrailblazeRoute(
     this.sourceId,
@@ -65,8 +68,12 @@ class TrailblazeRoute {
       elevationMetrics = coordinatesWithElevation.elevation;
       surfaceMetrics =
           _getMetrics(routeJson['details']['surface'], coordinates!);
-      highwayMetrics =
+      roadClassMetrics =
           _getMetrics(routeJson['details']['road_class'], coordinates!);
+      surfacePolylines = _generatePolylinesForMetric(
+          coordinates!, routeJson['details']['surface']);
+      roadClassPolylines = _generatePolylinesForMetric(
+          coordinates!, routeJson['details']['road_class']);
     } else {
       coordinates =
           PolylineCodec.decode(geometry, precision: kMapboxRoutePrecision)
@@ -125,28 +132,21 @@ class TrailblazeRoute {
     }
   }
 
-  List<Map<String, List<List<num>>>> getSurfacePolylines() {
-    List<Map<String, List<List<num>>>> polylines = _generatePolylinesWithSurface(
-        coordinates!, routeJson['details']['surface']);
+  Map<String, List<List<List<num>>>> _generatePolylinesForMetric(
+      List<List<num>> coordinates, List<dynamic> metricDetails) {
+    final Map<String, List<List<List<num>>>> polylines = {};
 
-    for (var polyline in polylines) {
-      log('Polyline: ${polyline}');
-    }
-
-    return polylines;
-  }
-
-  List<Map<String, List<List<num>>>> _generatePolylinesWithSurface(
-      List<List<num>> coordinates, List<dynamic> surfaceDetails) {
-    List<Map<String, List<List<num>>>> polylines = [];
-
-    for (var detail in surfaceDetails) {
+    for (var detail in metricDetails) {
       int startIndex = detail[0];
       int endIndex = detail[1];
-      String surfaceType = detail[2];
+      String type = detail[2];
 
       List<List<num>> segment = coordinates.sublist(startIndex, endIndex + 1);
-      polylines.add({surfaceType: segment});
+      if (polylines[type] == null) {
+        polylines[type] = [];
+      }
+
+      polylines[type]!.add(segment);
     }
 
     return polylines;
