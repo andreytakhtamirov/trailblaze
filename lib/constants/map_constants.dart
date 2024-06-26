@@ -13,6 +13,9 @@ final double kDevicePixelRatio =
 final kScreenHeight =
     WidgetsBinding.instance.platformDispatcher.views.first.display.size.height /
         kDevicePixelRatio;
+final kScreenWidth =
+    WidgetsBinding.instance.platformDispatcher.views.first.display.size.width /
+        kDevicePixelRatio;
 final kSafeAreaPaddingBottom =
     WidgetsBinding.instance.platformDispatcher.views.first.padding.bottom /
         kDevicePixelRatio;
@@ -20,6 +23,7 @@ final kSafeAreaPaddingBottom =
 const int kMapFlyToDuration = 400;
 const String kRouteSourceId = "route-source-id";
 const String kRouteLayerId = "route-layer-id";
+const String kMetricLayerIdPrefix = 'trailblaze-metric-';
 const double kRouteLineWidth = 6.0;
 const double kRouteActiveLineOpacity = 0.9;
 const double kRouteInactiveLineOpacity = 1.0;
@@ -154,4 +158,5 @@ enum ViewMode {
   directions,
   parks,
   shuffle,
+  metricDetails,
 }

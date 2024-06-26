@@ -18,11 +18,15 @@ class TrailblazeRoute {
   late final num duration;
   late final Map<String?, dynamic> routeOptions;
   List<num>? elevationMetrics;
-  Map<String, num>? surfaceMetrics;
-  Map<String, num>? highwayMetrics;
   dynamic routeJson;
   List<dynamic> waypoints;
   List<List<num>>? coordinates;
+
+  Map<String, num>? surfaceMetrics;
+  Map<String, List<List<List<num>>>>? surfacePolylines;
+
+  Map<String, num>? roadClassMetrics;
+  Map<String, List<List<List<num>>>>? roadClassPolylines;
 
   TrailblazeRoute(
     this.sourceId,
@@ -64,8 +68,12 @@ class TrailblazeRoute {
       elevationMetrics = coordinatesWithElevation.elevation;
       surfaceMetrics =
           _getMetrics(routeJson['details']['surface'], coordinates!);
-      highwayMetrics =
+      roadClassMetrics =
           _getMetrics(routeJson['details']['road_class'], coordinates!);
+      surfacePolylines = _generatePolylinesForMetric(
+          coordinates!, routeJson['details']['surface']);
+      roadClassPolylines = _generatePolylinesForMetric(
+          coordinates!, routeJson['details']['road_class']);
     } else {
       coordinates =
           PolylineCodec.decode(geometry, precision: kMapboxRoutePrecision)
@@ -122,5 +130,25 @@ class TrailblazeRoute {
       lineLayer.lineColor = Colors.grey.value;
       lineLayer.lineOpacity = kRouteInactiveLineOpacity;
     }
+  }
+
+  Map<String, List<List<List<num>>>> _generatePolylinesForMetric(
+      List<List<num>> coordinates, List<dynamic> metricDetails) {
+    final Map<String, List<List<List<num>>>> polylines = {};
+
+    for (var detail in metricDetails) {
+      int startIndex = detail[0];
+      int endIndex = detail[1];
+      String type = detail[2];
+
+      List<List<num>> segment = coordinates.sublist(startIndex, endIndex + 1);
+      if (polylines[type] == null) {
+        polylines[type] = [];
+      }
+
+      polylines[type]!.add(segment);
+    }
+
+    return polylines;
   }
 }

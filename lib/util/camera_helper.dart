@@ -53,6 +53,18 @@ class CameraHelper {
     double maxWidth, {
     bool extraPadding = false,
   }) async {
+    return cameraOptionsForGeometry(
+        mapboxMap, route.geometryJson, padding, maxHeight, maxWidth);
+  }
+
+  static Future<CameraOptions> cameraOptionsForGeometry(
+    MapboxMap mapboxMap,
+    Map<String?, Object?> geometryJson,
+    MbxEdgeInsets? padding,
+    double maxHeight,
+    double maxWidth, {
+    bool extraPadding = false,
+  }) async {
     num topBottomPadding;
     if (extraPadding) {
       topBottomPadding = kDefaultCameraState.padding.top;
@@ -84,7 +96,7 @@ class CameraHelper {
     }
 
     final cameraForRoute = await mapboxMap.cameraForGeometry(
-      route.geometryJson,
+      geometryJson,
       customPadding,
       null,
       null,
@@ -100,7 +112,8 @@ class CameraHelper {
     );
   }
 
-  static MapBoxPlace getMapBoxPlaceFromLonLat(List<double>? coordinates, String placeName) {
+  static MapBoxPlace getMapBoxPlaceFromLonLat(
+      List<double>? coordinates, String placeName) {
     return MapBoxPlace(placeName: placeName, center: coordinates);
   }
 
