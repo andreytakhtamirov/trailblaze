@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -48,39 +50,30 @@ class ChartHelper {
   }
 
   static SfCartesianChart buildSurfaceChart(TrailblazeRoute route,
-      {Function(String)? onTapData}) {
+      {bool showLegend = true}) {
     final series = _buildStackedBarSurface(route);
-    return _buildChart(route, series, kChartPalette1, onTapData: onTapData);
+    return _buildChart(route, series, kChartPalette1, showLegend: showLegend);
   }
 
   static SfCartesianChart buildRoadClassChart(TrailblazeRoute route,
-      {Function(String)? onTapData}) {
+      {bool showLegend = true}) {
     final series = _buildStackedBarRoadClass(route);
-    return _buildChart(route, series, kChartPalette2, onTapData: onTapData);
+    return _buildChart(route, series, kChartPalette2, showLegend: showLegend);
   }
 
   static SfCartesianChart _buildChart(TrailblazeRoute route,
       List<CartesianSeries<num, String>> series, List<Color> palette,
-      {Function(String)? onTapData}) {
+      {bool showLegend = true}) {
     return SfCartesianChart(
-      onLegendTapped: (args) {
-        final keyName = (args.series as StackedBarSeries).name;
-        if (onTapData != null) {
-          onTapData(keyName ?? '');
-        }
-      },
-      onTooltipRender: (TooltipArgs args) async {
-        if (onTapData != null) {
-          onTapData(args.header ?? '');
-        }
-      },
       tooltipBehavior: TooltipBehavior(
+        elevation: 100,
         activationMode: ActivationMode.singleTap,
         enable: true,
         shouldAlwaysShow: false,
       ),
       primaryXAxis: CategoryAxis(),
       primaryYAxis: NumericAxis(
+        isVisible: showLegend,
         labelFormat: '{value}m',
         numberFormat: NumberFormat.compact(),
         maximum: route.distance.toDouble() + route.distance.toDouble() * 0.05,
@@ -88,11 +81,11 @@ class ChartHelper {
       series: series,
       palette: palette,
       legend: Legend(
-        isVisible: true,
+        isVisible: showLegend,
         position: LegendPosition.bottom,
         alignment: ChartAlignment.center,
         shouldAlwaysShowScrollbar: true,
-        toggleSeriesVisibility: onTapData == null ? true : false,
+        toggleSeriesVisibility: true,
       ),
       margin: const EdgeInsets.fromLTRB(24, 0, 24, 0),
     );
@@ -148,10 +141,14 @@ class ChartHelper {
     switch (type) {
       case MetricType.surface:
         final index = route.surfaceMetrics?.keys.toList().indexOf(key);
-        return kChartPalette1[index ?? 0];
+        return kChartPalette1.length > index! && index != -1
+            ? kChartPalette1[index]
+            : Colors.black;
       case MetricType.roadClass:
         final index = route.roadClassMetrics?.keys.toList().indexOf(key);
-        return kChartPalette2[index ?? 0];
+        return kChartPalette2.length > index! && index != -1
+            ? kChartPalette2[index]
+            : Colors.black;
       default:
         return Colors.black;
     }

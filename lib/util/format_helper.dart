@@ -53,4 +53,22 @@ class FormatHelper {
       return "$likes";
     }
   }
+
+  static String toCapitalizedText(String s) {
+    List<String> words = s.split('_');
+    String capitalizedText = '';
+
+    for (int i = 0; i < words.length; i++) {
+      String word = words[i];
+      if (word.isNotEmpty) {
+        String capitalizedWord = '${word[0].toUpperCase()}${word.substring(1)}';
+        capitalizedText += capitalizedWord;
+        if (i < words.length - 1) {
+          capitalizedText += ' ';
+        }
+      }
+    }
+
+    return capitalizedText;
+  }
 }

@@ -1273,6 +1273,12 @@ class _MapWidgetState extends State<MapWidget>
       await _removeRouteLayer(_selectedRoute!);
       _drawRoute(_selectedRoute!);
     }
+
+    if (_viewMode == ViewMode.metricDetails &&
+        _metricType != MetricType.elevation &&
+        _metricKey != null) {
+      _onMetricChanged(_metricType, _metricKey);
+    }
   }
 
   void _onTapOutsideMapStyle(PointerDownEvent event) {
