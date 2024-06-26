@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/constants/route_info_constants.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/util/chart_helper.dart';
@@ -32,6 +33,7 @@ class _MetricsWidgetState extends State<MetricsWidget> {
   late List<String> _keys;
   bool _isExpanded = false;
   double? _gridItemHeight;
+  double aspectRatio = kScreenWidth / 200;
 
   @override
   void initState() {
@@ -138,7 +140,8 @@ class _MetricsWidgetState extends State<MetricsWidget> {
                         return LayoutBuilder(builder:
                             (BuildContext context, BoxConstraints constraints) {
                           final width = constraints.maxWidth;
-                          if (_gridItemHeight == null) {
+                          if (_gridItemHeight == null ||
+                              _gridItemHeight != constraints.maxHeight) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
                               if (mounted) {
                                 setState(() {
@@ -224,18 +227,18 @@ class _MetricsWidgetState extends State<MetricsWidget> {
                           );
                         });
                       },
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
                         crossAxisSpacing: 0,
                         mainAxisSpacing: 0,
-                        childAspectRatio: 2,
+                        childAspectRatio: aspectRatio,
                       ),
                     ),
                   ),
                 ),
-              // Show "More" button if there are more than (2 rows)
-              if (_keys.length > 6)
+              // Show "More" button if there are more than 2 rows of items.
+              if (((_keys.length / 3).ceil() * (_gridItemHeight ?? 50)) >
+                  (_gridItemHeight ?? 50) * 2)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

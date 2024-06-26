@@ -1563,7 +1563,7 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   void _closeMetricView() {
-    _setViewMode(ViewMode.directions);
+    _setViewMode(_previousViewMode);
     _cleanMetricAnnotations();
     setState(() {
       _isCameraLocked = false;

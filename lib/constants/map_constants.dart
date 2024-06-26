@@ -13,6 +13,9 @@ final double kDevicePixelRatio =
 final kScreenHeight =
     WidgetsBinding.instance.platformDispatcher.views.first.display.size.height /
         kDevicePixelRatio;
+final kScreenWidth =
+    WidgetsBinding.instance.platformDispatcher.views.first.display.size.width /
+        kDevicePixelRatio;
 final kSafeAreaPaddingBottom =
     WidgetsBinding.instance.platformDispatcher.views.first.padding.bottom /
         kDevicePixelRatio;
