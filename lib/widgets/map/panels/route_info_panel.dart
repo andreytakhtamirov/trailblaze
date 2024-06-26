@@ -211,17 +211,19 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                InkWell(
-                  onTap: onDetailsTap,
-                  child: Text(
-                    'Preview »',
-                    style: TextStyle(
-                      fontSize: 15.0,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.blue.shade700,
+                if (widget.route?.surfacePolylines != null &&
+                    widget.route?.roadClassPolylines != null)
+                  InkWell(
+                    onTap: onDetailsTap,
+                    child: Text(
+                      'Preview »',
+                      style: TextStyle(
+                        fontSize: 15.0,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.blue.shade700,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

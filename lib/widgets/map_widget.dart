@@ -867,6 +867,81 @@ class _MapWidgetState extends State<MapWidget>
     }
   }
 
+  Future<void> _drawMetric(MetricType type, String targetKey) async {
+    final Map<String, List<List<List<num>>>> polylines;
+    switch (type) {
+      case MetricType.elevation:
+        return;
+      case MetricType.surface:
+        polylines = _selectedRoute!.surfacePolylines!;
+        break;
+      case MetricType.roadClass:
+        polylines = _selectedRoute!.roadClassPolylines!;
+        break;
+    }
+
+    final p = polylines[targetKey]!;
+    await _drawLine(p, targetKey);
+    await _flyToMetric(p, targetKey);
+  }
+
+  Future<void> _drawLine(List<List<List<num>>> polylines, String key) async {
+    await _deleteMetricLines();
+
+    try {
+      await _mapboxMap.style
+          .addSource(PolylineHelper.buildGeoJsonSource(polylines, key));
+    } catch (e) {
+      // Source might exist already
+    }
+
+    await _mapboxMap.style.addLayerAt(PolylineHelper.buildLineLayer(key),
+        mbm.LayerPosition(below: "road-label"));
+  }
+
+  Future<void> _deleteMetricLines() async {
+    final layers = await _mapboxMap.style.getStyleLayers();
+
+    for (mbm.StyleObjectInfo? l in layers) {
+      if (l!.id.startsWith(kMetricLayerIdPrefix)) {
+        try {
+          await _mapboxMap.style.removeStyleLayer(l.id);
+        } catch (e) {
+          // Layer might have been removed already.
+        }
+      }
+    }
+
+    final sources = await _mapboxMap.style.getStyleSources();
+    for (mbm.StyleObjectInfo? l in sources) {
+      if (l!.id.startsWith(kMetricLayerIdPrefix)) {
+        try {
+          await _mapboxMap.style.removeStyleSource(l.id);
+        } catch (e) {
+          // Layer might have been removed already.
+        }
+      }
+    }
+  }
+
+  Future<void> _flyToMetric(List<List<List<num>>> polylines, String key) async {
+    final height = mounted ? MediaQuery.of(context).size.height : 0.0;
+    final width = mounted ? MediaQuery.of(context).size.width : 0.0;
+
+    final cameraForRoute = await CameraHelper.cameraOptionsForGeometry(
+      _mapboxMap,
+      PolylineHelper.buildFlatLineString(polylines, key),
+      _getCameraPadding(),
+      height,
+      width,
+      extraPadding: widget.forceTopBottomPadding,
+    );
+    await _mapFlyToOptions(cameraForRoute, isAnimated: true);
+    setState(() {
+      _isCameraLocked = false;
+    });
+  }
+
   Future<void> _onExportRoute() async {
     if (_selectedRoute == null ||
         _selectedRoute!.coordinates == null ||
@@ -2058,81 +2133,6 @@ class _MapWidgetState extends State<MapWidget>
     }
 
     return panels ?? [];
-  }
-
-  Future<void> _drawMetric(MetricType type, String targetKey) async {
-    final Map<String, List<List<List<num>>>> polylines;
-    switch (type) {
-      case MetricType.elevation:
-        return;
-      case MetricType.surface:
-        polylines = _selectedRoute!.surfacePolylines!;
-        break;
-      case MetricType.roadClass:
-        polylines = _selectedRoute!.roadClassPolylines!;
-        break;
-    }
-
-    final p = polylines[targetKey]!;
-    await _drawLine(p, targetKey);
-    await _flyToMetric(p, targetKey);
-  }
-
-  Future<void> _drawLine(List<List<List<num>>> polylines, String key) async {
-    await _deleteMetricLines();
-
-    try {
-      await _mapboxMap.style
-          .addSource(PolylineHelper.buildGeoJsonSource(polylines, key));
-    } catch (e) {
-      // Source might exist already
-    }
-
-    await _mapboxMap.style.addLayerAt(PolylineHelper.buildLineLayer(key),
-        mbm.LayerPosition(below: "road-label"));
-  }
-
-  Future<void> _deleteMetricLines() async {
-    final layers = await _mapboxMap.style.getStyleLayers();
-
-    for (mbm.StyleObjectInfo? l in layers) {
-      if (l!.id.startsWith(kMetricLayerIdPrefix)) {
-        try {
-          await _mapboxMap.style.removeStyleLayer(l.id);
-        } catch (e) {
-          // Layer might have been removed already.
-        }
-      }
-    }
-
-    final sources = await _mapboxMap.style.getStyleSources();
-    for (mbm.StyleObjectInfo? l in sources) {
-      if (l!.id.startsWith(kMetricLayerIdPrefix)) {
-        try {
-          await _mapboxMap.style.removeStyleSource(l.id);
-        } catch (e) {
-          // Layer might have been removed already.
-        }
-      }
-    }
-  }
-
-  Future<void> _flyToMetric(List<List<List<num>>> polylines, String key) async {
-    final height = mounted ? MediaQuery.of(context).size.height : 0.0;
-    final width = mounted ? MediaQuery.of(context).size.width : 0.0;
-
-    final cameraForRoute = await CameraHelper.cameraOptionsForGeometry(
-      _mapboxMap,
-      PolylineHelper.buildFlatLineString(polylines, key),
-      _getCameraPadding(),
-      height,
-      width,
-      extraPadding: widget.forceTopBottomPadding,
-    );
-    await _mapFlyToOptions(cameraForRoute, isAnimated: true);
-    setState(() {
-      _isCameraLocked = false;
-    });
   }
 
   @override
