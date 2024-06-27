@@ -132,6 +132,7 @@ class _MetricsWidgetState extends State<MetricsWidget> {
                       itemCount: _keys.length,
                       itemBuilder: (BuildContext context, int index) {
                         final key = _keys[index];
+                        final label = FormatHelper.toCapitalizedText(key);
                         final percentDistance =
                             _distanceForKey(widget.metricType, key);
                         final isSelected = widget.metricKey == key;
@@ -140,6 +141,9 @@ class _MetricsWidgetState extends State<MetricsWidget> {
                         return LayoutBuilder(builder:
                             (BuildContext context, BoxConstraints constraints) {
                           final width = constraints.maxWidth;
+                          final textScale = ((width - 54) / (label.length * 9))
+                              .clamp(0.70,
+                                  1.2); // Scale text to available container width.
                           if (_gridItemHeight == null ||
                               _gridItemHeight != constraints.maxHeight) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -193,14 +197,15 @@ class _MetricsWidgetState extends State<MetricsWidget> {
                                         children: [
                                           Flexible(
                                             flex: 3,
-                                            child: FittedBox(
-                                              fit: BoxFit.fitWidth,
-                                              child: Text(
-                                                FormatHelper.toCapitalizedText(
-                                                    key),
-                                                style: const TextStyle(
-                                                  color: Colors.black,
-                                                ),
+                                            child: Text(
+                                              label,
+                                              textScaler:
+                                                  TextScaler.linear(textScale),
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 2,
+                                              style: const TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 14,
                                               ),
                                             ),
                                           ),
