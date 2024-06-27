@@ -50,9 +50,8 @@ class CameraHelper {
     TrailblazeRoute route,
     MbxEdgeInsets? padding,
     double maxHeight,
-    double maxWidth, {
-    bool extraPadding = false,
-  }) async {
+    double maxWidth,
+  ) async {
     return cameraOptionsForGeometry(
         mapboxMap, route.geometryJson, padding, maxHeight, maxWidth);
   }
@@ -62,24 +61,14 @@ class CameraHelper {
     Map<String?, Object?> geometryJson,
     MbxEdgeInsets? padding,
     double maxHeight,
-    double maxWidth, {
-    bool extraPadding = false,
-  }) async {
-    num topBottomPadding;
-    if (extraPadding) {
-      topBottomPadding = kDefaultCameraState.padding.top;
-    } else {
-      topBottomPadding = 0;
-    }
-
+    double maxWidth,
+  ) async {
     final customPadding = MbxEdgeInsets(
       top: (padding?.top ?? 0) +
-          kRouteCameraState.padding.top +
-          topBottomPadding,
+          kRouteCameraState.padding.top,
       left: (padding?.left ?? 0) + kRouteCameraState.padding.left,
       bottom: (padding?.bottom ?? 0) +
-          kRouteCameraState.padding.bottom +
-          topBottomPadding,
+          kRouteCameraState.padding.bottom,
       right: (padding?.right ?? 0) + kRouteCameraState.padding.right,
     );
 
