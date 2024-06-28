@@ -88,6 +88,7 @@ class _MapWidgetState extends State<MapWidget>
   double? _selectedDistanceMeters = kDefaultFeatureDistanceMeters;
   mbm.Position? _userLocation;
   final GlobalKey _topWidgetKey = GlobalKey();
+  final GlobalKey _directionsWidgetKey = GlobalKey();
   final GlobalKey _shareWidgetKey = GlobalKey();
   double _panelPosition = 0;
 
@@ -520,10 +521,15 @@ class _MapWidgetState extends State<MapWidget>
 
   double _getTopOffset() {
     double topOffset = 0;
-    final double height = _topWidgetKey.currentContext != null
-        ? (_topWidgetKey.currentContext?.findRenderObject() as RenderBox)
-            .size
-            .height
+    final GlobalKey key;
+    if (_shouldShowDirectionsWidget()) {
+      key = _directionsWidgetKey;
+    } else {
+      key = _topWidgetKey;
+    }
+
+    final double height = key.currentContext != null
+        ? (key.currentContext?.findRenderObject() as RenderBox).size.height
         : 0;
 
     if (_shouldShowDirectionsWidget() && _viewMode == ViewMode.search) {
@@ -1838,9 +1844,12 @@ class _MapWidgetState extends State<MapWidget>
                         right: 0,
                         child: Column(
                           children: [
-                            if (_shouldShowDirectionsWidget())
-                              _showDirectionsWidget()
-                            else if (shouldShowShuffleWidget)
+                            Visibility(
+                              maintainState: true, // Preserve Blend state.
+                              visible: _shouldShowDirectionsWidget(),
+                              child: _showDirectionsWidget(),
+                            ),
+                            if (shouldShowShuffleWidget)
                               _showShuffleWidget()
                             else if (shouldShowMetricsWidget)
                               _showMetricsWidget()
@@ -2032,7 +2041,7 @@ class _MapWidgetState extends State<MapWidget>
 
   Widget _showDirectionsWidget() {
     return AnimatedContainer(
-      key: _topWidgetKey,
+      key: _directionsWidgetKey,
       duration: const Duration(milliseconds: 300),
       child: AnimatedCrossFade(
         duration: const Duration(milliseconds: 300),
