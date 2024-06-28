@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:auth0_flutter/auth0_flutter.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +23,7 @@ import 'package:trailblaze/util/format_helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:trailblaze/util/static_image_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
+import 'package:trailblaze/widgets/buttons/more_button.dart';
 import 'package:trailblaze/widgets/map/icon_button_small.dart';
 
 class RouteInfoPanel extends ConsumerStatefulWidget {
@@ -182,62 +184,112 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
     );
   }
 
-  ExpandableNotifier _buildExpandablePanel(
-      String title, SfCartesianChart chart, Function() onDetailsTap) {
-    return ExpandableNotifier(
-      controller: _expandableController,
-      child: ScrollOnExpand(
-        child: ExpandablePanel(
-          theme: const ExpandableThemeData(
-            tapHeaderToExpand: false,
-            tapBodyToExpand: false,
-            tapBodyToCollapse: false,
-            hasIcon: false,
-            iconPlacement: ExpandablePanelIconPlacement.right,
-            iconColor: Colors.black,
-            bodyAlignment: ExpandablePanelBodyAlignment.right,
-            headerAlignment: ExpandablePanelHeaderAlignment.center,
-            alignment: Alignment.center,
-          ),
-          header: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 24, 8, 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15.0,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (widget.route?.surfacePolylines != null &&
-                    widget.route?.roadClassPolylines != null)
-                  InkWell(
-                    onTap: onDetailsTap,
-                    child: Text(
-                      'Preview »',
-                      style: TextStyle(
-                        fontSize: 15.0,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.blue.shade700,
+  Widget _buildMetricCard(
+      Map<String, num> metrics, MetricType type, bool buttonInHeader) {
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: ExpandableNotifier(
+          controller: _expandableController,
+          child: ScrollOnExpand(
+            child: ExpandablePanel(
+              theme: const ExpandableThemeData(
+                tapHeaderToExpand: false,
+                tapBodyToExpand: false,
+                tapBodyToCollapse: false,
+                hasIcon: false,
+                iconPlacement: ExpandablePanelIconPlacement.right,
+                iconColor: Colors.black,
+                bodyAlignment: ExpandablePanelBodyAlignment.right,
+                headerAlignment: ExpandablePanelHeaderAlignment.center,
+                alignment: Alignment.center,
+              ),
+              header: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        type.value,
+                        style: const TextStyle(
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-          collapsed: const SizedBox(),
-          expanded: SizedBox(
-            height: 100,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
-              child: chart,
+                    if (widget.route?.surfacePolylines != null &&
+                        widget.route?.roadClassPolylines != null &&
+                        buttonInHeader)
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            widget.onPreviewMetric(type);
+                          },
+                          child: const MoreButton(
+                            label: 'Preview',
+                            axisAlignment: MainAxisAlignment.end,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              collapsed: const SizedBox(),
+              expanded: Padding(
+                padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+                child: Column(
+                  children: [
+                    _chartForType(metrics, type),
+                    if (!buttonInHeader)
+                      widget.route?.surfacePolylines != null &&
+                              widget.route?.roadClassPolylines != null
+                          ? InkWell(
+                              onTap: () {
+                                widget.onPreviewMetric(type);
+                              },
+                              child: const Padding(
+                                padding: EdgeInsets.only(
+                                  top: 16,
+                                  right: 8,
+                                  left: 8,
+                                ),
+                                child: MoreButton(
+                                  label: 'More',
+                                  axisAlignment: MainAxisAlignment.end,
+                                ),
+                              ),
+                            )
+                          : const SizedBox(),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _chartForType(Map<String, num> metrics, MetricType type) {
+    switch (type) {
+      case MetricType.elevation:
+        return SizedBox(
+          height: 100,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: ChartHelper.buildElevationChart(
+                widget.route!, _elevationTrackball),
+          ),
+        );
+      case MetricType.surface:
+        return _buildMetricBarView(metrics, type);
+      case MetricType.roadClass:
+        return _buildMetricBarView(metrics, type);
+    }
   }
 
   void _fetchRouteMetrics() async {
@@ -435,31 +487,32 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                     widget.route!.surfaceMetrics != null
                 ? Column(
                     children: [
-                      _buildExpandablePanel(
-                        'Elevation',
-                        ChartHelper.buildElevationChart(
-                            widget.route!, _elevationTrackball),
-                        () {
-                          widget.onPreviewMetric(MetricType.elevation);
-                        },
+                      _buildMetricCard(
+                        widget.route!.surfaceMetrics!,
+                        MetricType.elevation,
+                        true,
                       ),
-                      _buildExpandablePanel(
-                        'Surface Type',
-                        ChartHelper.buildSurfaceChart(widget.route!),
-                        () {
-                          widget.onPreviewMetric(MetricType.surface);
-                        },
+                      Row(
+                        children: [
+                          Flexible(
+                            child: _buildMetricCard(
+                              widget.route!.surfaceMetrics!,
+                              MetricType.surface,
+                              false,
+                            ),
+                          ),
+                          // Not supported in every mode
+                          widget.route!.roadClassMetrics != null
+                              ? Flexible(
+                                  child: _buildMetricCard(
+                                    widget.route!.roadClassMetrics!,
+                                    MetricType.roadClass,
+                                    false,
+                                  ),
+                                )
+                              : const SizedBox(),
+                        ],
                       ),
-                      // Not supported in every mode
-                      widget.route!.roadClassMetrics != null
-                          ? _buildExpandablePanel(
-                              'Road Class',
-                              ChartHelper.buildRoadClassChart(widget.route!),
-                              () {
-                                widget.onPreviewMetric(MetricType.roadClass);
-                              },
-                            )
-                          : const SizedBox(),
                     ],
                   )
                 : _isFetchingMetrics == true &&
@@ -481,6 +534,79 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                       ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMetricBarView(Map<String, num> metrics, MetricType type) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            shrinkWrap: true,
+            itemCount: metrics.length.clamp(0, 3),
+            itemBuilder: (BuildContext context, int index) {
+              final metric = metrics.keys.elementAt(index);
+              final distance = metrics[metric] ?? 0;
+              return LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final availableWidth = constraints.maxWidth;
+                  final itemWidth =
+                      availableWidth * (distance / widget.route!.distance);
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: itemWidth,
+                              height: 15,
+                              color: ChartHelper.colorForMetricKey(
+                                  widget.route!, type, metric),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: AutoSizeText(
+                                maxFontSize: 24,
+                                minFontSize: 12,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                FormatHelper.toCapitalizedText(metric),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: AutoSizeText(
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w300),
+                                maxFontSize: 24,
+                                minFontSize: 10,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                FormatHelper.formatDistancePrecise(distance),
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
