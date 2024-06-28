@@ -88,6 +88,7 @@ class _MapWidgetState extends State<MapWidget>
   double? _selectedDistanceMeters = kDefaultFeatureDistanceMeters;
   mbm.Position? _userLocation;
   final GlobalKey _topWidgetKey = GlobalKey();
+  final GlobalKey _directionsWidgetKey = GlobalKey();
   final GlobalKey _shareWidgetKey = GlobalKey();
   double _panelPosition = 0;
 
@@ -520,10 +521,15 @@ class _MapWidgetState extends State<MapWidget>
 
   double _getTopOffset() {
     double topOffset = 0;
-    final double height = _topWidgetKey.currentContext != null
-        ? (_topWidgetKey.currentContext?.findRenderObject() as RenderBox)
-            .size
-            .height
+    final GlobalKey key;
+    if (_shouldShowDirectionsWidget()) {
+      key = _directionsWidgetKey;
+    } else {
+      key = _topWidgetKey;
+    }
+
+    final double height = key.currentContext != null
+        ? (key.currentContext?.findRenderObject() as RenderBox).size.height
         : 0;
 
     if (_shouldShowDirectionsWidget() && _viewMode == ViewMode.search) {
@@ -543,7 +549,7 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   double _getBottomOffset({bool wantStatic = true}) {
-    final double bottomOffset;
+    double bottomOffset;
     if (_panelController.isAttached) {
       if (_isPanelBackdrop()) {
         bottomOffset = _getMinPanelHeight();
@@ -558,6 +564,10 @@ class _MapWidgetState extends State<MapWidget>
       }
     } else {
       bottomOffset = 0;
+    }
+
+    if (widget.forceTopBottomPadding && _viewMode == ViewMode.metricDetails) {
+      bottomOffset = kSafeAreaPaddingBottom;
     }
 
     return bottomOffset;
@@ -609,12 +619,18 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   mbm.MbxEdgeInsets _getCameraPadding() {
-    final topOffset = _getTopOffset();
+    double topOffset = _getTopOffset();
     double bottomOffset = _getBottomOffset();
 
     // Offset bottom by refresh button height.
     if (_viewMode == ViewMode.shuffle) {
       bottomOffset += kOptionsPillHeight;
+    }
+
+    // Widget is inside a view with an app bar.
+    // Need to compensate for extra padding.
+    if (widget.forceTopBottomPadding) {
+      topOffset -= 80;
     }
 
     return mbm.MbxEdgeInsets(
@@ -737,7 +753,6 @@ class _MapWidgetState extends State<MapWidget>
       _getCameraPadding(),
       height,
       width,
-      extraPadding: widget.forceTopBottomPadding,
     );
     await _mapFlyToOptions(cameraForRoute, isAnimated: isAnimated);
   }
@@ -925,6 +940,7 @@ class _MapWidgetState extends State<MapWidget>
   }
 
   Future<void> _flyToMetric(List<List<List<num>>> polylines, String key) async {
+    await _clearCameraPadding();
     final height = mounted ? MediaQuery.of(context).size.height : 0.0;
     final width = mounted ? MediaQuery.of(context).size.width : 0.0;
 
@@ -934,7 +950,6 @@ class _MapWidgetState extends State<MapWidget>
       _getCameraPadding(),
       height,
       width,
-      extraPadding: widget.forceTopBottomPadding,
     );
     await _mapFlyToOptions(cameraForRoute, isAnimated: true);
     setState(() {
@@ -1829,9 +1844,12 @@ class _MapWidgetState extends State<MapWidget>
                         right: 0,
                         child: Column(
                           children: [
-                            if (_shouldShowDirectionsWidget())
-                              _showDirectionsWidget()
-                            else if (shouldShowShuffleWidget)
+                            Visibility(
+                              maintainState: true, // Preserve Blend state.
+                              visible: _shouldShowDirectionsWidget(),
+                              child: _showDirectionsWidget(),
+                            ),
+                            if (shouldShowShuffleWidget)
                               _showShuffleWidget()
                             else if (shouldShowMetricsWidget)
                               _showMetricsWidget()
@@ -2023,7 +2041,7 @@ class _MapWidgetState extends State<MapWidget>
 
   Widget _showDirectionsWidget() {
     return AnimatedContainer(
-      key: _topWidgetKey,
+      key: _directionsWidgetKey,
       duration: const Duration(milliseconds: 300),
       child: AnimatedCrossFade(
         duration: const Duration(milliseconds: 300),
