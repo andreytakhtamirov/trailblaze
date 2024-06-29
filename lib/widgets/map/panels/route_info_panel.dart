@@ -32,12 +32,16 @@ class RouteInfoPanel extends ConsumerStatefulWidget {
     required this.route,
     required this.panelHeight,
     required this.onPreviewMetric,
+    required this.onSetHeight,
+    required this.isPanelFullyOpen,
     this.hideSaveRoute = false,
   }) : super(key: key);
   final TrailblazeRoute? route;
   final bool hideSaveRoute;
+  final bool isPanelFullyOpen;
   final double panelHeight;
   final void Function(MetricType type) onPreviewMetric;
+  final void Function(double height) onSetHeight;
 
   @override
   ConsumerState<RouteInfoPanel> createState() => _RouteInfoPanelState();
@@ -49,8 +53,8 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
   bool _isFetchingMetrics = false;
   String? _savedRouteId;
   bool _isLoadingRouteUpdate = false;
-  bool _chartsExpanded = false;
-  final ExpandableController _expandableController = ExpandableController();
+  bool _setHeight = false;
+  final GlobalKey _metricsKey = GlobalKey();
 
   @override
   initState() {
@@ -74,21 +78,7 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
         _isLoadingRouteUpdate = false;
       });
     }
-    if (widget.panelHeight > 0.8) {
-      if (!_chartsExpanded) {
-        setState(() {
-          _chartsExpanded = true;
-          _expandableController.expanded = true;
-        });
-      }
-    } else {
-      if (_chartsExpanded) {
-        setState(() {
-          _chartsExpanded = false;
-          _expandableController.expanded = false;
-        });
-      }
-    }
+    return;
   }
 
   @override
@@ -191,81 +181,78 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
       child: Card(
         margin: EdgeInsets.zero,
         child: ExpandableNotifier(
-          controller: _expandableController,
-          child: ScrollOnExpand(
-            child: ExpandablePanel(
-              theme: const ExpandableThemeData(
-                tapHeaderToExpand: false,
-                tapBodyToExpand: false,
-                tapBodyToCollapse: false,
-                hasIcon: false,
-                iconPlacement: ExpandablePanelIconPlacement.right,
-                iconColor: Colors.black,
-                bodyAlignment: ExpandablePanelBodyAlignment.right,
-                headerAlignment: ExpandablePanelHeaderAlignment.center,
-                alignment: Alignment.center,
-              ),
-              header: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+          initialExpanded: true,
+          child: ExpandablePanel(
+            theme: const ExpandableThemeData(
+              tapHeaderToExpand: false,
+              tapBodyToExpand: false,
+              tapBodyToCollapse: false,
+              hasIcon: false,
+              iconPlacement: ExpandablePanelIconPlacement.right,
+              iconColor: Colors.black,
+              bodyAlignment: ExpandablePanelBodyAlignment.right,
+              headerAlignment: ExpandablePanelHeaderAlignment.center,
+              alignment: Alignment.center,
+            ),
+            header: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      type.value,
+                      style: const TextStyle(
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  if (widget.route?.surfacePolylines != null &&
+                      widget.route?.roadClassPolylines != null &&
+                      buttonInHeader)
                     Expanded(
-                      child: Text(
-                        type.value,
-                        style: const TextStyle(
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.w500,
+                      child: InkWell(
+                        onTap: () {
+                          widget.onPreviewMetric(type);
+                        },
+                        child: const MoreButton(
+                          label: 'Preview',
+                          axisAlignment: MainAxisAlignment.end,
                         ),
                       ),
                     ),
-                    if (widget.route?.surfacePolylines != null &&
-                        widget.route?.roadClassPolylines != null &&
-                        buttonInHeader)
-                      Expanded(
-                        child: InkWell(
-                          onTap: () {
-                            widget.onPreviewMetric(type);
-                          },
-                          child: const MoreButton(
-                            label: 'Preview',
-                            axisAlignment: MainAxisAlignment.end,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
-              collapsed: const SizedBox(),
-              expanded: Padding(
-                padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
-                child: Column(
-                  children: [
-                    _chartForType(metrics, type),
-                    if (!buttonInHeader)
-                      widget.route?.surfacePolylines != null &&
-                              widget.route?.roadClassPolylines != null
-                          ? InkWell(
-                              onTap: () {
-                                widget.onPreviewMetric(type);
-                              },
-                              child: const Padding(
-                                padding: EdgeInsets.only(
-                                  top: 16,
-                                  right: 8,
-                                  left: 8,
-                                ),
-                                child: MoreButton(
-                                  label: 'More',
-                                  axisAlignment: MainAxisAlignment.end,
-                                ),
+            ),
+            collapsed: const SizedBox(),
+            expanded: Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+              child: Column(
+                children: [
+                  _chartForType(metrics, type),
+                  if (!buttonInHeader)
+                    widget.route?.surfacePolylines != null &&
+                            widget.route?.roadClassPolylines != null
+                        ? InkWell(
+                            onTap: () {
+                              widget.onPreviewMetric(type);
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.only(
+                                top: 16,
+                                right: 8,
+                                left: 8,
                               ),
-                            )
-                          : const SizedBox(),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+                              child: MoreButton(
+                                label: 'More',
+                                axisAlignment: MainAxisAlignment.end,
+                              ),
+                            ),
+                          )
+                        : const SizedBox(),
+                  const SizedBox(height: 16),
+                ],
               ),
             ),
           ),
@@ -395,10 +382,28 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
     final profile = ref.watch(profileProvider);
     final credentials = ref.watch(credentialsProvider);
 
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final height = _metricsKey.currentContext?.size?.height;
+
+      if (!_setHeight || widget.panelHeight != height) {
+        widget.onSetHeight(height ?? 0);
+        setState(() {
+          _setHeight = true;
+        });
+      }
+    });
+
     return Expanded(
       child: SingleChildScrollView(
+        physics: widget.isPanelFullyOpen
+            ? null
+            : const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-        child: Column(
+        child: ListView(
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          shrinkWrap: true,
+          key: _metricsKey,
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),

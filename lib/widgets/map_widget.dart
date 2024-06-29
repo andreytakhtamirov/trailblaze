@@ -90,7 +90,6 @@ class _MapWidgetState extends State<MapWidget>
   final GlobalKey _topWidgetKey = GlobalKey();
   final GlobalKey _directionsWidgetKey = GlobalKey();
   final GlobalKey _shareWidgetKey = GlobalKey();
-  double _panelPosition = 0;
 
   bool _isOriginChanged = false;
   bool _isCameraLocked = false;
@@ -122,6 +121,8 @@ class _MapWidgetState extends State<MapWidget>
 
   MetricType _metricType = MetricType.elevation;
   String? _metricKey;
+
+  double _panelHeight = 0;
 
   @override
   void initState() {
@@ -1544,8 +1545,20 @@ class _MapWidgetState extends State<MapWidget>
       return 0;
     } else if (_viewMode == ViewMode.parks) {
       return kPanelFeaturesMaxHeight;
+    } else if (_viewMode == ViewMode.directions) {
+      final size = MediaQuery.of(context);
+      final topPadding = size.padding.top;
+      final screenHeight = size.size.height;
+      if (screenHeight - kAppBarHeight < _panelHeight + kPanelGrabberHeight) {
+        return screenHeight -
+            topPadding -
+            kAppBarHeight -
+            kPanelOverflowMarginTop;
+      } else {
+        return _panelHeight + kPanelGrabberHeight;
+      }
     } else {
-      return kPanelRouteInfoMaxHeight;
+      return kPanelFeaturesMaxHeight;
     }
   }
 
@@ -1712,7 +1725,6 @@ class _MapWidgetState extends State<MapWidget>
             controller: _panelController,
             onPanelSlide: (double pos) {
               setState(() {
-                _panelPosition = pos;
                 _panelOptionsHeight =
                     pos * (_getMaxPanelHeight() - _getMinPanelHeight()) +
                         kPanelFabHeight;
@@ -2134,8 +2146,15 @@ class _MapWidgetState extends State<MapWidget>
             RouteInfoPanel(
               route: _selectedRoute,
               hideSaveRoute: !widget.isInteractiveMap,
-              panelHeight: _panelPosition,
+              isPanelFullyOpen:
+                  _panelController.isAttached && _panelController.isPanelOpen,
+              panelHeight: _panelHeight,
               onPreviewMetric: _onPreviewMetric,
+              onSetHeight: (height) {
+                setState(() {
+                  _panelHeight = height;
+                });
+              },
             ),
           ];
         } else if (_selectedPlace != null) {

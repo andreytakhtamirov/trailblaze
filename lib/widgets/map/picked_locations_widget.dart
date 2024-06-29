@@ -117,7 +117,8 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
   }
 
   void _onSliderChangeEnd(double value, {bool isSilentUpdate = false}) async {
-    widget.onOptionsChanged(widget.selectedMode, _selectedDistance, isSilentUpdate);
+    widget.onOptionsChanged(
+        widget.selectedMode, _selectedDistance, isSilentUpdate);
   }
 
   int _determineCurrentState() {
@@ -472,7 +473,7 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
               : MainAxisAlignment.center,
           children: [
             Flexible(
-              flex: 2,
+              flex: 1,
               child: IconButtonSmall(
                 icon: !_isEditingAvoidArea
                     ? widget.avoidArea == 0
@@ -497,22 +498,19 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
               ),
             ),
             widget.avoidArea != 0 && !_isEditingAvoidArea
-                ? Flexible(
-                    flex: 1,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: IconButtonSmall(
-                        icon: Icons.delete,
-                        foregroundColor: Colors.redAccent,
-                        backgroundColor: Colors.white,
-                        onTap: () => {
-                          widget.onClearAvoidArea(),
-                          widget.onMapControlChanged(false),
-                        },
-                        hasBorder: true,
-                      ),
-                    ),
-                  )
+                ? Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: IconButtonSmall(
+                    icon: Icons.delete,
+                    foregroundColor: Colors.redAccent,
+                    backgroundColor: Colors.white,
+                    onTap: () => {
+                      widget.onClearAvoidArea(),
+                      widget.onMapControlChanged(false),
+                    },
+                    hasBorder: true,
+                  ),
+                )
                 : const SizedBox(),
           ],
         ),

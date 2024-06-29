@@ -20,6 +20,10 @@ final kSafeAreaPaddingBottom =
     WidgetsBinding.instance.platformDispatcher.views.first.padding.bottom /
         kDevicePixelRatio;
 
+final double kAppBarHeight = 60 + kSafeAreaPaddingBottom;
+const double kPanelGrabberHeight = 40;
+const double kPanelOverflowMarginTop = 30;
+
 const int kMapFlyToDuration = 400;
 const String kRouteSourceId = "route-source-id";
 const String kRouteLayerId = "route-layer-id";
