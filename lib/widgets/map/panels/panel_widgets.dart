@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trailblaze/constants/map_constants.dart';
 
 class PanelWidgets {
   static Widget panelGrabber() {
@@ -9,7 +10,7 @@ class PanelWidgets {
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           Container(
-            width: 40,
+            width: kPanelGrabberHeight,
             height: 5,
             decoration: BoxDecoration(
                 color: Colors.grey[300],
