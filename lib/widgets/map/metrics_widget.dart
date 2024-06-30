@@ -6,6 +6,7 @@ import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/util/chart_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/widgets/buttons/dropdown_button.dart';
+import 'package:trailblaze/widgets/list_items/metrics_item.dart';
 
 class MetricsWidget extends StatefulWidget {
   final TrailblazeRoute? route;
@@ -132,7 +133,6 @@ class _MetricsWidgetState extends State<MetricsWidget> {
                       itemCount: _keys.length,
                       itemBuilder: (BuildContext context, int index) {
                         final key = _keys[index];
-                        final label = FormatHelper.toCapitalizedText(key);
                         final percentDistance =
                             _distanceForKey(widget.metricType, key);
                         final isSelected = widget.metricKey == key;
@@ -141,9 +141,6 @@ class _MetricsWidgetState extends State<MetricsWidget> {
                         return LayoutBuilder(builder:
                             (BuildContext context, BoxConstraints constraints) {
                           final width = constraints.maxWidth;
-                          final textScale = ((width - 54) / (label.length * 9))
-                              .clamp(0.70,
-                                  1.2); // Scale text to available container width.
                           if (_gridItemHeight == null ||
                               _gridItemHeight != constraints.maxHeight) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -154,81 +151,15 @@ class _MetricsWidgetState extends State<MetricsWidget> {
                               }
                             });
                           }
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 3, vertical: 4),
-                            child: InkWell(
-                              onTap: () {
-                                widget.onMetricChanged(widget.metricType, key);
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? accentColor.withOpacity(0.7)
-                                        : Colors.grey.withOpacity(0.3),
-                                    width: 3,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      height: 15,
-                                      width: 15,
-                                      decoration: BoxDecoration(
-                                        color: accentColor,
-                                        borderRadius: const BorderRadius.all(
-                                          Radius.circular(15),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    SizedBox(
-                                      width: width - 54,
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Flexible(
-                                            flex: 3,
-                                            child: Text(
-                                              label,
-                                              textScaler:
-                                                  TextScaler.linear(textScale),
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 2,
-                                              style: const TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ),
-                                          if (isSelected)
-                                            Flexible(
-                                              flex: 2,
-                                              child: FittedBox(
-                                                fit: BoxFit.fitWidth,
-                                                child: Text(
-                                                  percentDistance,
-                                                  style: const TextStyle(
-                                                    color: Colors.black,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                          return MetricsItem(
+                            isSelected: isSelected,
+                            accentColor: accentColor,
+                            width: width,
+                            metricKey: key,
+                            percentDistance: percentDistance,
+                            onMetricChanged: () {
+                              widget.onMetricChanged(widget.metricType, key);
+                            },
                           );
                         });
                       },
