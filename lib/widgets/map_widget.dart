@@ -85,6 +85,7 @@ class _MapWidgetState extends State<MapWidget>
   tb.Feature? _selectedFeature;
   double _fabHeight = kPanelFabHeight;
   double _panelOptionsHeight = kPanelFabHeight;
+  double _panelHeight = 0;
   double? _selectedDistanceMeters = kDefaultFeatureDistanceMeters;
   mbm.Position? _userLocation;
   final GlobalKey _topWidgetKey = GlobalKey();
@@ -121,8 +122,6 @@ class _MapWidgetState extends State<MapWidget>
 
   MetricType _metricType = MetricType.elevation;
   String? _metricKey;
-
-  double _panelHeight = 0;
 
   @override
   void initState() {
@@ -2153,6 +2152,9 @@ class _MapWidgetState extends State<MapWidget>
               onSetHeight: (height) {
                 setState(() {
                   _panelHeight = height;
+                  _panelOptionsHeight = _panelController.panelPosition *
+                          (_getMaxPanelHeight() - _getMinPanelHeight()) +
+                      kPanelFabHeight;
                 });
               },
             ),

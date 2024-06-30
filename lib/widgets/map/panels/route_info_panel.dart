@@ -78,7 +78,6 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
         _isLoadingRouteUpdate = false;
       });
     }
-    return;
   }
 
   @override
@@ -311,6 +310,16 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
       widget.route?.elevationMetrics = elevationMetrics?.cast<num>();
       widget.route?.surfaceMetrics = surfaceMetrics?.cast<String, num>();
     }
+
+    // Update panel height.
+    if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final height = _metricsKey.currentContext?.size?.height;
+        if (widget.panelHeight != height) {
+          widget.onSetHeight(height ?? 0);
+        }
+      });
+    }
   }
 
   String _saveRouteButtonText() {
@@ -382,16 +391,17 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
     final profile = ref.watch(profileProvider);
     final credentials = ref.watch(credentialsProvider);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final height = _metricsKey.currentContext?.size?.height;
-
-      if (!_setHeight || widget.panelHeight != height) {
-        widget.onSetHeight(height ?? 0);
-        setState(() {
-          _setHeight = true;
-        });
-      }
-    });
+    if (!_setHeight) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final height = _metricsKey.currentContext?.size?.height;
+        if (widget.panelHeight != height) {
+          widget.onSetHeight(height ?? 0);
+          setState(() {
+            _setHeight = true;
+          });
+        }
+      });
+    }
 
     return Expanded(
       child: SingleChildScrollView(
