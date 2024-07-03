@@ -50,24 +50,25 @@ class CameraHelper {
     TrailblazeRoute route,
     MbxEdgeInsets? padding,
     double maxHeight,
-    double maxWidth, {
-    bool extraPadding = false,
-  }) async {
-    num topBottomPadding;
-    if (extraPadding) {
-      topBottomPadding = kDefaultCameraState.padding.top;
-    } else {
-      topBottomPadding = 0;
-    }
+    double maxWidth,
+  ) async {
+    return cameraOptionsForGeometry(
+        mapboxMap, route.geometryJson, padding, maxHeight, maxWidth);
+  }
 
+  static Future<CameraOptions> cameraOptionsForGeometry(
+    MapboxMap mapboxMap,
+    Map<String?, Object?> geometryJson,
+    MbxEdgeInsets? padding,
+    double maxHeight,
+    double maxWidth,
+  ) async {
     final customPadding = MbxEdgeInsets(
       top: (padding?.top ?? 0) +
-          kRouteCameraState.padding.top +
-          topBottomPadding,
+          kRouteCameraState.padding.top,
       left: (padding?.left ?? 0) + kRouteCameraState.padding.left,
       bottom: (padding?.bottom ?? 0) +
-          kRouteCameraState.padding.bottom +
-          topBottomPadding,
+          kRouteCameraState.padding.bottom,
       right: (padding?.right ?? 0) + kRouteCameraState.padding.right,
     );
 
@@ -84,7 +85,7 @@ class CameraHelper {
     }
 
     final cameraForRoute = await mapboxMap.cameraForGeometry(
-      route.geometryJson,
+      geometryJson,
       customPadding,
       null,
       null,
@@ -100,7 +101,8 @@ class CameraHelper {
     );
   }
 
-  static MapBoxPlace getMapBoxPlaceFromLonLat(List<double>? coordinates, String placeName) {
+  static MapBoxPlace getMapBoxPlaceFromLonLat(
+      List<double>? coordinates, String placeName) {
     return MapBoxPlace(placeName: placeName, center: coordinates);
   }
 

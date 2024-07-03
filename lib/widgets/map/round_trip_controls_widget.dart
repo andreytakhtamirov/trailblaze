@@ -87,7 +87,7 @@ class RoundTripControlsWidget extends StatelessWidget {
             child: IconButton(
               padding: const EdgeInsets.all(16),
               iconSize: 32,
-              icon: const Icon(Icons.arrow_back),
+              icon: const Icon(Icons.arrow_back_ios_new),
               onPressed: onBackClicked,
             ),
           ),
