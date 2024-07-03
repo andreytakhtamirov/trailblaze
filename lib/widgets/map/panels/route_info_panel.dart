@@ -19,6 +19,7 @@ import 'package:trailblaze/managers/profile_manager.dart';
 import 'package:trailblaze/requests/route_metrics.dart';
 import 'package:trailblaze/requests/user_profile.dart';
 import 'package:trailblaze/util/chart_helper.dart';
+import 'package:trailblaze/util/firebase_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:trailblaze/util/static_image_helper.dart';
@@ -213,6 +214,7 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                     Expanded(
                       child: InkWell(
                         onTap: () {
+                          FirebaseHelper.logScreen("PreviewMetric-${type.value}");
                           widget.onPreviewMetric(type);
                         },
                         child: const MoreButton(
@@ -235,6 +237,7 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                             widget.route?.roadClassPolylines != null
                         ? InkWell(
                             onTap: () {
+                              FirebaseHelper.logScreen("PreviewMetric-${type.value}");
                               widget.onPreviewMetric(type);
                             },
                             child: const Padding(
