@@ -32,8 +32,8 @@ Android release and development builds:
 
 
 ## Coming Soon
-- *Discover page with routes from other users.*
-- Save and share your own routes.*
+- Discover page with routes from other users.
+- Save and share your own routes.
 
 <br>
 <br>
