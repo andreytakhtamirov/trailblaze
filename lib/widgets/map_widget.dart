@@ -2029,7 +2029,8 @@ class _MapWidgetState extends State<MapWidget>
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
-          if (_selectedRoute != null && _viewMode == ViewMode.directions)
+          if (_selectedRoute != null && _viewMode == ViewMode.directions ||
+              _viewMode == ViewMode.shuffle)
             Positioned(
               right: 4,
               bottom: _panelOptionsHeight - 10,
