@@ -30,6 +30,10 @@ class FirebaseHelper {
     return FirebaseAnalytics.instance.logScreenView(screenName: screenName);
   }
 
+  static Future<void> logEvent(String name, Map<String, Object> params) {
+    return FirebaseAnalytics.instance.logEvent(name: name, parameters: params);
+  }
+
   static Future<void> logLogin(String method) {
     return FirebaseAnalytics.instance.logLogin(loginMethod: method);
   }

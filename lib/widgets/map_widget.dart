@@ -965,6 +965,8 @@ class _MapWidgetState extends State<MapWidget>
           extraMarginBottom: true);
       return;
     }
+    FirebaseHelper.logEvent("Export",
+        {'d': FormatHelper.formatDistancePrecise(_selectedRoute?.distance)});
     final coordinates = _selectedRoute!.coordinates!;
     final elevation = _selectedRoute!.elevationMetrics!;
     final gpx = ExportHelper.generateGpx(coordinates, elevation);
@@ -1544,7 +1546,8 @@ class _MapWidgetState extends State<MapWidget>
       return 0;
     } else if (_viewMode == ViewMode.parks) {
       return kPanelFeaturesMaxHeight;
-    } else if (_viewMode == ViewMode.directions) {
+    } else if (_viewMode == ViewMode.directions ||
+        _viewMode == ViewMode.shuffle) {
       final size = MediaQuery.of(context);
       final topPadding = size.padding.top;
       final screenHeight = size.size.height;

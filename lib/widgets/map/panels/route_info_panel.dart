@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:math' as math;
 
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:auto_size_text/auto_size_text.dart';
@@ -55,7 +56,10 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
   String? _savedRouteId;
   bool _isLoadingRouteUpdate = false;
   bool _setHeight = false;
+  double? _smallCardHeight;
   final GlobalKey _metricsKey = GlobalKey();
+  final GlobalKey _surfaceMetricKey = GlobalKey();
+  final GlobalKey _roadClassMetricKey = GlobalKey();
 
   @override
   initState() {
@@ -175,7 +179,8 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
   }
 
   Widget _buildMetricCard(
-      Map<String, num> metrics, MetricType type, bool buttonInHeader) {
+      Map<String, num> metrics, MetricType type, bool buttonInHeader,
+      {GlobalKey? key, double? height}) {
     return Padding(
       padding: const EdgeInsets.all(4),
       child: Card(
@@ -214,7 +219,8 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                     Expanded(
                       child: InkWell(
                         onTap: () {
-                          FirebaseHelper.logScreen("PreviewMetric-${type.value}");
+                          FirebaseHelper.logScreen(
+                              "PreviewMetric-${type.value}");
                           widget.onPreviewMetric(type);
                         },
                         child: const MoreButton(
@@ -231,28 +237,38 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
               padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
               child: Column(
                 children: [
-                  _chartForType(metrics, type),
-                  if (!buttonInHeader)
-                    widget.route?.surfacePolylines != null &&
-                            widget.route?.roadClassPolylines != null
-                        ? InkWell(
-                            onTap: () {
-                              FirebaseHelper.logScreen("PreviewMetric-${type.value}");
-                              widget.onPreviewMetric(type);
-                            },
-                            child: const Padding(
-                              padding: EdgeInsets.only(
-                                top: 16,
-                                right: 8,
-                                left: 8,
-                              ),
-                              child: MoreButton(
-                                label: 'More',
-                                axisAlignment: MainAxisAlignment.end,
-                              ),
-                            ),
-                          )
-                        : const SizedBox(),
+                  SizedBox(
+                    key: key,
+                    height: height == 0 ? null : height,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _chartForType(metrics, type),
+                        if (!buttonInHeader)
+                          widget.route?.surfacePolylines != null &&
+                                  widget.route?.roadClassPolylines != null
+                              ? InkWell(
+                                  onTap: () {
+                                    FirebaseHelper.logScreen(
+                                        "PreviewMetric-${type.value}");
+                                    widget.onPreviewMetric(type);
+                                  },
+                                  child: const Padding(
+                                    padding: EdgeInsets.only(
+                                      top: 16,
+                                      right: 8,
+                                      left: 8,
+                                    ),
+                                    child: MoreButton(
+                                      label: 'More',
+                                      axisAlignment: MainAxisAlignment.end,
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox(),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -275,9 +291,9 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
           ),
         );
       case MetricType.surface:
-        return _buildMetricBarView(metrics, type);
+        return _buildMetricBarView(_surfaceMetricKey, metrics, type);
       case MetricType.roadClass:
-        return _buildMetricBarView(metrics, type);
+        return _buildMetricBarView(_roadClassMetricKey, metrics, type);
     }
   }
 
@@ -316,11 +332,8 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
 
     // Update panel height.
     if (mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        final height = _metricsKey.currentContext?.size?.height;
-        if (widget.panelHeight != height) {
-          widget.onSetHeight(height ?? 0);
-        }
+      setState(() {
+        _setHeight = false;
       });
     }
   }
@@ -403,6 +416,14 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
             _setHeight = true;
           });
         }
+
+        final double surfaceMetricsHeight =
+            _surfaceMetricKey.currentContext?.size?.height ?? 0;
+        final double roadClassMetricsHeight =
+            _roadClassMetricKey.currentContext?.size?.height ?? 0;
+
+        _smallCardHeight =
+            math.max(surfaceMetricsHeight, roadClassMetricsHeight);
       });
     }
 
@@ -517,6 +538,8 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                               widget.route!.surfaceMetrics!,
                               MetricType.surface,
                               false,
+                              key: _surfaceMetricKey,
+                              height: _smallCardHeight,
                             ),
                           ),
                           // Not supported in every mode
@@ -526,6 +549,8 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                                     widget.route!.roadClassMetrics!,
                                     MetricType.roadClass,
                                     false,
+                                    key: _roadClassMetricKey,
+                                    height: _smallCardHeight,
                                   ),
                                 )
                               : const SizedBox(),
@@ -556,7 +581,8 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
     );
   }
 
-  Widget _buildMetricBarView(Map<String, num> metrics, MetricType type) {
+  Widget _buildMetricBarView(
+      GlobalKey key, Map<String, num> metrics, MetricType type) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
