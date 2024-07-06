@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trailblaze/data/feature.dart';
+import 'package:trailblaze/util/distance_helper.dart';
+import 'package:trailblaze/util/format_helper.dart';
 import 'package:turf/turf.dart' as turf;
 
 class FeatureItem extends StatelessWidget {
@@ -26,8 +28,8 @@ class FeatureItem extends StatelessWidget {
       coordinates: turf.Position(feature.center['lon'], feature.center['lat']),
     );
 
-    final distance = turf.distance(point1Coord, point2Coord);
-    return "${distance.toStringAsFixed(2)} km";
+    return FormatHelper.formatDistancePrecise(
+        DistanceHelper.euclideanDistance(point1Coord, point2Coord));
   }
 
   @override

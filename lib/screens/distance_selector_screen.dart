@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:trailblaze/constants/map_constants.dart';
+import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/widgets/ui_tools/o_ring_widget.dart';
 
 class DistanceSelectorScreen extends StatefulWidget {
@@ -30,6 +31,9 @@ class DistanceSelectorScreen extends StatefulWidget {
 class _DistanceSelectorScreenState extends State<DistanceSelectorScreen> {
   late MapboxMap _mapboxMap;
   double _selectedDistanceKm = 0;
+  String _distanceLabelNum = '';
+  String _distanceLabelUnit = '';
+
   double _dragAmount = 0;
 
   final double kMinDragAmount = 150;
@@ -38,8 +42,19 @@ class _DistanceSelectorScreenState extends State<DistanceSelectorScreen> {
   @override
   void initState() {
     super.initState();
+    setDistance(widget.initialDistanceMeters);
+  }
+
+  void setDistance(double distanceMeters) {
+    final String d = FormatHelper.formatDistancePrecise(
+      distanceMeters,
+      noRemainder: true,
+    );
+    final split = d.split(' ');
     setState(() {
-      _selectedDistanceKm = widget.initialDistanceMeters / 1000;
+      _selectedDistanceKm = distanceMeters / 1000;
+      _distanceLabelNum = split[0];
+      _distanceLabelUnit = split[1];
     });
   }
 
@@ -127,10 +142,12 @@ class _DistanceSelectorScreenState extends State<DistanceSelectorScreen> {
 
   double calculateSelectedDistance(double dragAmount, double size) {
     double maxDragAmount = size - kMinDragAmount - kSliderPadding;
-    return widget.minDistanceKm +
-        (dragAmount - kMinDragAmount) /
-            (maxDragAmount) *
-            (widget.maxDistanceKm - widget.minDistanceKm);
+    return (widget.minDistanceKm +
+                (dragAmount - kMinDragAmount) /
+                    (maxDragAmount) *
+                    (widget.maxDistanceKm - widget.minDistanceKm))
+            .ceil() *
+        1000;
   }
 
   double calculateDragAmount(double selectedDistance, double size) {
@@ -260,7 +277,7 @@ class _DistanceSelectorScreenState extends State<DistanceSelectorScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            _selectedDistanceKm.toStringAsFixed(0),
+                            _distanceLabelNum,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.primary,
@@ -269,7 +286,7 @@ class _DistanceSelectorScreenState extends State<DistanceSelectorScreen> {
                             ),
                           ),
                           Text(
-                            "km",
+                            _distanceLabelUnit,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.primary,
@@ -291,8 +308,8 @@ class _DistanceSelectorScreenState extends State<DistanceSelectorScreen> {
                           final sum = _dragAmount + details.delta.dx * 1.5;
                           _dragAmount =
                               sum.clamp(kMinDragAmount, size - kSliderPadding);
-                          _selectedDistanceKm =
-                              calculateSelectedDistance(_dragAmount, size);
+                          setDistance(
+                              calculateSelectedDistance(_dragAmount, size));
                         });
 
                         _updateCamera(size);
