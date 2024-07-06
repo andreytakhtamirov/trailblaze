@@ -1,8 +1,10 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:trailblaze/constants/route_info_constants.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
+import 'package:trailblaze/util/format_helper.dart';
 
 class ChartHelper {
   static SfCartesianChart buildElevationChart(
@@ -16,24 +18,30 @@ class ChartHelper {
         metrics.reduce((value, value2) => value < value2 ? value : value2);
 
     // Add padding below/above for visibility.
-    minElevation -= minElevation * 0.05;
-    maxElevation += maxElevation * 0.05;
+    minElevation -= minElevation * 0.01;
+    maxElevation += maxElevation * 0.01;
 
     return SfCartesianChart(
       trackballBehavior: trackball,
       primaryXAxis: NumericAxis(
-        minimum: 0,
-        maximum: distance.toDouble(),
-        labelFormat: '{value}m',
-        numberFormat: NumberFormat.compact(),
-      ),
+          minimum: 0,
+          maximum: distance.toDouble(),
+          axisLabelFormatter: (axisLabelRenderArgs) {
+            final d = axisLabelRenderArgs.value;
+            return ChartAxisLabel(
+                FormatHelper.formatDistancePrecise(d, noRemainder: true),
+                const TextStyle());
+          }),
       primaryYAxis: NumericAxis(
-        minimum: minElevation.toDouble(),
-        maximum: maxElevation.toDouble(),
-        interval: (maxElevation - minElevation) / 3,
-        numberFormat: NumberFormat.compact(),
-        labelFormat: '{value}m',
-      ),
+          minimum: minElevation.toDouble(),
+          maximum: maxElevation.toDouble(),
+          interval: (maxElevation - minElevation) / 3,
+          axisLabelFormatter: (axisLabelRenderArgs) {
+            final d = axisLabelRenderArgs.value;
+            return ChartAxisLabel(
+                FormatHelper.formatElevationDistance(d, noRemainder: true),
+                const TextStyle());
+          }),
       series: <CartesianSeries<num, num>>[
         AreaSeries<num, num>(
           dataSource: metrics,
@@ -64,6 +72,57 @@ class ChartHelper {
       {bool showLegend = true}) {
     return SfCartesianChart(
       tooltipBehavior: TooltipBehavior(
+        builder: (data, point, s, pointIndex, seriesIndex) {
+          return Container(
+            width: 150,
+            padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  height: 15,
+                  width: 15,
+                  decoration: BoxDecoration(
+                    color: palette[seriesIndex],
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(15),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Column(
+                  children: [
+                    Expanded(
+                      child: AutoSizeText(
+                        FormatHelper.toCapitalizedText(
+                            series[seriesIndex].name ?? ''),
+                        minFontSize: 12,
+                        maxFontSize: 12,
+                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    Expanded(
+                      child: AutoSizeText(
+                        minFontSize: 12,
+                        maxFontSize: 12,
+                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        FormatHelper.formatDistancePrecise(data),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
         elevation: 100,
         activationMode: ActivationMode.singleTap,
         enable: true,
@@ -150,5 +209,26 @@ class ChartHelper {
       default:
         return Colors.black;
     }
+  }
+
+  static Widget trackballBuilder(BuildContext context, num? distance) {
+    return Container(
+      width: 70,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary,
+          width: 2,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          textAlign: TextAlign.center,
+          FormatHelper.formatElevationDistance(distance),
+        ),
+      ),
+    );
   }
 }

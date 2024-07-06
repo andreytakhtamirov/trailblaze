@@ -1,3 +1,7 @@
+import 'package:flutter/material.dart';
+import 'package:trailblaze/data/app_settings.dart';
+import 'package:units_converter/units_converter.dart';
+
 class FormatHelper {
   static String formatDuration(num? durationSeconds) {
     if (durationSeconds == null) {
@@ -22,20 +26,82 @@ class FormatHelper {
     return formattedDuration;
   }
 
-  static String formatDistance(num? distance, {bool noRemainder = false}) {
-    return "${(distance != null ? distance / 1000 : 0).toStringAsFixed(!noRemainder ? 2 : 0)} km";
+  static String formatDistance(num? distanceMeters,
+      {bool noRemainder = false}) {
+    if (AppSettings.isMetric) {
+      return _formatDistanceMetric(distanceMeters, noRemainder: noRemainder);
+    } else {
+      return _formatDistanceImperial(distanceMeters, noRemainder: noRemainder);
+    }
   }
 
-  static String formatDistancePrecise(num? distance,
+  static String formatDistancePrecise(num? distanceMeters,
       {bool noRemainder = false}) {
-    if (distance == null || distance == 0) {
+    if (AppSettings.isMetric) {
+      return _formatDistanceMetricPrecise(distanceMeters,
+          noRemainder: noRemainder);
+    } else {
+      return _formatDistanceImperialPrecise(distanceMeters,
+          noRemainder: noRemainder);
+    }
+  }
+
+  static String _formatDistanceMetric(num? distanceMeters,
+      {bool noRemainder = false}) {
+    return "${(distanceMeters != null ? distanceMeters / 1000 : 0).toStringAsFixed(!noRemainder ? 2 : 0)} km";
+  }
+
+  static String _formatDistanceMetricPrecise(num? distanceMeters,
+      {bool noRemainder = false}) {
+    if (distanceMeters == null || distanceMeters == 0) {
       return "0 m";
     }
 
-    if (distance < 1000) {
-      return "${distance.toStringAsFixed(0)} m";
+    if (distanceMeters < 1000) {
+      return "${distanceMeters.toStringAsFixed(0)} m";
     } else {
-      return "${(distance / 1000).toStringAsFixed(!noRemainder ? 2 : 0)} km";
+      return "${(distanceMeters / 1000).toStringAsFixed(!noRemainder ? 2 : 0)} km";
+    }
+  }
+
+  static String _formatDistanceImperial(num? distanceMeters,
+      {bool noRemainder = false}) {
+    final distanceMiles =
+        distanceMeters?.convertFromTo(LENGTH.meters, LENGTH.miles);
+
+    return "${(distanceMiles ?? 0).toStringAsFixed(!noRemainder ? 2 : 0)} mi";
+  }
+
+  static String _formatDistanceImperialPrecise(num? distanceMeters,
+      {bool noRemainder = false}) {
+    if (distanceMeters == null || distanceMeters == 0) {
+      return "0 ft";
+    }
+
+    final distanceFeet =
+        distanceMeters.convertFromTo(LENGTH.meters, LENGTH.feet) ?? 0;
+
+    if (distanceFeet < 500) {
+      return "${distanceFeet.toStringAsFixed(0)} ft";
+    } else {
+      return "${(distanceFeet.convertFromTo(LENGTH.feet, LENGTH.miles))!.toStringAsFixed(!noRemainder ? 2 : 0)} mi";
+    }
+  }
+
+  static String formatElevationDistance(num? distanceMeters,
+      {bool noRemainder = false}) {
+    if (AppSettings.isMetric) {
+      if (distanceMeters == null || distanceMeters == 0) {
+        return "0 m";
+      }
+      return "${distanceMeters.toStringAsFixed(0)} m";
+    } else {
+      if (distanceMeters == null || distanceMeters == 0) {
+        return "0 ft";
+      }
+      final distanceFeet =
+          distanceMeters.convertFromTo(LENGTH.meters, LENGTH.feet) ?? 0;
+      return "${distanceFeet.toStringAsFixed(0)} ft";
     }
   }
 

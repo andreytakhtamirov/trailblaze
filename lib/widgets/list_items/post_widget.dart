@@ -61,7 +61,8 @@ class PostView extends StatelessWidget {
                         alignment: Alignment.center,
                         transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
                         child: Icon(
-                          UiHelper.iconForTransportationMode(item.transportationMode),
+                          UiHelper.iconForTransportationMode(
+                              item.transportationMode),
                           color: Colors.green.shade800,
                         ),
                       ),

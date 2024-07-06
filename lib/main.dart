@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:trailblaze/constants/map_constants.dart';
+import 'package:trailblaze/data/app_settings.dart';
 import 'package:trailblaze/tabs/discover.dart';
 import 'package:trailblaze/tabs/map.dart';
 import 'package:trailblaze/tabs/profile/profile.dart';
@@ -110,6 +111,7 @@ class _MainPageState extends ConsumerState<MainPage> {
   void initState() {
     super.initState();
 
+    AppSettings.init(context);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final credentials = await _loadCredentials();
       _refreshProfile(credentials);
