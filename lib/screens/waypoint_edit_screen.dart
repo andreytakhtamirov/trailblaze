@@ -114,8 +114,14 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
                   onPressed: () {
                     if (_locations.length > 1) {
                       UiHelper.showSnackBar(
-                          context, 'Currently limited to start/end',
-                          extraMarginBottom: true);
+                        context,
+                        'Currently limited to start/end',
+                        margin: const EdgeInsets.only(
+                          bottom: 100,
+                          right: 40,
+                          left: 40,
+                        ),
+                      );
                       return;
                     }
                     setState(() {

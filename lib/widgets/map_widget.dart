@@ -966,8 +966,15 @@ class _MapWidgetState extends State<MapWidget>
     if (_selectedRoute == null ||
         _selectedRoute!.coordinates == null ||
         _selectedRoute!.elevationMetrics == null) {
-      UiHelper.showSnackBar(context, 'Unable to export route.',
-          extraMarginBottom: true);
+      UiHelper.showSnackBar(
+        context,
+        'Unable to export route.',
+        margin: const EdgeInsets.only(
+          bottom: 100,
+          right: 40,
+          left: 40,
+        ),
+      );
       return;
     }
     FirebaseHelper.logEvent("Export",

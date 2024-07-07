@@ -71,6 +71,7 @@ dependencies:
   share_plus: ^9.0.0
   auto_size_text: ^3.0.0
   units_converter: ^3.0.0
+  scroll_loop_auto_scroll: ^0.0.5
 
 dev_dependencies:
   flutter_test:

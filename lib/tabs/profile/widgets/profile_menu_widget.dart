@@ -7,13 +7,13 @@ class ProfileMenuWidget extends StatelessWidget {
     this.credentials,
     required this.onLogoutPressed,
     required this.onEditProfilePressed,
-    required this.onAboutPressed(),
+    required this.onSettingsPressed,
   });
 
   final Credentials? credentials;
   final void Function() onLogoutPressed;
   final void Function(Credentials?) onEditProfilePressed;
-  final void Function() onAboutPressed;
+  final void Function() onSettingsPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -25,9 +25,9 @@ class ProfileMenuWidget extends StatelessWidget {
       itemBuilder: (BuildContext context) {
         final menuItems = [
           const PopupMenuItem(
-            value: 'about',
+            value: 'settings',
             child: ListTile(
-              title: Text('About'),
+              title: Text('Settings'),
             ),
           ),
         ];
@@ -58,9 +58,8 @@ class ProfileMenuWidget extends StatelessWidget {
           onLogoutPressed();
         } else if (value == 'edit_profile') {
           onEditProfilePressed(credentials);
-        }
-        if (value == 'about') {
-          onAboutPressed();
+        } else if (value == 'settings') {
+          onSettingsPressed();
         }
       },
     );
