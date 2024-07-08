@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:trailblaze/constants/map_constants.dart';
+import 'package:trailblaze/data/app_settings.dart';
 import 'package:trailblaze/tabs/discover.dart';
 import 'package:trailblaze/tabs/map.dart';
 import 'package:trailblaze/tabs/profile/profile.dart';
@@ -15,6 +16,7 @@ import 'managers/profile_manager.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FirebaseHelper.init();
+  AppSettings.init();
   MapboxOptions.setAccessToken(kMapboxAccessToken);
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -109,7 +111,6 @@ class _MainPageState extends ConsumerState<MainPage> {
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final credentials = await _loadCredentials();
       _refreshProfile(credentials);

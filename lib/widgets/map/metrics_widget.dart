@@ -242,24 +242,9 @@ class _MetricsWidgetState extends State<MetricsWidget> {
               if (widget.onDrawPoint != null) {
                 widget.onDrawPoint!(coordinates);
               }
-              return Container(
-                width: 70,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary,
-                    width: 2,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    textAlign: TextAlign.center,
-                    FormatHelper.formatDistancePrecise(
-                        route.elevationMetrics?[trackballDetails.pointIndex!]),
-                  ),
-                ),
+              return ChartHelper.trackballBuilder(
+                context,
+                route.elevationMetrics?[trackballDetails.pointIndex!],
               );
             },
           ),

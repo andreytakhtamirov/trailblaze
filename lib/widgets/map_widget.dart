@@ -318,7 +318,10 @@ class _MapWidgetState extends State<MapWidget>
     }
 
     annotationHelper?.drawCircleAnnotationMulti(coordinatesList);
-    await _flyToFeatures(coordinatesList: coordinatesList);
+
+    if (_features!.isNotEmpty) {
+      await _flyToFeatures(coordinatesList: coordinatesList);
+    }
   }
 
   Future<void> _flyToFeatures({List<mbm.Point>? coordinatesList}) async {
@@ -412,7 +415,9 @@ class _MapWidgetState extends State<MapWidget>
       if (features.isEmpty) {
         setState(() {
           _features = [];
+          _selectedFeature = null;
         });
+        await _togglePanel(true);
       } else {
         setState(() {
           _features = features;
@@ -961,8 +966,15 @@ class _MapWidgetState extends State<MapWidget>
     if (_selectedRoute == null ||
         _selectedRoute!.coordinates == null ||
         _selectedRoute!.elevationMetrics == null) {
-      UiHelper.showSnackBar(context, 'Unable to export route.',
-          extraMarginBottom: true);
+      UiHelper.showSnackBar(
+        context,
+        'Unable to export route.',
+        margin: const EdgeInsets.only(
+          bottom: 100,
+          right: 40,
+          left: 40,
+        ),
+      );
       return;
     }
     FirebaseHelper.logEvent("Export",
@@ -1469,12 +1481,19 @@ class _MapWidgetState extends State<MapWidget>
       setState(() {
         _pauseUiCallbacks = true;
       });
-      _setSelectedFeature(_features!.first, skipFlyToFeature: true);
+
+      if (_features != null && _features!.isNotEmpty) {
+        _setSelectedFeature(_features!.first, skipFlyToFeature: true);
+      }
+
       await _togglePanel(true);
       setState(() {
         _pauseUiCallbacks = false;
       });
-      await _flyToFeatures();
+
+      if (_features != null && _features!.isNotEmpty) {
+        await _flyToFeatures();
+      }
     }
   }
 
@@ -1754,7 +1773,7 @@ class _MapWidgetState extends State<MapWidget>
 
               if (_selectedFeature != null) {
                 onManuallySelectFeature(_selectedFeature!);
-              } else {
+              } else if (_features != null && _features!.isNotEmpty) {
                 onManuallySelectFeature(_features!.first);
               }
             },

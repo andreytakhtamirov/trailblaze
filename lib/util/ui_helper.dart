@@ -7,17 +7,31 @@ import 'package:trailblaze/trailblaze_icons_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class UiHelper {
-  static showSnackBar(BuildContext context, String message,
-      {int durationSeconds = 2, bool extraMarginBottom = false}) {
+  static showSnackBarSuccess(BuildContext context, String message,
+      {int durationSeconds = 2, required EdgeInsets margin}) {
     SnackBar snackBar = SnackBar(
-      behavior: extraMarginBottom ? SnackBarBehavior.floating : null,
-      margin: extraMarginBottom
-          ? const EdgeInsets.only(
-              bottom: 100,
-              right: 40,
-              left: 40,
-            )
-          : null,
+      behavior: SnackBarBehavior.floating,
+      margin: margin,
+      content: Row(
+        children: [
+          const Icon(
+            Icons.check_circle,
+            color: Colors.green,
+          ),
+          const SizedBox(width: 8),
+          Text(message),
+        ],
+      ),
+      duration: Duration(seconds: durationSeconds),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+  static showSnackBar(BuildContext context, String message,
+      {int durationSeconds = 2, EdgeInsets? margin}) {
+    SnackBar snackBar = SnackBar(
+      behavior: margin != null ? SnackBarBehavior.floating : null,
+      margin: margin,
       content: Text(message),
       duration: Duration(seconds: durationSeconds),
     );

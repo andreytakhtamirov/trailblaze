@@ -9,8 +9,8 @@ import 'package:trailblaze/data/profile.dart';
 import 'package:trailblaze/managers/credential_manager.dart';
 import 'package:trailblaze/managers/profile_manager.dart';
 import 'package:trailblaze/requests/user_profile.dart';
-import 'package:trailblaze/screens/about_screen.dart';
 import 'package:trailblaze/screens/create_profile_screen.dart';
+import 'package:trailblaze/screens/settings_screen.dart';
 import 'package:trailblaze/tabs/profile/widgets/login_widget.dart';
 import 'package:trailblaze/tabs/profile/widgets/profile_header_widget.dart';
 import 'package:trailblaze/tabs/profile/widgets/profile_menu_widget.dart';
@@ -133,14 +133,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     _mutateProfile(Profile.fromJson(data));
   }
 
-  void _onAboutPressed() {
-    FirebaseHelper.logScreen("About");
+  void _onSettingsPressed() async {
+    FirebaseHelper.logScreen("Settings");
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const AboutScreen(),
+        builder: (context) => const SettingsScreen(),
       ),
-    );
+    ).then((value) {
+      // Refresh state so widgets update with the new changes (units for now).
+      setState(() {});
+    });
   }
 
   @override
@@ -157,7 +160,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             credentials: credentials,
             onLogoutPressed: _onLogoutPressed,
             onEditProfilePressed: _onEditProfilePressed,
-            onAboutPressed: _onAboutPressed,
+            onSettingsPressed: _onSettingsPressed,
           )
         ],
       ),

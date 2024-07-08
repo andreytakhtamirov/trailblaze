@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:mapbox_search/mapbox_search.dart';
-import 'package:turf/turf.dart' as turf;
+import 'package:trailblaze/util/distance_helper.dart';
+import 'package:trailblaze/util/format_helper.dart';
 
 import '../../constants/map_constants.dart';
 
@@ -108,8 +109,8 @@ class _PlacePickerState extends State<PlacePicker> {
           mbm.Position(_futureLocation!.longitude, _futureLocation!.latitude),
     );
 
-    final distance = turf.distance(point1Coord, point2Coord);
-    return "${distance.toStringAsFixed(2)} km";
+    return FormatHelper.formatDistancePrecise(
+        DistanceHelper.euclideanDistance(point1Coord, point2Coord));
   }
 
   @override

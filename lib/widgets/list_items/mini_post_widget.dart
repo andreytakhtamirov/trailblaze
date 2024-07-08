@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -155,11 +156,15 @@ class MiniPostView extends ConsumerWidget {
                             ),
                             const Spacer(),
                             Expanded(
-                              child: Text(
+                              child: AutoSizeText(
                                 FormatHelper.formatDistance(
                                     item.route.distance),
+                                maxFontSize: 14,
+                                minFontSize: 10,
+                                softWrap: true,
+                                wrapWords: false,
                                 style: const TextStyle(
-                                    fontSize: 14, fontWeight: FontWeight.bold),
+                                    fontSize: 14, fontWeight: FontWeight.w700),
                               ),
                             ),
                           ],

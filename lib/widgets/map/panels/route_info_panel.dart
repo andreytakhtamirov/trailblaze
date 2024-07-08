@@ -64,7 +64,14 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
   @override
   initState() {
     super.initState();
-    _elevationTrackball = TrackballBehavior(enable: true);
+    _elevationTrackball = TrackballBehavior(
+        enable: true,
+        builder: (context, trackballDetails) {
+          return ChartHelper.trackballBuilder(
+            context,
+            widget.route?.elevationMetrics?[trackballDetails.pointIndex!],
+          );
+        });
     setState(() {
       _isFetchingMetrics = false;
     });
