@@ -59,114 +59,167 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            SingleChildScrollView(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 64, bottom: 64),
-                      child: _previewWidget(),
-                    ),
-                    _divider(),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 24),
-                            child: Text(
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 16, bottom: 24),
+                child: _previewWidget(),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Container(
+                  decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.25),
+                          offset: const Offset(0, 2),
+                          blurRadius: 2,
+                        ),
+                      ]),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.straighten_rounded,
+                              size: 28,
+                            ),
+                            SizedBox(width: 16),
+                            Text(
                               'Distance Units',
                               style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w400,
+                                fontSize: 18,
+                               fontWeight: FontWeight.w500,
                               ),
                             ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 24),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                MaterialButton(
-                                  onPressed: () {
-                                    _onSetUnits(true);
-                                  },
-                                  color: _isUnitsMetric
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Colors.grey,
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.horizontal(
-                                        left: Radius.circular(15)),
-                                  ),
-                                  child: const Text(
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 24),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            MaterialButton(
+                              minWidth: 100,
+                              onPressed: () {
+                                _onSetUnits(true);
+                              },
+                              padding: const EdgeInsets.all(8),
+                              color: _isUnitsMetric
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.grey,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.horizontal(
+                                    left: Radius.circular(15)),
+                              ),
+                              child: const Column(
+                                children: [
+                                  Text(
                                     'Metric',
-                                    style: TextStyle(color: Colors.white),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                    ),
                                   ),
-                                ),
-                                MaterialButton(
-                                  onPressed: () {
-                                    _onSetUnits(false);
-                                  },
-                                  color: _isUnitsMetric
-                                      ? Colors.grey
-                                      : Theme.of(context).colorScheme.primary,
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.horizontal(
-                                        right: Radius.circular(15)),
+                                  Text(
+                                    'kilometers',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 12,
+                                    ),
                                   ),
-                                  child: const Text(
-                                    'Imperial',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
+                            MaterialButton(
+                              minWidth: 100,
+                              onPressed: () {
+                                _onSetUnits(false);
+                              },
+                              padding: const EdgeInsets.all(8),
+                              color: _isUnitsMetric
+                                  ? Colors.grey
+                                  : Theme.of(context).colorScheme.primary,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.horizontal(
+                                    right: Radius.circular(15)),
+                              ),
+                              child: const Column(
+                                children: [
+                                  Text(
+                                    'Imperial',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                  Text(
+                                    'miles',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                child: MaterialButton(
+                  onPressed: () {
+                    _onAboutPressed();
+                  },
+                  padding: const EdgeInsets.all(16),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(8))),
+                  color: Colors.grey.shade200,
+                  child: const Padding(
+                    padding: EdgeInsets.only(left: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 28,
+                        ),
+                        SizedBox(width: 16),
+                        Text(
+                          'About App',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
                           ),
-                        ],
-                      ),
+                        ),
+                        Spacer(),
+                        Icon(Icons.arrow_forward_ios_sharp),
+                      ],
                     ),
-                    _divider(),
-                  ],
+                  ),
                 ),
               ),
-            ),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
-              child: MaterialButton(
-                onPressed: () {
-                  _onAboutPressed();
-                },
-                padding: const EdgeInsets.all(16),
-                shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(20))),
-                color: Colors.grey.shade200,
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Text(
-                      'About app',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Icon(Icons.arrow_forward_ios_sharp),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -206,11 +259,5 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ));
-  }
-
-  Widget _divider() {
-    return Divider(
-      color: Colors.grey.shade300,
-    );
   }
 }

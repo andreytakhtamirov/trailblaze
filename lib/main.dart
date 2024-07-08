@@ -16,6 +16,7 @@ import 'managers/profile_manager.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FirebaseHelper.init();
+  AppSettings.init();
   MapboxOptions.setAccessToken(kMapboxAccessToken);
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -110,8 +111,6 @@ class _MainPageState extends ConsumerState<MainPage> {
   @override
   void initState() {
     super.initState();
-
-    AppSettings.init(context);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final credentials = await _loadCredentials();
       _refreshProfile(credentials);
