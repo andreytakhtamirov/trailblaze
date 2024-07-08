@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'dart:math';
+
 import 'package:trailblaze/data/app_settings.dart';
 import 'package:units_converter/units_converter.dart';
 
@@ -38,10 +39,10 @@ class FormatHelper {
   static String formatDistancePrecise(num? distanceMeters,
       {bool noRemainder = false}) {
     if (AppSettings.isMetric) {
-      return _formatDistanceMetricPrecise(distanceMeters,
+      return _formatDistancePreciseMetric(distanceMeters,
           noRemainder: noRemainder);
     } else {
-      return _formatDistanceImperialPrecise(distanceMeters,
+      return _formatDistancePreciseImperial(distanceMeters,
           noRemainder: noRemainder);
     }
   }
@@ -51,7 +52,7 @@ class FormatHelper {
     return "${(distanceMeters != null ? distanceMeters / 1000 : 0).toStringAsFixed(!noRemainder ? 2 : 0)} km";
   }
 
-  static String _formatDistanceMetricPrecise(num? distanceMeters,
+  static String _formatDistancePreciseMetric(num? distanceMeters,
       {bool noRemainder = false}) {
     if (distanceMeters == null || distanceMeters == 0) {
       return "0 m";
@@ -72,7 +73,7 @@ class FormatHelper {
     return "${(distanceMiles ?? 0).toStringAsFixed(!noRemainder ? 2 : 0)} mi";
   }
 
-  static String _formatDistanceImperialPrecise(num? distanceMeters,
+  static String _formatDistancePreciseImperial(num? distanceMeters,
       {bool noRemainder = false}) {
     if (distanceMeters == null || distanceMeters == 0) {
       return "0 ft";
@@ -105,9 +106,33 @@ class FormatHelper {
     }
   }
 
-  static String formatSquareDistance(num? distance,
+  static String formatSquareDistance(num? distanceMeters,
       {bool noRemainder = false}) {
-    return "${(distance != null ? distance / 1e6 : 0).toStringAsFixed(!noRemainder ? 2 : 0)} km\u00B2";
+    if (AppSettings.isMetric) {
+      return _formatSquareDistanceMetric(distanceMeters,
+          noRemainder: noRemainder);
+    } else {
+      return _formatSquareDistanceImperial(distanceMeters,
+          noRemainder: noRemainder);
+    }
+  }
+
+  static String _formatSquareDistanceMetric(num? distanceMeters,
+      {bool noRemainder = false}) {
+    return "${(distanceMeters != null ? distanceMeters / 1e6 : 0).toStringAsFixed(!noRemainder ? 2 : 0)} km\u00B2";
+  }
+
+  static String _formatSquareDistanceImperial(num? distanceMeters,
+      {bool noRemainder = false}) {
+    if (distanceMeters == null || distanceMeters <= 0) {
+      return "0 mi\u00B2";
+    }
+
+    final sideMiles =
+        sqrt(distanceMeters).convertFromTo(LENGTH.meters, LENGTH.miles) ?? 0;
+    final distanceMiles = pow(sideMiles, 2);
+
+    return "${(distanceMiles).toStringAsFixed(!noRemainder ? 2 : 0)} mi\u00B2";
   }
 
   static String formatLikesCount(int likes) {
