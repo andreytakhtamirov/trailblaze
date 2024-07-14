@@ -1,5 +1,5 @@
 
-# trailblaze-flutter
+# Trailblaze
 
 A route-planning app that finds the scenic way to get to places. 
 
