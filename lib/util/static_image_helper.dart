@@ -1,4 +1,3 @@
-import 'package:mapbox_search/colors/color.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/extensions/iterable_extension.dart';

@@ -1,3 +1,4 @@
+import 'package:mapbox_search/mapbox_search.dart';
 import 'package:turf/turf.dart';
 
 class DistanceHelper {
@@ -13,8 +14,10 @@ class DistanceHelper {
     return distance(coordinate1, coordinate2, Unit.meters);
   }
 
-  static Point centerToPoint(List<double> center) {
-    return Point(coordinates: Position(center[0], center[1]));
+  static Point placeToPoint(MapBoxPlace? place) {
+    return Point(
+        coordinates: Position(place?.center?.long ?? 0,
+            place?.center?.lat ?? 0));
   }
 
   static Position _computeCentroid(List<Position> points) {

@@ -47,7 +47,7 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
     }
 
     for (MapBoxPlace? place in _locations) {
-      waypointsJson.add(place?.toRawJsonWithNullCheck());
+      waypointsJson.add(place?.toJson());
     }
 
     Navigator.pop(context, {
@@ -129,7 +129,7 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
                           MapBoxPlace(placeName: 'Point of Interest'));
                     });
                   },
-                  color: const Color(0xFFBDD2DD),
+                  color: Theme.of(context).colorScheme.onPrimary,
                   child: const Text(
                     'Add point of interest',
                     style: TextStyle(color: Colors.black),

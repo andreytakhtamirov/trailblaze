@@ -129,10 +129,10 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
     String polyline = PolylineCodec.encode(coordinates, precision: 5);
     Uri staticImageUri = StaticImageHelper.staticImageFromPolyline(
       kMapboxAccessToken,
-      waypointsList.first.center?[0] ?? 0,
-      waypointsList.first.center?[1] ?? 0,
-      waypointsList.last.center?[0] ?? 0,
-      waypointsList.last.center?[1] ?? 0,
+      waypointsList.first.center?.lat ?? 0,
+      waypointsList.first.center?.long ?? 0,
+      waypointsList.last.center?.lat ?? 0,
+      waypointsList.last.center?.long ?? 0,
       polyline,
     );
 
@@ -367,7 +367,7 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
     }
   }
 
-  Color _saveRouteButtonForeground() {
+  dynamic _saveRouteButtonForeground() {
     if (!_isLoadingRouteUpdate && _savedRouteId == null) {
       return Theme.of(context).colorScheme.primary;
     } else if (!_isLoadingRouteUpdate && _savedRouteId != null) {

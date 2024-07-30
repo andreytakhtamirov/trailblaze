@@ -17,7 +17,7 @@ extension MapBoxStaticImageExtension on StaticImage {
     uri = uri.replace(
         path:
             "${uri.path}/${width ?? kStaticMapWidth}x${height ?? kStaticMapHeight}");
-    uri = uri.replace(queryParameters: {"access_token": apiKey});
+    uri = uri.replace(queryParameters: {"access_token": MapBoxSearch.apiKey});
 
     return uri;
   }

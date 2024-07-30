@@ -68,24 +68,26 @@ class _PlacePickerState extends State<PlacePicker> {
       limit: 10,
     );
 
-    List<MapBoxPlace>? result;
+    final ApiResponse<List<MapBoxPlace>> result;
     if (currentLocation?.longitude != null &&
         currentLocation?.latitude != null) {
       result = await geocoding.getPlaces(
         query,
-        proximity: Location(
+        proximity: Proximity.LatLong(
           lat: currentLocation!.latitude,
-          lng: currentLocation.longitude,
+          long: currentLocation.longitude,
         ),
       );
+      result.fold((success) => () {
+        setState(() {
+          _results = success;
+        });
+      }, (failure) => () {});
     } else {
       result = await geocoding.getPlaces(
         query,
       );
     }
-    setState(() {
-      _results = result!;
-    });
   }
 
   void _onPlaceSelected(MapBoxPlace? place) {
@@ -166,7 +168,7 @@ class _PlacePickerState extends State<PlacePicker> {
                               title: Text(result.placeName ?? ''),
                               subtitle: _futureLocation != null
                                   ? Text(
-                                      _calculateDistanceToUser(result.center))
+                                      _calculateDistanceToUser([result.center!.long, result.center!.lat]))
                                   : null,
                               onTap: () => _onPlaceSelected(result),
                             );
