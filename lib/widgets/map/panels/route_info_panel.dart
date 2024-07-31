@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:developer';
 import 'dart:math' as math;
 
@@ -88,6 +87,8 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
       setState(() {
         _savedRouteId = null;
         _isLoadingRouteUpdate = false;
+        _setHeight = false;
+        _smallCardHeight = null;
       });
     }
   }
@@ -111,12 +112,7 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
       _isLoadingRouteUpdate = true;
     });
 
-    final waypoints = widget.route?.routeOptions['waypoints'];
-    final List<MapBoxPlace> waypointsList = [];
-
-    for (dynamic placeJson in waypoints) {
-      waypointsList.add(MapBoxPlace.fromJson(json.decode(placeJson)));
-    }
+    final List<MapBoxPlace>? waypoints = widget.route?.waypoints;
 
     final List<List<num>> coordinates;
     if (widget.route?.coordinates != null) {
@@ -129,10 +125,10 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
     String polyline = PolylineCodec.encode(coordinates, precision: 5);
     Uri staticImageUri = StaticImageHelper.staticImageFromPolyline(
       kMapboxAccessToken,
-      waypointsList.first.center?.lat ?? 0,
-      waypointsList.first.center?.long ?? 0,
-      waypointsList.last.center?.lat ?? 0,
-      waypointsList.last.center?.long ?? 0,
+      waypoints?.first.center?.lat ?? 0,
+      waypoints?.first.center?.long ?? 0,
+      waypoints?.last.center?.lat ?? 0,
+      waypoints?.last.center?.long ?? 0,
       polyline,
     );
 
