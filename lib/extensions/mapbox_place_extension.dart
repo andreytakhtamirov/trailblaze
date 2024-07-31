@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'package:mapbox_search/mapbox_search.dart';
 
 extension MapBoxPlaceExtensions on MapBoxPlace {

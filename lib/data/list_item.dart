@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:mapbox_search/mapbox_search.dart';

@@ -1,5 +1,5 @@
 import 'package:mapbox_search/mapbox_search.dart';
-import 'package:trailblaze/constants/map_constants.dart';
+import 'package:trailblaze/constants/request_api_constants.dart';
 import 'package:trailblaze/extensions/iterable_extension.dart';
 import 'package:trailblaze/extensions/mapbox_static_image_extension.dart';
 
@@ -12,9 +12,7 @@ class StaticImageHelper {
     double lng2,
     String polyline,
   ) {
-    StaticImage staticImage = StaticImage(
-      apiKey: mbApiKey,
-    );
+    StaticImage staticImage = StaticImage(apiKey: mbApiKey);
 
     MapBoxPath path = MapBoxPath(
       pathColor: const RgbColor(255, 0, 0),
@@ -23,9 +21,14 @@ class StaticImageHelper {
       pathOpacity: 1.0,
     );
 
-    return staticImage.getStaticUrlWithPolylineWithoutPoints(
+    return staticImage.getStaticUrlWithPolylineTb(
+      height: kStaticMapHeight,
+      width: kStaticMapWidth,
+      point1: (lat: lat1, long: lng1),
+      point2: (lat: lat2, long: lng2),
       path: path,
-      style: kMapStyleOutdoors,
+      style: MapBoxStyle.Outdoors.effectiveValue,
+      apiKey: mbApiKey,
     );
   }
 
