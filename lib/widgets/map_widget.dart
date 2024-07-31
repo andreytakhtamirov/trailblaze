@@ -659,7 +659,7 @@ class _MapWidgetState extends State<MapWidget>
     _goToUserLocation();
   }
 
-  void _displayRoute(String profile, List<dynamic> waypoints) async {
+  void _displayRoute(String profile, List<MapBoxPlace> waypoints) async {
     bool isRoundTrip = waypoints.length == 1;
     final double? distance = isRoundTrip ? _selectedDistanceMeters : null;
 
@@ -848,8 +848,7 @@ class _MapWidgetState extends State<MapWidget>
     }
 
     for (var i = 0; i < route.waypoints.length; i++) {
-      final waypoint = route.waypoints[i];
-      final mbp = MapBoxPlace.fromJson(waypoint);
+      final mbp = route.waypoints[i];
       final point = mbm.Position(mbp.center?.long ?? 0, mbp.center?.lat ?? 0);
 
       if (i == 0) {
@@ -982,7 +981,7 @@ class _MapWidgetState extends State<MapWidget>
     final elevation = _selectedRoute!.elevationMetrics!;
     final gpx = ExportHelper.generateGpx(coordinates, elevation);
 
-    final lastWaypoint = MapBoxPlace.fromJson(_selectedRoute!.waypoints.last);
+    final lastWaypoint = _selectedRoute!.waypoints.last;
     final box =
         (_shareWidgetKey.currentContext?.findRenderObject() as RenderBox);
     await ExportHelper.shareGpxFile(gpx, lastWaypoint.placeName ?? '',
@@ -1090,13 +1089,7 @@ class _MapWidgetState extends State<MapWidget>
           _currentOriginCoordinates,
           '${FormatHelper.formatDistance(_selectedDistanceMeters, noRemainder: true)} round trip'));
     }
-
-    List<dynamic> waypointsJson = [];
-    for (MapBoxPlace place in waypoints) {
-      waypointsJson.add(place.toJson());
-    }
-
-    _displayRoute(_selectedMode, waypointsJson);
+    _displayRoute(_selectedMode, waypoints);
   }
 
   void _clearAvoidArea() {
@@ -1513,7 +1506,10 @@ class _MapWidgetState extends State<MapWidget>
       setState(() {
         _pauseUiCallbacks = true;
         if (_selectedPlace != null && _selectedPlace!.center != null) {
-          _currentOriginCoordinates = [_selectedPlace!.center!.long, _selectedPlace!.center!.lat];
+          _currentOriginCoordinates = [
+            _selectedPlace!.center!.long,
+            _selectedPlace!.center!.lat
+          ];
         }
       });
 

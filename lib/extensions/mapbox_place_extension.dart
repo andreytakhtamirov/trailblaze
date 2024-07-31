@@ -1,43 +1,47 @@
-// import 'dart:convert';
-//
-// import 'package:mapbox_search/mapbox_search.dart';
-//
-// extension MapBoxPlaceExtensions on MapBoxPlace {
-//   String toRawJsonWithNullCheck() => json.encode(toJsonWithNullCheck());
-//
-//   // Add null checking to fields.
-//   Map<String, dynamic> toJsonWithNullCheck() {
-//     return {
-//       "id": id,
-//       "type": featureVa.reverse![type],
-//       "place_type": placeType.map((x) => x?.value).toList(),
-//       "address": addressNumber,
-//       "properties": properties?.toJson(),
-//       "text": text,
-//       "place_name": placeName,
-//       'bbox': bbox != null ? const BBoxConverter().toJson(bbox!) : null,
-//       'center': const OptionalLocationConverter().toJson(instance.center),
-//       "geometry": geometry?.toJson(),
-//       "matching_text": matchingText,
-//       "matching_place_name": matchingPlaceName,
-//     };
-//   }
-//
-//   MapBoxPlace fromRawJson(String rawJson) {
-//     Map<String, dynamic> data = json.decode(rawJson);
-//     return MapBoxPlace(
-//       id: data['id'] ?? '',
-//       type: FeatureType.FEATURE,
-//       placeType: [PlaceType.address],
-//       addressNumber: data['address'] ?? '',
-//       properties: Properties.fromJson(data['properties'] ?? {}),
-//       text: data['text'] ?? '',
-//       placeName: data['place_name'] ?? '',
-//       bbox: List<double>.from( ?? []),
-//       center: (long: data['center']['lon'], lat: data['center']['lat']),
-//       geometry: Geometry.fromJson(data['geometry'] ?? {}),
-//       matchingText: data['matching_text'] ?? '',
-//       matchingPlaceName: data['matching_place_name'] ?? '',
-//     );
-//   }
-// }
+import 'dart:convert';
+import 'dart:developer';
+import 'package:mapbox_search/mapbox_search.dart';
+
+extension MapBoxPlaceExtensions on MapBoxPlace {
+  String toJsonTb() => json.encode(_toJson());
+
+  Map<String, dynamic> _toJson() {
+    const converter = BBoxConverter();
+    return {
+      "id": id,
+      "type": "Feature",
+      "place_type": placeType.map((x) => x?.value).toList(),
+      "address": addressNumber,
+      "properties": properties?.toJson(),
+      "text": text,
+      "place_name": placeName,
+      "bbox": bbox != null ? converter.toJson(bbox!) : null,
+      "center": [center!.long, center!.lat],
+      "geometry": geometry?.toJson(),
+      "matching_text": matchingText,
+      "matching_place_name": matchingPlaceName,
+    };
+  }
+
+  static MapBoxPlace fromJsonTb(String rawJson) {
+    Map<String, dynamic> data = json.decode(rawJson);
+    final c = data['center'] as List<dynamic>;
+    return MapBoxPlace(
+      id: data['id'] ?? '',
+      type: FeatureType.FEATURE,
+      placeType: [PlaceType.address],
+      addressNumber: data['address'] ?? '',
+      properties: data['properties'] != null
+          ? Properties.fromJson(data['properties'])
+          : null,
+      text: data['text'] ?? '',
+      placeName: data['place_name'] ?? '',
+      bbox: data['bbox'] != null ? const BBoxConverter().fromJson(data['bbox']) : null,
+      center: (long: c.first, lat: c.last),
+      geometry:
+          data['geometry'] != null ? Geometry.fromJson(data['geometry']) : null,
+      matchingText: data['matching_text'] ?? '',
+      matchingPlaceName: data['matching_place_name'] ?? '',
+    );
+  }
+}

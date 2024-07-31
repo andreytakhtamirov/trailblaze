@@ -1,5 +1,9 @@
+import 'dart:developer';
+
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:mapbox_search/mapbox_search.dart';
+import 'package:trailblaze/extensions/mapbox_place_extension.dart';
 import 'package:trailblaze/constants/request_api_constants.dart';
 import 'package:trailblaze/data/profile.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
@@ -84,11 +88,16 @@ class PostListItem implements Item {
         modeString != null &&
         imageUrl != null &&
         waypoints != null) {
+      final List<MapBoxPlace> places = [];
+      for (dynamic w in waypoints) {
+        places.add(MapBoxPlaceExtensions.fromJsonTb(w));
+      }
+
       TrailblazeRoute route = TrailblazeRoute(
         kRouteSourceId,
         kRouteLayerId,
         routeJson,
-        waypoints,
+        places,
         routeOptions,
         isActive: true,
         isGraphhopperRoute: routeType == kRouteTypeGraphhopper,
@@ -171,6 +180,11 @@ class RouteListItem implements Item {
     final routeType = itemJson[kJsonKeyRouteType];
     final waypoints = routeOptions[kJsonKeyWaypoints];
 
+    final List<MapBoxPlace> places = [];
+    for (dynamic w in waypoints) {
+      places.add(MapBoxPlaceExtensions.fromJsonTb(w));
+    }
+
     if (id != null &&
         title != null &&
         distance != null &&
@@ -182,7 +196,7 @@ class RouteListItem implements Item {
         kRouteSourceId,
         kRouteLayerId,
         routeJson,
-        waypoints,
+        places,
         routeOptions,
         isActive: true,
         isGraphhopperRoute: routeType == kRouteTypeGraphhopper,
