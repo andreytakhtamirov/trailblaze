@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -62,6 +64,7 @@ class _ItemsFeedState extends ConsumerState<ItemsFeed>
             return PostListItem.fromJson(item);
           }
         } catch (e) {
+          log("Item fetch failed: $e");
           _pagingController.error = e;
         }
 

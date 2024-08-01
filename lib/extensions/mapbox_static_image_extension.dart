@@ -63,12 +63,3 @@ extension MapBoxStaticImageExtension on StaticImage {
     return uri;
   }
 }
-
-extension MapBoxStyleExtension on MapBoxStyle {
-  String get effectiveValue {
-    if (this == MapBoxStyle.Outdoors) {
-      return "outdoors-v12";
-    }
-    return value;
-  }
-}
