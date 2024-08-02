@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/widgets/map/place_picker_widget.dart';
 
-
 class PlaceSearchBar extends StatefulWidget {
   const PlaceSearchBar({Key? key, this.selectedPlace, required this.onSelected})
       : super(key: key);
@@ -26,11 +25,9 @@ class _PlaceSearchBarState extends State<PlaceSearchBar> {
       child: Material(
         elevation: 2,
         borderRadius: BorderRadius.circular(20),
-        child: GestureDetector(
-          child: PlacePicker(
-            selectedPlace: widget.selectedPlace,
-            onSelected: widget.onSelected,
-          ),
+        child: PlacePicker(
+          selectedPlace: widget.selectedPlace,
+          onSelected: widget.onSelected,
         ),
       ),
     );

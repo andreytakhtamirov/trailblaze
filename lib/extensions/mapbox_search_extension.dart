@@ -4,8 +4,8 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:mapbox_search/models/location.dart';
 import 'package:http/http.dart' as http;
-import 'package:trailblaze/widgets/map/place_picker_widget.dart';
-import 'package:uuid/uuid.dart';
+import 'package:trailblaze/data/search_feature_type.dart';
+import 'package:trailblaze/util/device_info_helper.dart';
 
 part "mapbox_search_extension.g.dart";
 
@@ -14,6 +14,7 @@ final Uri _baseUri = Uri.parse('https://api.mapbox.com/search/searchbox/v1/');
 extension MapBoxSearchExtension on SearchBoxAPI {
   Uri _createUrl(
     String apiKey,
+    String sessionUUID,
     String queryOrId,
     Proximity proximity,
     Proximity origin, [
@@ -22,6 +23,7 @@ extension MapBoxSearchExtension on SearchBoxAPI {
   ]) {
     final typesStr = types.map((e) => e.value).toList(growable: true);
     typesStr.add(SearchFeatureType.category.value);
+
     final finalUri = Uri(
       scheme: _baseUri.scheme,
       host: _baseUri.host,
@@ -39,7 +41,8 @@ extension MapBoxSearchExtension on SearchBoxAPI {
           (NoProximity _) => {},
         },
         'access_token': apiKey,
-        'session_token': const Uuid().v1(),
+        'session_token': sessionUUID,
+        'navigation_profile': 'walking',
         if (country != null) 'country': country,
         if (limit != null) 'limit': limit.toString(),
         if (language != null) 'language': language,
@@ -54,24 +57,36 @@ extension MapBoxSearchExtension on SearchBoxAPI {
   /// Get a list of places that match the query.
   Future<ApiResponse<SuggestionResponseTb>> getSuggestionsCustom(
     String apiKey,
-    String queryText, {
+    String queryText,
+    http.Client client, {
     Proximity proximity = const NoProximity(),
     Proximity origin = const NoProximity(),
     List<POICategory> poi = const [],
   }) async {
-    final uri = _createUrl(apiKey, queryText, proximity, origin, poi);
-    print(uri);
-    final response = await http.get(uri);
-
-    if (response.statusCode != 200) {
+    try {
+      String? sessionUUID = await DeviceInfoHelper.getDeviceDetails();
+      final uri = _createUrl(
+          apiKey, sessionUUID, queryText, proximity, origin, poi, false);
+      final response = await client.get(uri);
+      if (response.statusCode != 200) {
+        return (
+          success: null,
+          failure: FailureResponse.fromJson(json.decode(response.body))
+        );
+      } else {
+        return (
+          success: SuggestionResponseTb.fromJson(json.decode(response.body)),
+          failure: null
+        );
+      }
+    } catch (e) {
       return (
         success: null,
-        failure: FailureResponse.fromJson(json.decode(response.body))
-      );
-    } else {
-      return (
-        success: SuggestionResponseTb.fromJson(json.decode(response.body)),
-        failure: null
+        failure: FailureResponse(
+          message: 'Client closed',
+          error: null,
+          response: {},
+        )
       );
     }
   }

@@ -2084,7 +2084,13 @@ class _MapWidgetState extends State<MapWidget>
             ? CrossFadeState.showSecond
             : CrossFadeState.showFirst,
         firstChild: PlaceSearchBar(
-            onSelected: _onSelectPlace, selectedPlace: _selectedPlace),
+            onSelected: (place) async {
+              await annotationHelper?.deletePointAnnotations();
+              Future.delayed(const Duration(milliseconds: 100), () {
+                _onSelectPlace(place);
+              });
+            },
+            selectedPlace: _selectedPlace),
         secondChild: TapRegion(
           onTapOutside: (_) {
             _onCollapseRouteControls();
