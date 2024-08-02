@@ -32,8 +32,8 @@ environment:
 dependencies:
   mapbox_maps_flutter: ^2.0.0
   auth0_flutter: ^1.4.1
-  mapbox_search: 4.0.0-beta.1
-  http: ^0.13.5
+  mapbox_search: ^4.2.2
+  http: ^1.1.0
   secure_dotenv: ^1.0.0
   geolocator: ^9.0.2
   polyline_codec: ^0.1.6
@@ -46,7 +46,7 @@ dependencies:
   flutter_secure_storage: ^8.0.0
   flutter_riverpod: ^2.3.6
   image_picker: ^1.0.0
-  image_cropper: ^4.0.1
+  image_cropper: ^7.1.0
   connectivity_plus: ^4.0.1
   flutter_cache_manager: ^3.3.1
   package_info_plus: ^4.0.2

@@ -1,41 +1,44 @@
 import 'dart:convert';
-
 import 'package:mapbox_search/mapbox_search.dart';
 
 extension MapBoxPlaceExtensions on MapBoxPlace {
-  String toRawJsonWithNullCheck() => json.encode(toJsonWithNullCheck());
+  String toJsonTb() => json.encode(_toJson());
 
-  // Add null checking to fields.
-  Map<String, dynamic> toJsonWithNullCheck() {
+  Map<String, dynamic> _toJson() {
+    const converter = BBoxConverter();
     return {
       "id": id,
-      "type": featureTypeValues.reverse![type],
+      "type": "Feature",
       "place_type": placeType.map((x) => x?.value).toList(),
       "address": addressNumber,
       "properties": properties?.toJson(),
       "text": text,
       "place_name": placeName,
-      "bbox": bbox?.map((x) => x).toList(),
-      "center": center?.map((x) => x).toList(),
+      "bbox": bbox != null ? converter.toJson(bbox!) : null,
+      "center": [center!.long, center!.lat],
       "geometry": geometry?.toJson(),
       "matching_text": matchingText,
       "matching_place_name": matchingPlaceName,
     };
   }
 
-  MapBoxPlace fromRawJson(String rawJson) {
+  static MapBoxPlace fromJsonTb(String rawJson) {
     Map<String, dynamic> data = json.decode(rawJson);
+    final c = data['center'] as List<dynamic>;
     return MapBoxPlace(
       id: data['id'] ?? '',
       type: FeatureType.FEATURE,
       placeType: [PlaceType.address],
       addressNumber: data['address'] ?? '',
-      properties: Properties.fromJson(data['properties'] ?? {}),
+      properties: data['properties'] != null
+          ? Properties.fromJson(data['properties'])
+          : null,
       text: data['text'] ?? '',
       placeName: data['place_name'] ?? '',
-      bbox: List<double>.from(data['bbox'] ?? []),
-      center: List<double>.from(data['center'] ?? []),
-      geometry: Geometry.fromJson(data['geometry'] ?? {}),
+      bbox: data['bbox'] != null ? const BBoxConverter().fromJson(data['bbox']) : null,
+      center: (long: c.first, lat: c.last),
+      geometry:
+          data['geometry'] != null ? Geometry.fromJson(data['geometry']) : null,
       matchingText: data['matching_text'] ?? '',
       matchingPlaceName: data['matching_place_name'] ?? '',
     );

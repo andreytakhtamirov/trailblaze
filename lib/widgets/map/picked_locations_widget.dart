@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/util/blend_helper.dart';
@@ -72,11 +71,10 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
   void didUpdateWidget(covariant PickedLocationsWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.startingLocation != null &&
-        widget.endingLocation != null &&
-        (!listEquals(widget.startingLocation?.center,
+            widget.endingLocation != null &&
+            (widget.startingLocation?.center !=
                 oldWidget.startingLocation?.center) ||
-            !listEquals(widget.endingLocation?.center,
-                oldWidget.endingLocation?.center))) {
+        (widget.endingLocation?.center != oldWidget.endingLocation?.center)) {
       _calculateControlBounds();
     }
   }
@@ -499,18 +497,18 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
             ),
             widget.avoidArea != 0 && !_isEditingAvoidArea
                 ? Padding(
-                  padding: const EdgeInsets.only(left: 4),
-                  child: IconButtonSmall(
-                    icon: Icons.delete,
-                    foregroundColor: Colors.redAccent,
-                    backgroundColor: Colors.white,
-                    onTap: () => {
-                      widget.onClearAvoidArea(),
-                      widget.onMapControlChanged(false),
-                    },
-                    hasBorder: true,
-                  ),
-                )
+                    padding: const EdgeInsets.only(left: 4),
+                    child: IconButtonSmall(
+                      icon: Icons.delete,
+                      foregroundColor: Colors.redAccent,
+                      backgroundColor: Colors.white,
+                      onTap: () => {
+                        widget.onClearAvoidArea(),
+                        widget.onMapControlChanged(false),
+                      },
+                      hasBorder: true,
+                    ),
+                  )
                 : const SizedBox(),
           ],
         ),

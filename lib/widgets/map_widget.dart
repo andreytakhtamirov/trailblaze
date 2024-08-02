@@ -19,7 +19,6 @@ import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/constants/request_api_constants.dart';
 import 'package:trailblaze/constants/ui_control_constants.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
-import 'package:trailblaze/extensions/mapbox_place_extension.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:trailblaze/managers/feature_manager.dart';
 import 'package:trailblaze/screens/waypoint_edit_screen.dart';
@@ -226,7 +225,7 @@ class _MapWidgetState extends State<MapWidget>
     final f = selectedFeature;
     MapBoxPlace place = MapBoxPlace(
       placeName: f.tags['name'],
-      center: [f.center['lon'], f.center['lat']],
+      center: (long: f.center['lon'], lat: f.center['lat']),
     );
 
     if (!skipFlyToFeature) {
@@ -586,7 +585,7 @@ class _MapWidgetState extends State<MapWidget>
 
     MapBoxPlace myLocation = MapBoxPlace(
         placeName: "My Location",
-        center: [position.longitude, position.latitude]);
+        center: (long: position.longitude, lat: position.latitude));
 
     setState(() {
       _startingLocation = myLocation;
@@ -660,7 +659,7 @@ class _MapWidgetState extends State<MapWidget>
     _goToUserLocation();
   }
 
-  void _displayRoute(String profile, List<dynamic> waypoints) async {
+  void _displayRoute(String profile, List<MapBoxPlace> waypoints) async {
     bool isRoundTrip = waypoints.length == 1;
     final double? distance = isRoundTrip ? _selectedDistanceMeters : null;
 
@@ -849,9 +848,8 @@ class _MapWidgetState extends State<MapWidget>
     }
 
     for (var i = 0; i < route.waypoints.length; i++) {
-      final waypoint = route.waypoints[i];
-      final mbp = MapBoxPlace.fromRawJson(waypoint);
-      final point = mbm.Position(mbp.center?[0] ?? 0, mbp.center?[1] ?? 0);
+      final mbp = route.waypoints[i];
+      final point = mbm.Position(mbp.center?.long ?? 0, mbp.center?.lat ?? 0);
 
       if (i == 0) {
         annotationHelper?.drawStartAnnotation(point);
@@ -983,8 +981,7 @@ class _MapWidgetState extends State<MapWidget>
     final elevation = _selectedRoute!.elevationMetrics!;
     final gpx = ExportHelper.generateGpx(coordinates, elevation);
 
-    final lastWaypoint =
-        MapBoxPlace.fromRawJson(_selectedRoute!.waypoints.last);
+    final lastWaypoint = _selectedRoute!.waypoints.last;
     final box =
         (_shareWidgetKey.currentContext?.findRenderObject() as RenderBox);
     await ExportHelper.shareGpxFile(gpx, lastWaypoint.placeName ?? '',
@@ -1060,13 +1057,17 @@ class _MapWidgetState extends State<MapWidget>
     if (place != null) {
       if (place.center != null) {
         setState(() {
-          _nextOriginCoordinates = place.center?.cast<double>();
+          _nextOriginCoordinates = [
+            place.center?.long ?? 0,
+            place.center?.lat ?? 0
+          ];
         });
       }
 
-      _flyToPlace(mbm.Position(place.center?[0] ?? 0, place.center?[1] ?? 0));
+      _flyToPlace(
+          mbm.Position(place.center?.long ?? 0, place.center?.lat ?? 0));
       annotationHelper?.drawSingleAnnotation(
-          mbm.Position(place.center?[0] ?? 0, place.center?[1] ?? 0));
+          mbm.Position(place.center?.long ?? 0, place.center?.lat ?? 0));
     } else {
       annotationHelper?.deleteAllAnnotations();
     }
@@ -1088,13 +1089,7 @@ class _MapWidgetState extends State<MapWidget>
           _currentOriginCoordinates,
           '${FormatHelper.formatDistance(_selectedDistanceMeters, noRemainder: true)} round trip'));
     }
-
-    List<dynamic> waypointsJson = [];
-    for (MapBoxPlace place in waypoints) {
-      waypointsJson.add(place.toRawJsonWithNullCheck());
-    }
-
-    _displayRoute(_selectedMode, waypointsJson);
+    _displayRoute(_selectedMode, waypoints);
   }
 
   void _clearAvoidArea() {
@@ -1208,20 +1203,22 @@ class _MapWidgetState extends State<MapWidget>
       return;
     }
 
-    MapBoxPlace place = MapBoxPlace(
-        center: [coordinate.lng.toDouble(), coordinate.lat.toDouble()]);
+    MapBoxPlace place = MapBoxPlace(center: (
+      long: coordinate.lng.toDouble(),
+      lat: coordinate.lat.toDouble()
+    ));
 
     _onSelectPlace(place);
 
-    Future<List<MapBoxPlace>?> futurePlaces = geocoding.getAddress(Location(
-        lat: coordinate.lat.toDouble(), lng: coordinate.lng.toDouble()));
+    final futureAddress = await geocoding.getAddress(
+        (lat: coordinate.lat.toDouble(), long: coordinate.lng.toDouble()));
 
-    futurePlaces.then((places) {
+    futureAddress.fold((places) {
       setState(() {
         _manuallySelectedPlace = true;
       });
       String? placeName;
-      if (places != null && places.isNotEmpty) {
+      if (places.isNotEmpty) {
         MapBoxPlace? place;
         for (MapBoxPlace p in places) {
           if (p.placeType.contains(PlaceType.poi)) {
@@ -1241,12 +1238,13 @@ class _MapWidgetState extends State<MapWidget>
       placeName ??=
           "(${coordinate.lng.toStringAsFixed(4)}, ${coordinate.lat.toStringAsFixed(4)})";
 
-      MapBoxPlace updatedPlace = MapBoxPlace(
-          placeName: placeName,
-          center: [coordinate.lng.toDouble(), coordinate.lat.toDouble()]);
+      MapBoxPlace updatedPlace = MapBoxPlace(placeName: placeName, center: (
+        long: coordinate.lng.toDouble(),
+        lat: coordinate.lat.toDouble()
+      ));
       _onSelectPlace(updatedPlace, isPlaceDataUpdate: true);
       _setMapControlSettings();
-    });
+    }, (failure) => () {});
   }
 
   void _onMapScrollListener(mbm.MapContentGestureContext context) async {
@@ -1507,8 +1505,11 @@ class _MapWidgetState extends State<MapWidget>
       await _setViewMode(ViewMode.shuffle);
       setState(() {
         _pauseUiCallbacks = true;
-        if (_selectedPlace != null) {
-          _currentOriginCoordinates = _selectedPlace!.center;
+        if (_selectedPlace != null && _selectedPlace!.center != null) {
+          _currentOriginCoordinates = [
+            _selectedPlace!.center!.long,
+            _selectedPlace!.center!.lat
+          ];
         }
       });
 

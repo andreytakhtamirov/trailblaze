@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:mapbox_search/models/predictions.dart';
 import 'package:polyline_codec/polyline_codec.dart';
 import 'package:trailblaze/constants/request_api_constants.dart';
 import 'package:trailblaze/extensions/polyline_codec_extension.dart';
@@ -19,7 +20,7 @@ class TrailblazeRoute {
   late final Map<String?, dynamic> routeOptions;
   List<num>? elevationMetrics;
   dynamic routeJson;
-  List<dynamic> waypoints;
+  List<MapBoxPlace> waypoints;
   List<List<num>>? coordinates;
 
   Map<String, num>? surfaceMetrics;

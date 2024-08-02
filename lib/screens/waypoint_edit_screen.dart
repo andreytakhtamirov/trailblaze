@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:mapbox_search/mapbox_search.dart';
-import 'package:trailblaze/extensions/mapbox_place_extension.dart';
+import 'package:mapbox_search/mapbox_search.dart' as mbs;
 import 'package:trailblaze/util/ui_helper.dart';
 import 'package:trailblaze/widgets/map/place_picker_widget.dart';
 
 class WaypointEditScreen extends StatefulWidget {
-  final MapBoxPlace? startingLocation;
-  final MapBoxPlace? endingLocation;
+  final mbs.MapBoxPlace? startingLocation;
+  final mbs.MapBoxPlace? endingLocation;
   final List<String> waypoints;
 
   const WaypointEditScreen(
@@ -46,8 +45,8 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
       return;
     }
 
-    for (MapBoxPlace? place in _locations) {
-      waypointsJson.add(place?.toRawJsonWithNullCheck());
+    for (mbs.MapBoxPlace? place in _locations) {
+      waypointsJson.add(place?.toJson());
     }
 
     Navigator.pop(context, {
@@ -93,7 +92,7 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
                             key: Key('$i'),
                             title: PlacePicker(
                               selectedPlace: _locations[i],
-                              onSelected: (MapBoxPlace? place) {
+                              onSelected: (mbs.MapBoxPlace? place) {
                                 setState(() {
                                   _locations[i] = place;
                                 });
@@ -126,7 +125,7 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
                     }
                     setState(() {
                       _locations.insert(_locations.length,
-                          MapBoxPlace(placeName: 'Point of Interest'));
+                          mbs.MapBoxPlace(placeName: 'Point of Interest'));
                     });
                   },
                   color: const Color(0xFFBDD2DD),

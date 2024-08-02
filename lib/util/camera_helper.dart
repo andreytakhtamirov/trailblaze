@@ -64,11 +64,9 @@ class CameraHelper {
     double maxWidth,
   ) async {
     final customPadding = MbxEdgeInsets(
-      top: (padding?.top ?? 0) +
-          kRouteCameraState.padding.top,
+      top: (padding?.top ?? 0) + kRouteCameraState.padding.top,
       left: (padding?.left ?? 0) + kRouteCameraState.padding.left,
-      bottom: (padding?.bottom ?? 0) +
-          kRouteCameraState.padding.bottom,
+      bottom: (padding?.bottom ?? 0) + kRouteCameraState.padding.bottom,
       right: (padding?.right ?? 0) + kRouteCameraState.padding.right,
     );
 
@@ -103,7 +101,9 @@ class CameraHelper {
 
   static MapBoxPlace getMapBoxPlaceFromLonLat(
       List<double>? coordinates, String placeName) {
-    return MapBoxPlace(placeName: placeName, center: coordinates);
+    return MapBoxPlace(
+        placeName: placeName,
+        center: (long: coordinates?.first ?? 0, lat: coordinates?.last ?? 0));
   }
 
   static Future<double> distanceFromMap(
