@@ -2,9 +2,8 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:mapbox_search/mapbox_search.dart';
-import 'package:trailblaze/util/distance_helper.dart';
+import 'package:trailblaze/extensions/mapbox_search_extension.dart';
 import 'package:trailblaze/util/format_helper.dart';
 
 import '../../constants/map_constants.dart';
@@ -22,7 +21,7 @@ class PlacePicker extends StatefulWidget {
 class _PlacePickerState extends State<PlacePicker> {
   bool _isExpanded = false;
   final FocusNode _searchFocusNode = FocusNode();
-  List<MapBoxPlace> _results = [];
+  List<SuggestionTb> _results = [];
   geo.Position? _futureLocation;
 
   @override
@@ -50,6 +49,7 @@ class _PlacePickerState extends State<PlacePicker> {
       setState(() {
         _results.clear();
       });
+      return;
     }
     geo.Position? currentLocation;
 
@@ -57,36 +57,51 @@ class _PlacePickerState extends State<PlacePicker> {
       currentLocation = _futureLocation;
     }
 
-    final geocoding = GeoCoding(
-      apiKey: kMapboxAccessToken,
+    SearchBoxAPI searchBoxAPI = SearchBoxAPI(
+      limit: 10,
       types: [
         PlaceType.address,
         PlaceType.place,
         PlaceType.poi,
         PlaceType.neighborhood
       ],
-      limit: 10,
     );
 
-    final ApiResponse<List<MapBoxPlace>> result;
     if (currentLocation?.longitude != null &&
         currentLocation?.latitude != null) {
-      result = await geocoding.getPlaces(
+      ApiResponse<SuggestionResponseTb> result =
+          await searchBoxAPI.getSuggestionsCustom(
+        kMapboxAccessToken,
         query,
-        proximity: Proximity.LatLong(
-          lat: currentLocation!.latitude,
-          long: currentLocation.longitude,
-        ),
+        proximity: currentLocation != null
+            ? Proximity.LatLong(
+                lat: currentLocation.latitude,
+                long: currentLocation.longitude,
+              )
+            : Proximity.LocationIp(),
+        origin: currentLocation != null
+            ? Proximity.LatLong(
+                lat: currentLocation.latitude,
+                long: currentLocation.longitude,
+              )
+            : Proximity.LocationNone(),
       );
-      result.fold((success) => () {
-        setState(() {
-          _results = success;
+
+      result.fold((sr) async {
+        final List<SuggestionTb> suggestions = sr.suggestions;
+        suggestions.sort((a, b) {
+          if (a.distance == null && b.distance == null) return 0;
+          if (a.distance == null) return -1; // Null comes before non-null
+          if (b.distance == null) return 1; // Null comes before non-null
+          return a.distance!.compareTo(b.distance!);
         });
-      }, (failure) => () {});
-    } else {
-      result = await geocoding.getPlaces(
-        query,
-      );
+
+        setState(() {
+          _results = suggestions;
+        });
+      }, (failure) {
+        log("FAIL ${failure.error}");
+      });
     }
   }
 
@@ -96,23 +111,6 @@ class _PlacePickerState extends State<PlacePicker> {
     setState(() {
       _isExpanded = false;
     });
-  }
-
-  String _calculateDistanceToUser(List<double>? point1) {
-    if (_futureLocation == null) {
-      return "test";
-    }
-
-    final point1Coord = mbm.Point(
-      coordinates: mbm.Position(point1![0], point1[1]),
-    );
-    final point2Coord = mbm.Point(
-      coordinates:
-          mbm.Position(_futureLocation!.longitude, _futureLocation!.latitude),
-    );
-
-    return FormatHelper.formatDistancePrecise(
-        DistanceHelper.euclideanDistance(point1Coord, point2Coord));
   }
 
   @override
@@ -164,13 +162,9 @@ class _PlacePickerState extends State<PlacePicker> {
                           itemCount: _results.length,
                           itemBuilder: (BuildContext context, int index) {
                             final result = _results[index];
-                            return ListTile(
-                              title: Text(result.placeName ?? ''),
-                              subtitle: _futureLocation != null
-                                  ? Text(
-                                      _calculateDistanceToUser([result.center!.long, result.center!.lat]))
-                                  : null,
-                              onTap: () => _onPlaceSelected(result),
+                            return _buildSuggestionTile(
+                              result,
+                              // onTap: () => {} //_onPlaceSelected(result),
                             );
                           },
                         ),
@@ -219,4 +213,102 @@ class _PlacePickerState extends State<PlacePicker> {
             ),
     );
   }
+
+  Widget _buildSuggestionTile(SuggestionTb s) {
+    final type = getFeatureTypeFromString(s.featureType);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Flexible(
+                fit: FlexFit.loose,
+                child: _iconForFeatureType(type),
+              ),
+              Flexible(
+                flex: 5,
+                fit: FlexFit.tight,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                      ),
+                    ),
+                    type != SearchFeatureType.category
+                        ? Text(
+                            "${FormatHelper.toCapitalizedText(s.address ?? "")}, ${s.context?.place?.name}",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                            ),
+                          )
+                        : const Text(
+                            'Click to search',
+                            style: TextStyle(
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                              decorationColor: Colors.blue,
+                            ),
+                          ),
+                  ],
+                ),
+              ),
+              Flexible(
+                  fit: FlexFit.loose,
+                  child: Text(FormatHelper.formatDistance(s.distance,
+                      noRemainder: true))),
+            ],
+          ),
+        ),
+        Divider(color: Colors.grey.shade300),
+      ],
+    );
+  }
+
+  Widget _iconForFeatureType(SearchFeatureType type) {
+    final IconData icon;
+    switch (type) {
+      case SearchFeatureType.category:
+        icon = Icons.search;
+        break;
+      case SearchFeatureType.poi:
+        icon = Icons.location_on_outlined;
+        break;
+      case SearchFeatureType.address:
+        icon = Icons.location_city_rounded;
+        break;
+      default:
+        icon = Icons.question_mark;
+        break;
+    }
+
+    return Icon(icon);
+  }
+}
+
+enum SearchFeatureType {
+  category("category"),
+  poi("poi"),
+  address("address");
+
+  final String value;
+
+  const SearchFeatureType(this.value);
+}
+
+SearchFeatureType getFeatureTypeFromString(String value) {
+  return SearchFeatureType.values.firstWhere(
+    (mode) => mode.toString() == 'SearchFeatureType.$value',
+    orElse: () => SearchFeatureType.address,
+  );
 }
