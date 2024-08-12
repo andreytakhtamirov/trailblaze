@@ -3,12 +3,14 @@ import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/data/search_feature_type.dart';
 import 'package:trailblaze/extensions/mapbox_search_extension.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
+import 'package:trailblaze/data/feature.dart' as tb;
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key, this.selectedPlaceName});
@@ -114,21 +116,87 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _onPlaceSelected(SuggestionTb s) async {
-    ApiResponse<RetrieveResonse> result =
-        await searchBoxAPI.getPlace(s.mapboxId);
+    log(s.poiCategoryIds!.first);
+    if (s.featureType == SearchFeatureType.category.value) {
+      // Fetch list of features
 
-    result.fold((response) async {
-      Feature? f = response.features.firstOrNull;
-      Navigator.of(context).pop(MapBoxPlace(
-        placeName: _suggestionFullName(s),
-        center: f?.geometry.coordinates,
-      ));
-    }, (failure) {
-      if (mounted) {
-        UiHelper.showSnackBar(
-            context, "Couldn't retrieve place: ${failure.error}");
+      geo.Position? currentLocation;
+
+      if (_futureLocation != null) {
+        currentLocation = _futureLocation;
       }
-    });
+
+      ApiResponse<mbm.FeatureCollection> result =
+          await searchBoxAPI.getCategory(
+        kMapboxAccessToken,
+        s.poiCategoryIds?.first ?? "",
+        _httpClient,
+        proximity: currentLocation != null
+            ? Proximity.LatLong(
+                lat: currentLocation.latitude,
+                long: currentLocation.longitude,
+              )
+            : Proximity.LocationIp(),
+        origin: currentLocation != null
+            ? Proximity.LatLong(
+                lat: currentLocation.latitude,
+                long: currentLocation.longitude,
+              )
+            : Proximity.LocationNone(),
+      );
+
+      result.fold((response) async {
+        List<mbm.Feature<mbm.GeometryObject>> features = response.features;
+
+        List<tb.Feature> places = [];
+        for (mbm.Feature<mbm.GeometryObject> f in features) {
+          log("FEATURE: ${f.toJson().toString()}");
+
+          if (f.geometry == null) {
+            return;
+          }
+          final name = f.properties?['name'];
+          final point = mbm.Point.fromJson(f.geometry!.toJson());
+
+          final fe = tb.Feature.fromPlace(MapBoxPlace(
+            placeName: name,
+            center: (
+            lat: point.coordinates.lat.toDouble(),
+            long: point.coordinates.lng.toDouble()
+            ),
+          ));
+          places.add(
+            fe
+          );
+
+          log("name: ${fe.center}");
+          log("point: ${point.coordinates.lat.toDouble()}");
+        }
+        Navigator.of(context).pop(places);
+      }, (failure) {
+        if (mounted) {
+          UiHelper.showSnackBar(
+              context, "Couldn't retrieve category: ${failure.error}");
+        }
+      });
+    } else {
+      // Fetch full place info
+      ApiResponse<RetrieveResonse> result =
+          await searchBoxAPI.getPlace(s.mapboxId);
+
+      result.fold((response) async {
+        Feature? f = response.features.firstOrNull;
+        Navigator.of(context).pop(MapBoxPlace(
+          placeName: _suggestionFullName(s),
+          center: f?.geometry.coordinates,
+        ));
+      }, (failure) {
+        if (mounted) {
+          UiHelper.showSnackBar(
+              context, "Couldn't retrieve place: ${failure.error}");
+        }
+      });
+    }
   }
 
   String _suggestionFullName(SuggestionTb s) {

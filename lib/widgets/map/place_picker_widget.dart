@@ -1,14 +1,22 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/screens/search_screen.dart';
+import 'package:trailblaze/data/feature.dart' as tb;
 
 import '../../constants/map_constants.dart';
 
 class PlacePicker extends StatefulWidget {
-  const PlacePicker({Key? key, this.selectedPlace, required this.onSelected})
-      : super(key: key);
+  const PlacePicker({
+    Key? key,
+    this.selectedPlace,
+    required this.onSelected,
+    required this.onSelectFeatures,
+  }) : super(key: key);
   final MapBoxPlace? selectedPlace;
   final void Function(MapBoxPlace?) onSelected;
+  final void Function(List<tb.Feature>) onSelectFeatures;
 
   @override
   State<PlacePicker> createState() => _PlacePickerState();
@@ -68,7 +76,7 @@ class _PlacePickerState extends State<PlacePicker> {
   }
 
   void _showSearchScreen() async {
-    final place = await Navigator.push(
+    final result = await Navigator.push(
       context,
       PageRouteBuilder(
         pageBuilder: (BuildContext context, Animation<double> animation1,
@@ -82,8 +90,15 @@ class _PlacePickerState extends State<PlacePicker> {
       ),
     );
 
-    if (place != null) {
-      widget.onSelected(place);
+    if (result == null) {
+      return;
+    }
+
+    if (result is MapBoxPlace) {
+      widget.onSelected(result);
+    } else if (result is List<tb.Feature>) {
+      log("LIST : ${result.length}");
+      widget.onSelectFeatures(result);
     }
   }
 }

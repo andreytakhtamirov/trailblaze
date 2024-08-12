@@ -97,6 +97,7 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
                                   _locations[i] = place;
                                 });
                               },
+                              onSelectFeatures: (features) {},
                             ),
                             leading: const Icon(Icons.location_city_rounded),
                             trailing: const Icon(Icons.drag_handle),

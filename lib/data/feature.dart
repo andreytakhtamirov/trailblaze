@@ -1,3 +1,5 @@
+import 'package:mapbox_search/mapbox_search.dart';
+
 class Feature {
   final String type;
   final int id;
@@ -20,6 +22,20 @@ class Feature {
       center: json['center'],
       nodes: List<int>.from(json['nodes']),
       tags: Map<String, dynamic>.from(json['tags']),
+    );
+  }
+
+  factory Feature.fromPlace(MapBoxPlace place) {
+
+    return Feature(
+      type: place.type.toString(),
+      id: place.hashCode,
+      center: {
+        'lat': place.center?.lat,
+        'lon': place.center?.long,
+      },
+      nodes: [],
+      tags: {'name': place.placeName},
     );
   }
 }

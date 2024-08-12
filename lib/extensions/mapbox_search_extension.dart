@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:json_annotation/json_annotation.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:mapbox_search/models/location.dart';
 import 'package:http/http.dart' as http;
@@ -41,12 +42,12 @@ extension MapBoxSearchExtension on SearchBoxAPI {
           (NoProximity _) => {},
         },
         'access_token': apiKey,
-        'session_token': sessionUUID,
+        if (!isCategory) 'session_token': sessionUUID,
         'navigation_profile': 'walking',
         if (country != null) 'country': country,
         if (limit != null) 'limit': limit.toString(),
         if (language != null) 'language': language,
-        if (types.isNotEmpty) 'types': typesStr.join(','),
+        if (!isCategory && types.isNotEmpty) 'types': typesStr.join(','),
         if (bbox != null) 'bbox': bbox?.asString,
         if (poi.isNotEmpty) 'poi_category': poi.map((e) => e.value).join(','),
       },
@@ -76,6 +77,46 @@ extension MapBoxSearchExtension on SearchBoxAPI {
       } else {
         return (
           success: SuggestionResponseTb.fromJson(json.decode(response.body)),
+          failure: null
+        );
+      }
+    } catch (e) {
+      return (
+        success: null,
+        failure: FailureResponse(
+          message: 'Client closed',
+          error: null,
+          response: {},
+        )
+      );
+    }
+  }
+
+  /// Get a list of places that match the query.
+  Future<ApiResponse<FeatureCollection>> getCategory(
+    String apiKey,
+    String categoryName,
+    http.Client client, {
+    Proximity proximity = const NoProximity(),
+    Proximity origin = const NoProximity(),
+    List<POICategory> poi = const [],
+  }) async {
+    try {
+      String? sessionUUID = await DeviceInfoHelper.getDeviceDetails();
+      final uri = _createUrl(
+          apiKey, sessionUUID, categoryName, proximity, origin, poi, true);
+      print(uri.toString());
+
+      final response = await client.get(uri);
+      print("RESPONSE: ${response.statusCode}");
+      if (response.statusCode != 200) {
+        return (
+          success: null,
+          failure: FailureResponse.fromJson(json.decode(response.body))
+        );
+      } else {
+        return (
+          success: FeatureCollection.fromJson(json.decode(response.body)),
           failure: null
         );
       }

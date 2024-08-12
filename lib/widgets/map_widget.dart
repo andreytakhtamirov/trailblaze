@@ -2084,13 +2084,31 @@ class _MapWidgetState extends State<MapWidget>
             ? CrossFadeState.showSecond
             : CrossFadeState.showFirst,
         firstChild: PlaceSearchBar(
-            onSelected: (place) async {
-              await annotationHelper?.deletePointAnnotations();
-              Future.delayed(const Duration(milliseconds: 100), () {
-                _onSelectPlace(place);
+          onSelected: (place) async {
+            await annotationHelper?.deletePointAnnotations();
+            Future.delayed(const Duration(milliseconds: 100), () {
+              _onSelectPlace(place);
+            });
+          },
+          onSelectFeatures: (features) async {
+            await _setViewMode(ViewMode.parks);
+            if (features.isEmpty) {
+              setState(() {
+                _features = [];
+                _selectedFeature = null;
               });
-            },
-            selectedPlace: _selectedPlace),
+              await _togglePanel(true);
+            } else {
+              setState(() {
+                _features = features;
+              });
+              _setSelectedFeature(features.first, skipFlyToFeature: true);
+            }
+
+            await _updateFeatures();
+          },
+          selectedPlace: _selectedPlace,
+        ),
         secondChild: TapRegion(
           onTapOutside: (_) {
             _onCollapseRouteControls();
