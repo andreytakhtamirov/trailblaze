@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:json_annotation/json_annotation.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:mapbox_search/models/location.dart';
 import 'package:http/http.dart' as http;
@@ -21,6 +21,7 @@ extension MapBoxSearchExtension on SearchBoxAPI {
     Proximity origin, [
     List<POICategory> poi = const [],
     bool isCategory = false,
+    BBox? bbox,
   ]) {
     final typesStr = types.map((e) => e.value).toList(growable: true);
     typesStr.add(SearchFeatureType.category.value);
@@ -48,11 +49,47 @@ extension MapBoxSearchExtension on SearchBoxAPI {
         if (limit != null) 'limit': limit.toString(),
         if (language != null) 'language': language,
         if (!isCategory && types.isNotEmpty) 'types': typesStr.join(','),
-        if (bbox != null) 'bbox': bbox?.asString,
+        if (bbox != null) 'bbox': bbox.asString,
         if (poi.isNotEmpty) 'poi_category': poi.map((e) => e.value).join(','),
       },
     );
     return finalUri;
+  }
+
+  Uri _createRetrievalUrl(
+    String apiKey,
+    String sessionUUID,
+    String queryOrId,
+  ) {
+    final finalUri = Uri(
+      scheme: _baseUri.scheme,
+      host: _baseUri.host,
+      path: '${_baseUri.path}retrieve/$queryOrId',
+      queryParameters: {
+        'access_token': apiKey,
+        'session_token': sessionUUID,
+      },
+    );
+    return finalUri;
+  }
+
+  Future<ApiResponse<RetrieveResonse>> getPlaceById(
+      String apiKey, String mapboxId) async {
+    String? sessionUUID = await DeviceInfoHelper.getDeviceDetails();
+    final uri = _createRetrievalUrl(apiKey, sessionUUID, mapboxId);
+    final response = await http.get(uri);
+
+    if (response.statusCode != 200) {
+      return (
+        success: null,
+        failure: FailureResponse.fromJson(json.decode(response.body))
+      );
+    } else {
+      return (
+        success: RetrieveResonse.fromJson(json.decode(response.body)),
+        failure: null
+      );
+    }
   }
 
   /// Get a list of places that match the query.
@@ -93,18 +130,19 @@ extension MapBoxSearchExtension on SearchBoxAPI {
   }
 
   /// Get a list of places that match the query.
-  Future<ApiResponse<FeatureCollection>> getCategory(
+  Future<ApiResponse<mbm.FeatureCollection>> getCategory(
     String apiKey,
     String categoryName,
     http.Client client, {
     Proximity proximity = const NoProximity(),
     Proximity origin = const NoProximity(),
     List<POICategory> poi = const [],
+    BBox? bbox,
   }) async {
     try {
       String? sessionUUID = await DeviceInfoHelper.getDeviceDetails();
-      final uri = _createUrl(
-          apiKey, sessionUUID, categoryName, proximity, origin, poi, true);
+      final uri = _createUrl(apiKey, sessionUUID, categoryName, proximity,
+          origin, poi, true, bbox);
       print(uri.toString());
 
       final response = await client.get(uri);
@@ -116,7 +154,7 @@ extension MapBoxSearchExtension on SearchBoxAPI {
         );
       } else {
         return (
-          success: FeatureCollection.fromJson(json.decode(response.body)),
+          success: mbm.FeatureCollection.fromJson(json.decode(response.body)),
           failure: null
         );
       }
@@ -157,12 +195,12 @@ class SuggestionTb {
     this.namePreferred,
     required this.mapboxId,
     required this.featureType,
-    required this.address,
-    required this.fullAddress,
+    this.address,
+    this.fullAddress,
     required this.placeFormatted,
-    required this.context,
-    required this.language,
-    required this.maki,
+    this.context,
+    this.language,
+    this.maki,
     this.distance,
     this.externalIds,
     this.poiCategory,
@@ -179,7 +217,7 @@ class SuggestionTb {
   final String? fullAddress;
   final String placeFormatted;
   final Context? context;
-  final String language;
+  final String? language;
   final String? maki;
   final int? distance;
   final ExternalIds? externalIds;

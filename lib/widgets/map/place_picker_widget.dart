@@ -13,10 +13,12 @@ class PlacePicker extends StatefulWidget {
     this.selectedPlace,
     required this.onSelected,
     required this.onSelectFeatures,
+    required this.onSearchBarTap,
   }) : super(key: key);
   final MapBoxPlace? selectedPlace;
   final void Function(MapBoxPlace?) onSelected;
   final void Function(List<tb.Feature>) onSelectFeatures;
+  final void Function() onSearchBarTap;
 
   @override
   State<PlacePicker> createState() => _PlacePickerState();
@@ -40,7 +42,7 @@ class _PlacePickerState extends State<PlacePicker> {
       child: InkWell(
         onTap: _showSearchScreen,
         child: Hero(
-          tag: "Search",
+          tag: 'Search',
           child: Row(
             children: [
               const Padding(
@@ -76,6 +78,7 @@ class _PlacePickerState extends State<PlacePicker> {
   }
 
   void _showSearchScreen() async {
+    widget.onSearchBarTap();
     final result = await Navigator.push(
       context,
       PageRouteBuilder(

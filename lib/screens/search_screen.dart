@@ -1,32 +1,39 @@
 import 'dart:developer';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/data/search_feature_type.dart';
 import 'package:trailblaze/extensions/mapbox_search_extension.dart';
-import 'package:trailblaze/util/format_helper.dart';
+import 'package:trailblaze/managers/map_state_notifier.dart';
+import 'package:trailblaze/managers/place_manager.dart';
+import 'package:trailblaze/util/search_item_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
-import 'package:trailblaze/data/feature.dart' as tb;
+import 'package:trailblaze/widgets/search/empty_search.dart';
 
-class SearchScreen extends StatefulWidget {
+class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key, this.selectedPlaceName});
 
   final String? selectedPlaceName;
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreenState extends ConsumerState<SearchScreen> {
   final FocusNode _searchFocusNode = FocusNode();
   List<SuggestionTb> _results = [];
   geo.Position? _futureLocation;
   final TextEditingController _textEditController = TextEditingController();
   http.Client _httpClient = http.Client();
+  final placeManager = PlaceManager();
+  bool _isHistoryShowing = false;
+  CoordinateBounds? mapViewBounds;
+
   SearchBoxAPI searchBoxAPI = SearchBoxAPI(
     limit: 10,
     types: [
@@ -51,9 +58,27 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _showBounds();
+  }
+
+  @override
   void dispose() {
     super.dispose();
     _httpClient.close();
+  }
+
+  void _showBounds() {
+    final cameraBounds = ref.watch(mapStateProvider.notifier).getCameraBounds();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      mapViewBounds = cameraBounds;
+    });
+    log("BOUNDS northEast: ${cameraBounds?.northeast.coordinates.toList()}");
+    log("BOUNDS southwest: ${cameraBounds?.southwest.coordinates.toList()}");
   }
 
   void _loadLocation() async {
@@ -71,11 +96,30 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  void _showHistory() async {
+    final places = await placeManager.mostRecentPlaces(10);
+    final List<SuggestionTb> results = [];
+
+    for (MapBoxPlace p in places) {
+      results.add(SuggestionTb(
+        mapboxId: p.id!,
+        name: p.placeName!,
+        placeFormatted: p.text!,
+        featureType: SearchFeatureType.history.value,
+      ));
+    }
+
+    setState(() {
+      _results = results;
+      _isHistoryShowing = true;
+    });
+  }
+
   void _search(String query) async {
     _httpClient = http.Client();
     query = query.trim();
     if (query.isEmpty) {
-      _clearResults();
+      _showHistory();
       return;
     }
     geo.Position? currentLocation;
@@ -107,6 +151,7 @@ class _SearchScreenState extends State<SearchScreen> {
       final List<SuggestionTb> suggestions = sr.suggestions;
       setState(() {
         _results = suggestions;
+        _isHistoryShowing = false;
       });
     }, (failure) {
       if (failure.error != null) {
@@ -115,106 +160,40 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  void _onPlaceSelected(SuggestionTb s) async {
-    log(s.poiCategoryIds!.first);
-    if (s.featureType == SearchFeatureType.category.value) {
-      // Fetch list of features
-
-      geo.Position? currentLocation;
-
-      if (_futureLocation != null) {
-        currentLocation = _futureLocation;
-      }
-
-      ApiResponse<mbm.FeatureCollection> result =
-          await searchBoxAPI.getCategory(
-        kMapboxAccessToken,
-        s.poiCategoryIds?.first ?? "",
-        _httpClient,
-        proximity: currentLocation != null
-            ? Proximity.LatLong(
-                lat: currentLocation.latitude,
-                long: currentLocation.longitude,
-              )
-            : Proximity.LocationIp(),
-        origin: currentLocation != null
-            ? Proximity.LatLong(
-                lat: currentLocation.latitude,
-                long: currentLocation.longitude,
-              )
-            : Proximity.LocationNone(),
-      );
-
-      result.fold((response) async {
-        List<mbm.Feature<mbm.GeometryObject>> features = response.features;
-
-        List<tb.Feature> places = [];
-        for (mbm.Feature<mbm.GeometryObject> f in features) {
-          log("FEATURE: ${f.toJson().toString()}");
-
-          if (f.geometry == null) {
-            return;
-          }
-          final name = f.properties?['name'];
-          final point = mbm.Point.fromJson(f.geometry!.toJson());
-
-          final fe = tb.Feature.fromPlace(MapBoxPlace(
-            placeName: name,
-            center: (
-            lat: point.coordinates.lat.toDouble(),
-            long: point.coordinates.lng.toDouble()
-            ),
-          ));
-          places.add(
-            fe
-          );
-
-          log("name: ${fe.center}");
-          log("point: ${point.coordinates.lat.toDouble()}");
-        }
-        Navigator.of(context).pop(places);
-      }, (failure) {
-        if (mounted) {
-          UiHelper.showSnackBar(
-              context, "Couldn't retrieve category: ${failure.error}");
-        }
-      });
-    } else {
-      // Fetch full place info
-      ApiResponse<RetrieveResonse> result =
-          await searchBoxAPI.getPlace(s.mapboxId);
-
-      result.fold((response) async {
-        Feature? f = response.features.firstOrNull;
-        Navigator.of(context).pop(MapBoxPlace(
-          placeName: _suggestionFullName(s),
-          center: f?.geometry.coordinates,
-        ));
-      }, (failure) {
-        if (mounted) {
-          UiHelper.showSnackBar(
-              context, "Couldn't retrieve place: ${failure.error}");
-        }
-      });
-    }
+  void _hideAllFeatures() async {
+    await placeManager.hideAllFeatures();
+    _clearResults();
   }
 
-  String _suggestionFullName(SuggestionTb s) {
-    final type = getFeatureTypeFromString(s.featureType);
-    final String fullName;
+  void _onSelectSuggestion(SuggestionTb s) async {
+    if (s.featureType == SearchFeatureType.category.value) {
+      // Fetch list of features for category.
+      final places = await placeManager.resolveCategory(
+        _futureLocation,
+        _httpClient,
+        s,
+        mapViewBounds,
+      );
 
-    switch (type) {
-      case SearchFeatureType.place:
-      case SearchFeatureType.address:
-      case SearchFeatureType.neighborhood:
-        fullName = '${s.name}, ${s.placeFormatted}';
-        break;
-      case SearchFeatureType.poi:
-      default:
-        fullName = "${s.address}, ${s.placeFormatted}";
+      if (places == null) {
+        if (mounted) {
+          UiHelper.showSnackBar(
+              context, "Couldn't retrieve category ${s.name}.");
+        }
+      } else if (mounted) {
+        Navigator.of(context).pop(places);
+      }
+    } else {
+      // Fetch info about particular place.
+      final place = await placeManager.resolveFeature(s);
+      if (place == null) {
+        if (mounted) {
+          UiHelper.showSnackBar(context, "Couldn't retrieve place.");
+        }
+      } else if (mounted) {
+        Navigator.of(context).pop(place);
+      }
     }
-
-    return fullName;
   }
 
   @override
@@ -227,7 +206,7 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Column(
           children: [
             Hero(
-              tag: "Search",
+              tag: 'Search',
               child: TextFormField(
                 controller: _textEditController,
                 focusNode: _searchFocusNode,
@@ -248,7 +227,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     onPressed: () {
                       setState(() {
                         _textEditController.clear();
-                        _clearResults();
+                        _showHistory();
                       });
                     },
                   ),
@@ -259,22 +238,54 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
             ),
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: _results.length,
-                itemBuilder: (BuildContext context, int index) {
-                  final result = _results[index];
-                  return InkWell(
-                    onTap: () {
-                      _onPlaceSelected(result);
-                    },
-                    child: _buildSuggestionTile(
-                      result,
+            _isHistoryShowing && _results.isNotEmpty
+                ? Padding(
+                    padding: const EdgeInsets.only(
+                      top: 16,
+                      left: 16,
+                      right: 16,
+                      bottom: 24,
                     ),
-                  );
-                },
-              ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Recent',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        InkWell(
+                          onTap: _hideAllFeatures,
+                          child: Text(
+                            'Clear All',
+                            style: TextStyle(
+                              color: Colors.blue.shade800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : const SizedBox(),
+            Expanded(
+              child: _results.isEmpty
+                  ? EmptySearch(isSearchEmpty: _isHistoryShowing)
+                  : ListView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: _results.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        final suggestion = _results[index];
+                        return InkWell(
+                          onTap: () {
+                            _onSelectSuggestion(suggestion);
+                          },
+                          child: _buildSuggestionTile(
+                            suggestion,
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -295,29 +306,32 @@ class _SearchScreenState extends State<SearchScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
+              const SizedBox(width: 16),
               Flexible(
                 fit: FlexFit.loose,
-                child: _iconForFeatureType(type),
+                child: SearchItemHelper.iconForFeatureType(type),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 24),
               Flexible(
                 flex: 5,
                 fit: FlexFit.tight,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _titleForFeatureType(s),
-                    _subtitleForFeatureType(s),
+                    SearchItemHelper.titleForFeatureType(s),
+                    SearchItemHelper.subtitleForFeatureType(s),
                   ],
                 ),
               ),
+              const SizedBox(width: 16),
               Flexible(
                 fit: FlexFit.loose,
-                child: _suffixForFeatureType(s),
+                child:
+                    SearchItemHelper.suffixForFeatureType(_futureLocation, s),
               ),
             ],
           ),
@@ -325,125 +339,5 @@ class _SearchScreenState extends State<SearchScreen> {
         Divider(color: Colors.grey.shade300),
       ],
     );
-  }
-
-  Widget _iconForFeatureType(SearchFeatureType type) {
-    switch (type) {
-      case SearchFeatureType.category:
-        return Icon(
-          Icons.search,
-          color: Colors.blue.shade900,
-        );
-      case SearchFeatureType.poi:
-        return const Icon(
-          Icons.location_on_outlined,
-        );
-      case SearchFeatureType.address:
-        return const Icon(
-          Icons.home,
-        );
-      case SearchFeatureType.place:
-        return const Icon(
-          Icons.location_city_rounded,
-        );
-      case SearchFeatureType.neighborhood:
-        return const Icon(
-          Icons.home_work_outlined,
-        );
-      default:
-        return const Icon(
-          Icons.question_mark,
-        );
-    }
-  }
-
-  Widget _titleForFeatureType(SuggestionTb s) {
-    final type = getFeatureTypeFromString(s.featureType);
-    switch (type) {
-      case SearchFeatureType.category:
-        return Text(
-          s.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.blue.shade900,
-          ),
-        );
-      case SearchFeatureType.place:
-      case SearchFeatureType.neighborhood:
-      case SearchFeatureType.poi:
-      case SearchFeatureType.address:
-      default:
-        return Text(
-          s.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 16,
-          ),
-        );
-    }
-  }
-
-  Widget _subtitleForFeatureType(SuggestionTb s) {
-    final type = getFeatureTypeFromString(s.featureType);
-    final String label;
-    switch (type) {
-      case SearchFeatureType.category:
-        return Text(
-          'Click to see nearby',
-          style: TextStyle(
-            color: Colors.blue.shade800,
-            decoration: TextDecoration.underline,
-            decorationColor: Colors.blue.shade800,
-            fontSize: 12,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        );
-      case SearchFeatureType.place:
-      case SearchFeatureType.address:
-      case SearchFeatureType.neighborhood:
-        label = s.placeFormatted;
-        break;
-      case SearchFeatureType.poi:
-      default:
-        label = "${s.address}, ${s.placeFormatted}";
-    }
-
-    return Text(
-      label,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
-        fontSize: 12,
-      ),
-    );
-  }
-
-  Widget _suffixForFeatureType(SuggestionTb s) {
-    final type = getFeatureTypeFromString(s.featureType);
-    final Widget distance;
-    if (_futureLocation != null) {
-      distance = Text(
-        FormatHelper.formatDistance(
-          s.distance,
-          noRemainder: true,
-        ),
-      );
-    } else {
-      distance = const SizedBox();
-    }
-
-    switch (type) {
-      case SearchFeatureType.category:
-        return Icon(
-          Icons.open_in_new,
-          color: Colors.blue.shade800,
-        );
-      default:
-        return distance;
-    }
   }
 }

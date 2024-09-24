@@ -9,10 +9,12 @@ class PlaceSearchBar extends StatefulWidget {
     this.selectedPlace,
     required this.onSelected,
     required this.onSelectFeatures,
+    required this.onSearchBarTap,
   }) : super(key: key);
   final MapBoxPlace? selectedPlace;
   final void Function(MapBoxPlace?) onSelected;
   final void Function(List<tb.Feature>) onSelectFeatures;
+  final void Function() onSearchBarTap;
 
   @override
   State<PlaceSearchBar> createState() => _PlaceSearchBarState();
@@ -35,6 +37,7 @@ class _PlaceSearchBarState extends State<PlaceSearchBar> {
           selectedPlace: widget.selectedPlace,
           onSelected: widget.onSelected,
           onSelectFeatures: widget.onSelectFeatures,
+          onSearchBarTap: widget.onSearchBarTap,
         ),
       ),
     );

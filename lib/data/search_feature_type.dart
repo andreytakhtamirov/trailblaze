@@ -3,7 +3,8 @@ enum SearchFeatureType {
   poi('poi'),
   address('address'),
   place('place'),
-  neighborhood('neighborhood');
+  neighborhood('neighborhood'),
+  history('history');
 
   final String value;
 

@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trailblaze/constants/route_info_constants.dart';
+import 'package:trailblaze/managers/map_state_notifier.dart';
 import 'package:trailblaze/util/export_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/util/polyline_helper.dart';
@@ -43,7 +45,7 @@ import '../data/transportation_mode.dart';
 import '../requests/create_route.dart';
 import '../widgets/map/map_style_selector_widget.dart';
 
-class MapWidget extends StatefulWidget {
+class MapWidget extends ConsumerStatefulWidget {
   final bool forceTopBottomPadding;
   final bool isInteractiveMap;
   final TrailblazeRoute? routeToDisplay;
@@ -58,10 +60,10 @@ class MapWidget extends StatefulWidget {
   });
 
   @override
-  State<MapWidget> createState() => _MapWidgetState();
+  ConsumerState<MapWidget> createState() => _MapWidgetState();
 }
 
-class _MapWidgetState extends State<MapWidget>
+class _MapWidgetState extends ConsumerState<MapWidget>
     with AutomaticKeepAliveClientMixin<MapWidget> {
   late mbm.MapboxMap _mapboxMap;
   MapBoxPlace? _selectedPlace;
@@ -1268,6 +1270,16 @@ class _MapWidgetState extends State<MapWidget>
         mbm.Position(_nextOriginCoordinates![0], _nextOriginCoordinates![1]));
   }
 
+  Future<void> _updateCameraState() async {
+    final bounds =
+        await _mapboxMap.coordinateBoundsForCamera(mbm.CameraOptions());
+    log("SET BOUNDS : ${bounds.northeast.coordinates.toList()} ${bounds.southwest.coordinates.toList()}");
+    ref.watch(mapStateProvider.notifier).setCameraBounds(bounds);
+
+    annotationHelper
+        ?.drawCircleAnnotationMulti([bounds.northeast, bounds.southwest]);
+  }
+
   void _onDirectionsBackClicked() {
     if (_previousViewMode != ViewMode.metricDetails) {
       _setViewMode(_previousViewMode);
@@ -1320,6 +1332,7 @@ class _MapWidgetState extends State<MapWidget>
       context,
       MaterialPageRoute(
         builder: (context) => WaypointEditScreen(
+          onSearchBarTap: _updateCameraState,
           startingLocation: _startingLocation,
           endingLocation: _selectedPlace,
           waypoints: const [],
@@ -1861,7 +1874,7 @@ class _MapWidgetState extends State<MapWidget>
                                           _viewMode == ViewMode.shuffle
                                               ? Colors.white
                                               : Colors.brown,
-                                      isNew: true,
+                                      isNew: false,
                                     ),
                                   ),
                                 ],
@@ -2090,6 +2103,7 @@ class _MapWidgetState extends State<MapWidget>
               _onSelectPlace(place);
             });
           },
+          onSearchBarTap: _updateCameraState,
           onSelectFeatures: (features) async {
             await _setViewMode(ViewMode.parks);
             if (features.isEmpty) {

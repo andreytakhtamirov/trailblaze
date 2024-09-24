@@ -7,12 +7,14 @@ class WaypointEditScreen extends StatefulWidget {
   final mbs.MapBoxPlace? startingLocation;
   final mbs.MapBoxPlace? endingLocation;
   final List<String> waypoints;
+  final void Function() onSearchBarTap;
 
-  const WaypointEditScreen(
-      {super.key,
-      required this.startingLocation,
-      required this.endingLocation,
-      required this.waypoints});
+  const WaypointEditScreen({super.key,
+    required this.startingLocation,
+    required this.endingLocation,
+    required this.waypoints,
+    required this.onSearchBarTap,
+  });
 
   @override
   State<WaypointEditScreen> createState() => _WaypointEditScreenState();
@@ -37,7 +39,7 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
   void _onSave() {
     List<dynamic> waypointsJson = [];
     List validLocations =
-        _locations.where((place) => place?.center != null).toList();
+    _locations.where((place) => place?.center != null).toList();
 
     if (validLocations.length < 2) {
       UiHelper.showSnackBar(
@@ -91,6 +93,7 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
                           child: ListTile(
                             key: Key('$i'),
                             title: PlacePicker(
+                              onSearchBarTap: widget.onSearchBarTap,
                               selectedPlace: _locations[i],
                               onSelected: (mbs.MapBoxPlace? place) {
                                 setState(() {
@@ -139,7 +142,10 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
               MaterialButton(
                 shape: const StadiumBorder(),
                 onPressed: _onSave,
-                color: Theme.of(context).colorScheme.primary,
+                color: Theme
+                    .of(context)
+                    .colorScheme
+                    .primary,
                 child: const Text(
                   "Save",
                   style: TextStyle(
