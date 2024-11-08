@@ -1,4 +1,5 @@
 import 'package:mapbox_search/mapbox_search.dart';
+import 'package:trailblaze/util/geocoding_helper.dart';
 
 class Feature {
   final String type;
@@ -21,12 +22,20 @@ class Feature {
       id: json['id'],
       center: json['center'],
       nodes: List<int>.from(json['nodes']),
-      tags: Map<String, dynamic>.from(json['tags']),
+      tags: {'name': json['tags']['name']},
     );
   }
 
-  factory Feature.fromPlace(MapBoxPlace place) {
+  static loadAddress(Feature f) async {
+    final address = await GeocodingHelper.addressFromCoordinates(
+      f.center['lat'] as double,
+      f.center['lon'] as double,
+    );
 
+    f.tags['address'] = address;
+  }
+
+  factory Feature.fromPlace(MapBoxPlace place) {
     return Feature(
       type: place.type.toString(),
       id: place.hashCode,
@@ -35,7 +44,7 @@ class Feature {
         'lon': place.center?.long,
       },
       nodes: [],
-      tags: {'name': place.placeName},
+      tags: {'name': place.placeName, 'address': place.properties?.address},
     );
   }
 }

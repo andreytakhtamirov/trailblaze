@@ -18,6 +18,7 @@ class AnnotationAction {
 
 class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
   final mbm.PointAnnotationManager _annotationManager;
+  final mbm.PointAnnotationManager _pointAnnotationManager;
   final mbm.CircleAnnotationManager _circleAnnotationManager;
   final mbm.CircleAnnotationManager _metricAnnotationManager;
   final mbm.CircleAnnotationManager _avoidAnnotationManager;
@@ -36,6 +37,7 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
 
   AnnotationHelper(
     this._annotationManager,
+    this._pointAnnotationManager,
     this._circleAnnotationManager,
     this._metricAnnotationManager,
     this._avoidAnnotationManager,
@@ -219,22 +221,39 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
     return mbm.Polygon(coordinates: [DistanceHelper.buildPolygon(coordinates)]);
   }
 
-  void drawCircleAnnotationMulti(List<mbm.Point> points) async {
-    List<mbm.CircleAnnotationOptions> optionsList = [];
-    await _circleAnnotationManager.deleteAll();
+  // TODO smart annotations
+  void drawPointAnnotationMulti(
+      List<String> names, List<mbm.Point> points) async {
+    List<mbm.PointAnnotationOptions> optionsList = [];
+    await _pointAnnotationManager.deleteAll();
+    final ByteData bytes = await rootBundle.load('assets/feature-puck.png');
+    final Uint8List list = bytes.buffer.asUint8List();
 
     for (var i = 0; i < points.length; i++) {
-      var options = mbm.CircleAnnotationOptions(
+      var options = mbm.PointAnnotationOptions(
         geometry: points[i],
-        circleStrokeColor: Colors.red.value,
-        circleColor: Colors.white.value,
-        circleStrokeWidth: kFeaturePinSize,
+        image: list,
+        iconSize: kLocationPinSize,
+        textAnchor: mbm.TextAnchor.BOTTOM_LEFT,
+        textField: names[i],
+        textHaloWidth: 5,
+        textSize: 13,
+        textMaxWidth: 20,
+        textEmissiveStrength: 1,
+        textHaloColor: const Color.fromRGBO(255, 255, 255, 0.15).value,
+        textOcclusionOpacity: 0.4,
+        textOffset: [1,0],
+        textColor: Colors.black.value,
+        symbolSortKey: 10,
       );
       optionsList.add(options);
     }
 
-    final annotations = await _circleAnnotationManager.createMulti(optionsList);
-    circleAnnotations.addAll(annotations.whereType<mbm.CircleAnnotation>());
+    await _pointAnnotationManager.createMulti(optionsList);
+  }
+
+  Future<void> clearPointAnnotations() async {
+    await _pointAnnotationManager.deleteAll();
   }
 
   void drawOriginAnnotation(mbm.Position coordinates) async {

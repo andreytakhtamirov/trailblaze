@@ -1,6 +1,7 @@
 import '../data/transportation_mode.dart';
 
 const geocodeResultsLimit = 5;
+const kCategoryResultsLimit = 25;
 
 const kMapboxRoutePrecision = 6;
 const kGraphhopperRoutePrecision = 5;

@@ -8,8 +8,7 @@ class FeatureManager {
   static Future<List<Feature>> loadFeatures(
       BuildContext context, int distanceMeters, List<double> center) async {
     final dartz.Either<Map<int, String>, List<dynamic>?> response;
-    response = await getFeatures(
-        [center[0], center[1]], distanceMeters);
+    response = await getFeatures([center[0], center[1]], distanceMeters);
 
     List<dynamic>? jsonData;
 
@@ -27,8 +26,11 @@ class FeatureManager {
       return [];
     }
 
-    List<Feature> features =
-        jsonData!.map((json) => Feature.fromJson(json)).toList();
+    List<Feature> features = await Future.wait(jsonData!.map((json) async {
+      var feature = Feature.fromJson(json);
+      await Feature.loadAddress(feature);
+      return feature;
+    }).toList());
 
     return features;
   }

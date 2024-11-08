@@ -11,13 +11,15 @@ class PlacePicker extends StatefulWidget {
   const PlacePicker({
     Key? key,
     this.selectedPlace,
+    this.transparentBackground = true,
     required this.onSelected,
     required this.onSelectFeatures,
     required this.onSearchBarTap,
   }) : super(key: key);
   final MapBoxPlace? selectedPlace;
+  final bool transparentBackground;
   final void Function(MapBoxPlace?) onSelected;
-  final void Function(List<tb.Feature>) onSelectFeatures;
+  final void Function(String categoryId, List<tb.Feature>) onSelectFeatures;
   final void Function() onSearchBarTap;
 
   @override
@@ -36,7 +38,7 @@ class _PlacePickerState extends State<PlacePicker> {
       curve: Curves.easeInOut,
       height: kSearchBarHeight,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: widget.transparentBackground ? Colors.transparent : Colors.white,
         borderRadius: BorderRadius.circular(20),
       ),
       child: InkWell(
@@ -99,9 +101,11 @@ class _PlacePickerState extends State<PlacePicker> {
 
     if (result is MapBoxPlace) {
       widget.onSelected(result);
-    } else if (result is List<tb.Feature>) {
-      log("LIST : ${result.length}");
-      widget.onSelectFeatures(result);
+    } else if (result['categoryId'] != null) {
+      widget.onSelectFeatures(
+        result['categoryId'],
+        result['features'],
+      );
     }
   }
 }

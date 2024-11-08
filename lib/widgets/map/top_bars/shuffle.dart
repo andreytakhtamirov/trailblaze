@@ -6,9 +6,9 @@ import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/widgets/map/icon_button_small.dart';
 import 'package:trailblaze/widgets/map/transportation_mode_widget.dart';
 
-import '../../data/transportation_mode.dart';
+import '../../../data/transportation_mode.dart';
 
-class RoundTripControlsWidget extends StatelessWidget {
+class ShuffleTopBar extends StatelessWidget {
   final TransportationMode selectedMode;
   final void Function() onBackClicked;
   final void Function(TransportationMode, double?) onModeChanged;
@@ -16,7 +16,7 @@ class RoundTripControlsWidget extends StatelessWidget {
   final List<double>? center;
   final Function({double? distanceMeters}) onDistanceChanged;
 
-  const RoundTripControlsWidget({
+  const ShuffleTopBar({
     super.key,
     required this.selectedMode,
     required this.onBackClicked,

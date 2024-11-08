@@ -32,6 +32,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   http.Client _httpClient = http.Client();
   final placeManager = PlaceManager();
   bool _isHistoryShowing = false;
+  bool _isLoading = true;
   CoordinateBounds? mapViewBounds;
 
   SearchBoxAPI searchBoxAPI = SearchBoxAPI(
@@ -77,8 +78,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     setState(() {
       mapViewBounds = cameraBounds;
     });
-    log("BOUNDS northEast: ${cameraBounds?.northeast.coordinates.toList()}");
-    log("BOUNDS southwest: ${cameraBounds?.southwest.coordinates.toList()}");
   }
 
   void _loadLocation() async {
@@ -112,6 +111,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     setState(() {
       _results = results;
       _isHistoryShowing = true;
+
+      if (_isLoading) {
+        _isLoading = false;
+      }
     });
   }
 
@@ -168,20 +171,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void _onSelectSuggestion(SuggestionTb s) async {
     if (s.featureType == SearchFeatureType.category.value) {
       // Fetch list of features for category.
-      final places = await placeManager.resolveCategory(
-        _futureLocation,
+      final features = await placeManager.resolveCategory(
         _httpClient,
-        s,
+        s.poiCategoryIds?.firstOrNull,
         mapViewBounds,
       );
 
-      if (places == null) {
+      if (features == null) {
         if (mounted) {
           UiHelper.showSnackBar(
               context, "Couldn't retrieve category ${s.name}.");
         }
       } else if (mounted) {
-        Navigator.of(context).pop(places);
+        Navigator.of(context).pop({
+          'categoryId': s.poiCategoryIds?.first,
+          'features': features,
+        });
       }
     } else {
       // Fetch info about particular place.
@@ -269,8 +274,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   )
                 : const SizedBox(),
             Expanded(
-              child: _results.isEmpty
-                  ? EmptySearch(isSearchEmpty: _isHistoryShowing)
+              child: !_isLoading && _results.isEmpty
+                  ? EmptySearch(isSearchEmpty: _textEditController.text.isEmpty)
                   : ListView.builder(
                       padding: EdgeInsets.zero,
                       itemCount: _results.length,

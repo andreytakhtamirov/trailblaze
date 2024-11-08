@@ -47,8 +47,9 @@ final double kPanelFeaturesMaxHeight =
     kScreenHeight / 3 - kSafeAreaPaddingBottom;
 final double kPanelShuffleMaxHeight =
     kScreenHeight / 3 - kSafeAreaPaddingBottom;
+final double kPanelFeatureListMaxHeight = kScreenHeight - 300;
 
-const double kPanelFabHeight = kPanelMinContentHeight + 8;
+const double kPanelFabHeight = 8;
 
 final double kFeatureItemHeight = kScreenHeight / 6;
 
@@ -156,11 +157,3 @@ final LogoSettings kDefaultLogoSettings = LogoSettings(
     marginBottom: kAttributionBottomOffset,
     marginLeft: kLogoLeftOffset,
     marginRight: 0);
-
-enum ViewMode {
-  search,
-  directions,
-  parks,
-  shuffle,
-  metricDetails,
-}

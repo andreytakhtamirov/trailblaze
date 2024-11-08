@@ -2,18 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:trailblaze/data/feature.dart';
 import 'package:trailblaze/util/distance_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
+import 'package:trailblaze/widgets/map/icon_button_small.dart';
 import 'package:turf/turf.dart' as turf;
 
 class FeatureItem extends StatelessWidget {
   final Feature feature;
   final turf.Position? userLocation;
   final void Function() onClicked;
+  final void Function() onDirections;
+  final void Function() onSave;
 
   const FeatureItem({
     super.key,
     required this.feature,
     required this.userLocation,
     required this.onClicked,
+    required this.onDirections,
+    required this.onSave,
   });
 
   String getDistance() {
@@ -35,17 +40,13 @@ class FeatureItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(4.0),
+      padding: const EdgeInsets.only(bottom: 8),
       child: GestureDetector(
         onTap: () {
           onClicked();
         },
         child: Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onTertiary.withOpacity(0.2),
-            border: Border.all(color: Colors.grey),
-            borderRadius: BorderRadius.circular(20),
-          ),
+          color: Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: Row(
@@ -57,24 +58,53 @@ class FeatureItem extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          flex: 2,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 1,
-                                child: FittedBox(
+                        Column(
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 8),
                                   child: Icon(
                                     Icons.forest_rounded,
                                     color:
                                         Theme.of(context).colorScheme.tertiary,
                                   ),
                                 ),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child: Text(
+                                Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        feature.tags['name'],
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                        ),
+                                      ),
+                                      Text(
+                                        feature.tags['address'] ?? '',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
                                   textAlign: TextAlign.end,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -86,20 +116,38 @@ class FeatureItem extends StatelessWidget {
                                         Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          feature.tags['name'],
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const SizedBox(width: 8),
+                                IconButtonSmall(
+                                  text: 'Directions',
+                                  icon: Icons.directions,
+                                  iconFontSize: 18.0,
+                                  textFontSize: 14,
+                                  onTap: onDirections,
+                                  hasBorder: true,
+                                  foregroundColor:
+                                      Theme.of(context).colorScheme.primary,
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                ),
+                                const SizedBox(width: 8),
+                                IconButtonSmall(
+                                  icon: Icons.bookmark_border,
+                                  iconFontSize: 22.0,
+                                  onTap: onSave,
+                                  hasBorder: true,
+                                  foregroundColor:
+                                      Theme.of(context).colorScheme.primary,
+                                  backgroundColor:
+                                      Theme.of(context).colorScheme.onPrimary,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ],
                     ),

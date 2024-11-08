@@ -30,7 +30,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  mapbox_maps_flutter: ^2.2.1
+  mapbox_maps_flutter: ^2.3.0
   auth0_flutter: ^1.4.1
   mapbox_search: ^4.2.2
   http: ^1.1.0
@@ -78,6 +78,7 @@ dependencies:
   device_info_plus: ^10.1.1
   drift: ^2.18.0
   drift_flutter: ^0.1.0
+  geocoding: ^3.0.0
 
 
 dev_dependencies:
@@ -114,13 +115,14 @@ flutter:
     - assets/app_icon.png
     - assets/app_icon.jpg
     - assets/location-puck.png
+    - assets/feature-puck.png
     - assets/location-pin.png
     - assets/models/blend.onnx
 
 
   fonts:
-      - family: TrailblazeIcons
-        fonts:
+    - family: TrailblazeIcons
+      fonts:
         - asset: fonts/TrailblazeIcons.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see

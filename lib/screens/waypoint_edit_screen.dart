@@ -100,7 +100,8 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
                                   _locations[i] = place;
                                 });
                               },
-                              onSelectFeatures: (features) {},
+                              // TODO implement
+                              onSelectFeatures: (features, category) {},
                             ),
                             leading: const Icon(Icons.location_city_rounded),
                             trailing: const Icon(Icons.drag_handle),
