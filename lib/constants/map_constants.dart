@@ -16,6 +16,9 @@ final kScreenHeight =
 final kScreenWidth =
     WidgetsBinding.instance.platformDispatcher.views.first.display.size.width /
         kDevicePixelRatio;
+final kSafeAreaPaddingTop =
+    WidgetsBinding.instance.platformDispatcher.views.first.padding.top /
+        kDevicePixelRatio;
 final kSafeAreaPaddingBottom =
     WidgetsBinding.instance.platformDispatcher.views.first.padding.bottom /
         kDevicePixelRatio;
@@ -47,7 +50,18 @@ final double kPanelFeaturesMaxHeight =
     kScreenHeight / 3 - kSafeAreaPaddingBottom;
 final double kPanelShuffleMaxHeight =
     kScreenHeight / 3 - kSafeAreaPaddingBottom;
-final double kPanelFeatureListMaxHeight = kScreenHeight - 300;
+
+final double kMapUsableScreenHeight = kScreenHeight -
+    kAppBarHeight -
+    kSafeAreaPaddingTop -
+    kAndroidTopOffset;
+
+final double kPanelFeatureListMaxHeight = (kMapUsableScreenHeight -
+        kOptionsPillHeight -
+        kMapUiTopOffset -
+        kPanelFabHeight -
+        kSearchBarHeight) *
+    1;
 
 const double kPanelFabHeight = 8;
 
@@ -93,7 +107,6 @@ const List<String> kMapStyleOptions = [
   kMapStyleSatellite,
 ];
 
-final kMapTopOffset = Platform.isAndroid ? 8.0 : 0.0;
 final kAndroidTopOffset = Platform.isAndroid ? 8.0 : 0.0;
 const kMapUiPadding = 14.0;
 const kCompassTopOffset = 32.0;

@@ -8,6 +8,7 @@ import 'package:trailblaze/constants/route_info_constants.dart';
 import 'package:trailblaze/data/view_mode_context.dart';
 import 'package:trailblaze/managers/map_state_notifier.dart';
 import 'package:trailblaze/managers/place_manager.dart';
+import 'package:trailblaze/screens/distance_selector_screen.dart';
 import 'package:trailblaze/util/export_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/util/polyline_helper.dart';
@@ -86,7 +87,6 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       ViewModeContext(viewMode: ViewMode.search);
   late Completer<void> _mapInitializedCompleter;
   AnnotationHelper? annotationHelper;
-  double _panelOptionsHeight = kPanelFabHeight;
   double _panelHeight = 0;
   double? _selectedDistanceMeters = kDefaultFeatureDistanceMeters;
   mbm.Position? _userLocation;
@@ -101,9 +101,6 @@ class _MapWidgetState extends ConsumerState<MapWidget>
 
   List<double>? _currentOriginCoordinates;
   List<double>? _nextOriginCoordinates;
-
-  // Queried coordinates of features.
-  List<double>? _featureQueriedCoordinates;
 
   final geocoding = GeoCoding(
     apiKey: kMapboxAccessToken,
@@ -287,7 +284,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     final cameraForCoordinates = await CameraHelper.cameraOptionsForCoordinates(
       _mapboxMap,
       coordinatesList,
-      _getCameraPadding(),
+      _getCameraPadding(ignoreBottom: true),
       height,
       width,
     );
@@ -320,7 +317,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   }
 
   Future<void> _loadParks(double distanceMeters) async {
-    if (_nextOriginCoordinates == null) {
+    if (_currentOriginCoordinates == null) {
       UiHelper.showSnackBar(context, "Could not find selected location.");
       return;
     }
@@ -337,20 +334,14 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       final featuresPromise = FeatureManager.loadFeatures(
           context,
           (_selectedDistanceMeters ?? kDefaultFeatureDistanceMeters).toInt(),
-          _nextOriginCoordinates!);
-
-      setState(() {
-        _featureQueriedCoordinates = _nextOriginCoordinates;
-      });
+          _currentOriginCoordinates!);
 
       features = await featuresPromise;
-
       if (features.isEmpty) {
         features = null;
-        await _togglePanel(true);
-      } else {
-        _setParks(features);
       }
+
+      _setParks(features);
     }
 
     setState(() {
@@ -538,9 +529,9 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     return position;
   }
 
-  mbm.MbxEdgeInsets _getCameraPadding() {
+  mbm.MbxEdgeInsets _getCameraPadding({bool ignoreBottom = false}) {
     double topOffset = _getTopOffset();
-    double bottomOffset = _getBottomOffset();
+    double bottomOffset = !ignoreBottom ? _getBottomOffset() : 0;
 
     // Offset bottom by refresh button height.
     if (_viewModeContext.viewMode == ViewMode.shuffle) {
@@ -900,7 +891,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   Future<void> _goToUserLocation({bool isAnimated = true}) async {
     geo.Position? position = await _getCurrentPosition();
     mbm.CameraOptions options = _cameraForUserPosition(position);
-    _setNextOriginCoordinates(options);
+    _setOriginCoordinates(options);
     await _mapFlyToOptions(options, isAnimated: isAnimated);
     _updateCameraState();
   }
@@ -926,10 +917,10 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     );
   }
 
-  void _setNextOriginCoordinates(mbm.CameraOptions options) {
+  void _setOriginCoordinates(mbm.CameraOptions options) {
     if (options.center != null) {
       setState(() {
-        _nextOriginCoordinates = [
+        _currentOriginCoordinates = [
           options.center?.coordinates.lng.toDouble() ?? 0,
           options.center?.coordinates.lat.toDouble() ?? 0
         ];
@@ -966,7 +957,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     if (place != null) {
       if (place.center != null) {
         setState(() {
-          _nextOriginCoordinates = [
+          _currentOriginCoordinates = [
             place.center?.long ?? 0,
             place.center?.lat ?? 0
           ];
@@ -1097,7 +1088,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             _viewModeContext.features != null) {
       final cameraState = await _mapboxMap.getCameraState();
       final closestFeature = await AnnotationHelper.getFeatureByClickProximity(
-          _viewModeContext.features!,
+          _viewModeContext.features ?? [],
           coordinate.lng,
           coordinate.lat,
           cameraState.zoom);
@@ -1360,7 +1351,9 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   void _onMapOriginAction(bool isUpdate) {
     if (isUpdate) {
       setState(() {
-        _currentOriginCoordinates = _nextOriginCoordinates;
+        if (_nextOriginCoordinates != null) {
+          _currentOriginCoordinates = _nextOriginCoordinates;
+        }
         _isOriginChanged = false;
       });
 
@@ -1383,7 +1376,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     if (_viewModeContext.viewMode == ViewMode.parks) {
       await _setViewMode(ViewMode.search);
 
-      // Reset to clean previous ViewMode state.
+      // Reset previous ViewMode state.
       setState(() {
         _previousViewModeContext = _viewModeContext;
       });
@@ -1391,12 +1384,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       _onSelectPlace(null);
     } else {
       FirebaseHelper.logScreen("NearbyParks");
-      final features = _viewModeContext.features;
-      if (features == null ||
-          features.isEmpty ||
-          _nextOriginCoordinates != _featureQueriedCoordinates) {
-        _loadParks(kDefaultFeatureDistanceMeters);
-      }
+      // TODO use cache for park queries
+      _loadParks(kDefaultFeatureDistanceMeters);
     }
   }
 
@@ -1546,7 +1535,6 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     String? categoryId,
     List<tb.Feature>? features,
   }) async {
-    final prevPanelPos = _previousViewModeContext.panelPos;
     setState(() {
       _previousViewModeContext = _viewModeContext;
       _viewModeContext = ViewModeContext(
@@ -1559,17 +1547,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     // Perform actions based on previous ViewMode (usually cleaning up).
     if (_previousViewModeContext.viewMode == ViewMode.parks ||
         _previousViewModeContext.viewMode == ViewMode.multiFeatures) {
-      // Get current panel position (rounded) to reapply later.
-      final panelPos = _panelController.isAttached
-          ? double.parse(_panelController.panelPosition.toStringAsFixed(1))
-          : null;
-
       setState(() {
         _previousViewModeContext = ViewModeContext(
           viewMode: _previousViewModeContext.viewMode,
           categoryId: _previousViewModeContext.categoryId,
           features: _previousViewModeContext.features,
-          panelPos: panelPos,
         );
         _isOriginChanged = false;
         _selectedPlace = null;
@@ -1586,24 +1568,23 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     // Perform actions based on new ViewMode
     if (_viewModeContext.viewMode == ViewMode.parks ||
         _viewModeContext.viewMode == ViewMode.multiFeatures) {
+      if (_viewModeContext.features != null) {
+        _togglePanel(false);
+      } else {
+        _togglePanel(true, toSnapPoint: true);
+      }
       setState(() {
         _selectedPlace = null;
       });
       _updateFeatures();
-    }
-
-    if (_panelController.isAttached) {
-      if (prevPanelPos == null || prevPanelPos < 0.5) {
-        _panelController.close();
-      } else {
-        _panelController.animatePanelToPosition(prevPanelPos);
-      }
+    } else if (_viewModeContext.viewMode == ViewMode.search) {
+      _togglePanel(false);
     }
 
     _setMapControlSettings();
   }
 
-  void _setParks(List<tb.Feature> features) async {
+  void _setParks(List<tb.Feature>? features) async {
     await _setViewMode(
       ViewMode.parks,
       categoryId: 'park',
@@ -1737,11 +1718,6 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                   _viewModeContext.viewMode == ViewMode.multiFeatures) {
                 return;
               }
-              setState(() {
-                _panelOptionsHeight =
-                    pos * (_getMaxPanelHeight() - _getMinPanelHeight()) +
-                        kPanelFabHeight;
-              });
             },
             borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(16.0), bottom: Radius.zero),
@@ -1751,7 +1727,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                   _togglePanel(true);
                 },
                 child: Container(
-                  color: Colors.red,
+                  color: Colors.transparent,
                   child: widget.forceTopBottomPadding
                       ? SafeArea(
                           child: Column(
@@ -1854,7 +1830,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                       Positioned(
                         top: (widget.forceTopBottomPadding == true)
                             ? 8
-                            : kMapTopOffset,
+                            : kAndroidTopOffset,
                         left: 0,
                         right: 0,
                         child: Column(
@@ -1922,39 +1898,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                                             foregroundColor: Colors.red,
                                           )),
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                          16, 8, 16, 0),
-                                      child: TapRegion(
-                                        onTapOutside: _onTapOutsideMapStyle,
-                                        onTapInside: _onTapInsideMapStyle,
-                                        child: MapStyleSelector(
-                                          onStyleChanged: _onStyleChanged,
-                                          hasTouchContext:
-                                              _mapStyleTouchContext,
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                          16, 8, 16, 0),
-                                      child: IconButtonSmall(
-                                        icon: Icons.navigation_rounded,
-                                        onTap: _onGpsButtonPressed,
-                                      ),
-                                    ),
-                                    Visibility(
-                                      visible: _selectedRoute != null &&
-                                          !_isCameraLocked,
-                                      child: Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                            16, 8, 16, 0),
-                                        child: IconButtonSmall(
-                                          icon: Icons.crop_free_rounded,
-                                          onTap: _onFlyToRoute,
-                                        ),
-                                      ),
-                                    ),
+                                    _showMapControlButtons(),
                                   ],
                                 ),
                               ],
@@ -2032,13 +1976,51 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
               ),
+            )
+          else if (_viewModeContext.viewMode == ViewMode.parks)
+            Positioned(
+              bottom: bottomOffset + kPanelFabHeight,
+              right: 16,
+              child: IconButtonSmall(
+                text:
+                    'Distance ${FormatHelper.formatDistance(_selectedDistanceMeters, noRemainder: true)}',
+                icon: Icons.edit,
+                iconFontSize: 28.0,
+                textFontSize: 17,
+                onTap: () async {
+                  FirebaseHelper.logScreen("DistanceSelectorScreen(Features)");
+                  final distanceKm = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DistanceSelectorScreen(
+                        center: [
+                          _currentOriginCoordinates?[0] ??
+                              _userLocation!.lng.toDouble(),
+                          _currentOriginCoordinates?[1] ??
+                              _userLocation!.lat.toDouble()
+                        ],
+                        initialDistanceMeters: _selectedDistanceMeters ??
+                            kDefaultFeatureDistanceMeters,
+                        minDistanceKm: kMinFeatureDistanceMeters / 1000,
+                        maxDistanceKm: kMaxFeatureDistanceMeters / 1000,
+                        minZoom: kMinFeatureFilterCameraZoom,
+                        maxZoom: kMaxFeatureFilterCameraZoom,
+                      ),
+                    ),
+                  );
+
+                  _onFeatureDistanceChanged(distanceKm * 1000);
+                },
+                backgroundColor: Theme.of(context).colorScheme.tertiary,
+                foregroundColor: Colors.white,
+              ),
             ),
           if (_selectedRoute != null &&
                   _viewModeContext.viewMode == ViewMode.directions ||
               _viewModeContext.viewMode == ViewMode.shuffle)
             Positioned(
               right: 4,
-              bottom: _panelOptionsHeight - 10,
+              bottom: bottomOffset - 50,
               child: PopupMenuButton(
                 key: _shareWidgetKey,
                 enabled: _selectedRoute?.coordinates?.length ==
@@ -2057,6 +2039,53 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         ],
       ),
     );
+  }
+
+  Widget _showMapControlButtons() {
+    final List<Widget> buttons = [];
+    if (!_panelController.isAttached ||
+        (_getMaxPanelHeight() <
+            kPanelFeatureListMaxHeight - 2 * kOptionsPillHeight) ||
+        (_getMaxPanelHeight() >=
+                kPanelFeatureListMaxHeight - 2 * kOptionsPillHeight &&
+            _panelPos <= 0.7)) {
+      buttons.addAll(
+        [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: TapRegion(
+              onTapOutside: _onTapOutsideMapStyle,
+              onTapInside: _onTapInsideMapStyle,
+              child: MapStyleSelector(
+                onStyleChanged: _onStyleChanged,
+                hasTouchContext: _mapStyleTouchContext,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: IconButtonSmall(
+              icon: Icons.navigation_rounded,
+              onTap: _onGpsButtonPressed,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (_selectedRoute != null && !_isCameraLocked) {
+      buttons.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: IconButtonSmall(
+            icon: Icons.crop_free_rounded,
+            onTap: _onFlyToRoute,
+          ),
+        ),
+      );
+    }
+
+    return buttons.isNotEmpty ? Column(children: buttons) : const SizedBox();
   }
 
   Widget _showDirectionsTopBar() {
@@ -2212,9 +2241,6 @@ class _MapWidgetState extends ConsumerState<MapWidget>
               onSetHeight: (height) {
                 setState(() {
                   _panelHeight = height;
-                  _panelOptionsHeight = _panelController.panelPosition *
-                          (_getMaxPanelHeight() - _getMinPanelHeight()) +
-                      kPanelFabHeight;
                 });
               },
             ),
