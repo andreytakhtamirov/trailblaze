@@ -33,6 +33,7 @@ class Feature {
     );
 
     f.tags['address'] = address;
+    f.tags['type'] = 'park';
   }
 
   factory Feature.fromPlace(MapBoxPlace place) {

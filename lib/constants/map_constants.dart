@@ -51,22 +51,16 @@ final double kPanelFeaturesMaxHeight =
 final double kPanelShuffleMaxHeight =
     kScreenHeight / 3 - kSafeAreaPaddingBottom;
 
-final double kMapUsableScreenHeight = kScreenHeight -
-    kAppBarHeight -
-    kSafeAreaPaddingTop -
-    kAndroidTopOffset;
+final double kAppPadding =
+    kAppBarHeight + kSafeAreaPaddingTop + kAndroidTopOffset;
 
-final double kPanelFeatureListMaxHeight = (kMapUsableScreenHeight -
-        kOptionsPillHeight -
-        kMapUiTopOffset -
-        kPanelFabHeight -
-        kSearchBarHeight) *
-    1;
+const double kMapExtraWidgetsHeight = kOptionsPillHeight +
+    kMapUiTopOffset +
+    kPanelFabHeight +
+    kSearchBarHeight;
 
 const double kPanelFabHeight = 8;
-
 final double kFeatureItemHeight = kScreenHeight / 6;
-
 const double kDefaultMapZoom = 12;
 
 final CameraState kDefaultCameraState = CameraState(

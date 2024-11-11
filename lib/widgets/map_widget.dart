@@ -1463,12 +1463,16 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       return 0;
     } else if (_viewModeContext.viewMode == ViewMode.parks ||
         _viewModeContext.viewMode == ViewMode.multiFeatures) {
-      return kPanelFeatureListMaxHeight;
+      final size = MediaQuery.sizeOf(context);
+      final double screenHeight =
+          size.height - kAppPadding - kMapExtraWidgetsHeight;
+      return screenHeight;
     } else if (_viewModeContext.viewMode == ViewMode.directions ||
         _viewModeContext.viewMode == ViewMode.shuffle) {
-      final size = MediaQuery.of(context);
-      final topPadding = size.padding.top;
-      final screenHeight = size.size.height;
+      final padding = MediaQuery.paddingOf(context);
+      final size = MediaQuery.sizeOf(context);
+      final topPadding = padding.top;
+      final screenHeight = size.height;
       if (screenHeight - kAppBarHeight < _panelHeight + kPanelGrabberHeight) {
         return screenHeight -
             topPadding -
@@ -2045,9 +2049,10 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     final List<Widget> buttons = [];
     if (!_panelController.isAttached ||
         (_getMaxPanelHeight() <
-            kPanelFeatureListMaxHeight - 2 * kOptionsPillHeight) ||
+            MediaQuery.sizeOf(context).height / 2 - 2 * kOptionsPillHeight) ||
         (_getMaxPanelHeight() >=
-                kPanelFeatureListMaxHeight - 2 * kOptionsPillHeight &&
+                MediaQuery.sizeOf(context).height / 2 -
+                    2 * kOptionsPillHeight &&
             _panelPos <= 0.7)) {
       buttons.addAll(
         [

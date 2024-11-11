@@ -67,7 +67,9 @@ class FeatureItem extends StatelessWidget {
                                   padding:
                                       const EdgeInsets.symmetric(horizontal: 8),
                                   child: Icon(
-                                    Icons.forest_rounded, // TODO type dependent icon
+                                    feature.tags['type'] == 'park'
+                                        ? Icons.forest_rounded
+                                        : Icons.location_on,
                                     color:
                                         Theme.of(context).colorScheme.tertiary,
                                   ),
