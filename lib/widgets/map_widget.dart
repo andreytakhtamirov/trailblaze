@@ -307,7 +307,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     });
   }
 
-  // TODO new isochrone filter for parks
+  void _onFeatureDirectionsClick(tb.Feature feature) async {
+    await _setSelectedFeature(feature);
+    _onDirectionsClicked();
+  }
+
   void _onFeatureDistanceChanged(double distanceMeters) {
     setState(() {
       _selectedDistanceMeters = distanceMeters;
@@ -1558,7 +1562,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           features: _previousViewModeContext.features,
         );
         _isOriginChanged = false;
-        _selectedPlace = null;
+
+        // Don't reset selected place if going to directions view from parks/multi features.
+        if (_viewModeContext.viewMode != ViewMode.directions) {
+          _selectedPlace = null;
+        }
       });
       annotationHelper?.clearPointAnnotations();
     } else if ((_previousViewModeContext.viewMode == ViewMode.directions ||
@@ -2216,6 +2224,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             userLocation: _userLocation,
             panelPos: _panelPos,
             onSelectFeature: _onManuallySelectFeature,
+            onDirectionsClick: _onFeatureDirectionsClick,
           ),
         ];
         break;
@@ -2229,6 +2238,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             userLocation: _userLocation,
             panelPos: _panelPos,
             onSelectFeature: _onManuallySelectFeature,
+            onDirectionsClick: _onFeatureDirectionsClick,
           ),
         ];
         break;

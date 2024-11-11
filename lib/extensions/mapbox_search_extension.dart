@@ -143,10 +143,7 @@ extension MapBoxSearchExtension on SearchBoxAPI {
       String? sessionUUID = await DeviceInfoHelper.getDeviceDetails();
       final uri = _createUrl(apiKey, sessionUUID, categoryName, proximity,
           origin, poi, true, bbox);
-      print(uri.toString());
-
       final response = await client.get(uri);
-      print("RESPONSE: ${response.statusCode}");
       if (response.statusCode != 200) {
         return (
           success: null,

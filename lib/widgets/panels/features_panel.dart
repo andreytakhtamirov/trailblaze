@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:trailblaze/data/feature.dart';
@@ -15,6 +13,7 @@ class FeaturesPanel extends StatelessWidget {
     this.userLocation,
     required this.panelPos,
     required this.onSelectFeature,
+    required this.onDirectionsClick,
   }) : super(key: key);
   final ScrollController scrollController;
   final String categoryName;
@@ -22,6 +21,7 @@ class FeaturesPanel extends StatelessWidget {
   final mbm.Position? userLocation;
   final double panelPos;
   final Function(Feature feature) onSelectFeature;
+  final Function(Feature feature) onDirectionsClick;
 
   @override
   Widget build(BuildContext context) {
@@ -50,10 +50,7 @@ class FeaturesPanel extends StatelessWidget {
                               onSelectFeature(features![index]);
                             },
                             onDirections: () {
-                              log('Directions'); // TODO shortcut actions
-                            },
-                            onSave: () {
-                              log('Save');
+                              onDirectionsClick(features![index]);
                             },
                           );
                         },

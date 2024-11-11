@@ -86,9 +86,6 @@ class AppDatabase extends _$AppDatabase {
       }
     }
 
-    final count = await searchFeatures.count().getSingle();
-
-    log("FEATURES ${count}");
     return into(searchFeatures).insert(feature);
   }
 }

@@ -67,10 +67,12 @@ class PlaceManager {
         }
         final name = f.properties?['name'];
         final fullAddress = f.properties?['full_address'];
+        final mapboxId = f.properties?['mapbox_id'];
         final point = mbm.Point.fromJson(f.geometry!.toJson());
 
         final fe = tb.Feature.fromPlace(
           MapBoxPlace(
+            id: mapboxId,
             placeName: name,
             properties: Properties(address: fullAddress),
             center: (
@@ -88,13 +90,11 @@ class PlaceManager {
     return completer.future;
   }
 
-  // TODO clean up
   Future<MapBoxPlace?> resolveFeature(SuggestionTb s) async {
     MapBoxPlace? place = await getPlaceById(s.mapboxId);
 
     // Place is cached
     if (place != null) {
-      log("USING CACHED PLACE ${place.placeName}");
       db.updateLastUsed(place.id!);
       return place;
     }
@@ -102,7 +102,6 @@ class PlaceManager {
     // Place doesn't exist in cache
     // Fetch full feature info and build place.
     final feature = await fetchFeature(s);
-    log("FEATURE ${feature == null}");
     if (feature != null) {
       place = MapBoxPlace(
         placeName: SearchItemHelper.titleLabelForFeatureType(s),
@@ -117,7 +116,6 @@ class PlaceManager {
         place.text!,
         jsonEncode(feature.geometry.toJson()),
       );
-      log("WRITING PLACE ${place.toJson()}");
     }
 
     return place;
@@ -129,10 +127,9 @@ class PlaceManager {
         await searchBoxAPI.getPlaceById(kMapboxAccessToken, s.mapboxId);
 
     result.fold((response) async {
-      log("RESPONSE ${response.features.length} ${s.mapboxId}");
       completer.complete(response.features.firstOrNull);
     }, (failure) {
-      log("Failed to retrieve Feature details ${failure.error}");
+      log("Failed to retrieve feature details ${failure.error}");
       completer.complete(null);
     });
 
@@ -159,6 +156,16 @@ class PlaceManager {
     }
 
     return featureToPlace(feature);
+  }
+
+  Future<bool> doesPlaceExist(String mapboxId) async {
+    final feature = await getPlaceById(mapboxId);
+
+    if (feature == null) {
+      return false;
+    }
+
+    return true;
   }
 
   Future<List<MapBoxPlace>> mostRecentPlaces(int limit) async {
