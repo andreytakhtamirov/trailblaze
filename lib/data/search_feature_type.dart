@@ -4,7 +4,8 @@ enum SearchFeatureType {
   address('address'),
   place('place'),
   neighborhood('neighborhood'),
-  history('history');
+  history('history'),
+  userLocation('userLocation');
 
   final String value;
 

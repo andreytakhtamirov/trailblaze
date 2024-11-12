@@ -5,6 +5,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:mapbox_search/models/location.dart';
 import 'package:http/http.dart' as http;
+import 'package:trailblaze/constants/request_api_constants.dart';
 import 'package:trailblaze/data/search_feature_type.dart';
 import 'package:trailblaze/util/device_info_helper.dart';
 
@@ -13,18 +14,18 @@ part "mapbox_search_extension.g.dart";
 final Uri _baseUri = Uri.parse('https://api.mapbox.com/search/searchbox/v1/');
 
 extension MapBoxSearchExtension on SearchBoxAPI {
-  Uri _createUrl(
-    String apiKey,
-    String sessionUUID,
-    String queryOrId,
-    Proximity proximity,
-    Proximity origin, [
-    List<POICategory> poi = const [],
-    bool isCategory = false,
-    BBox? bbox,
-  ]) {
-    final typesStr = types.map((e) => e.value).toList(growable: true);
-    typesStr.add(SearchFeatureType.category.value);
+  Uri _createUrl(String apiKey, String sessionUUID, String queryOrId,
+      Proximity proximity, Proximity origin,
+      {List<POICategory> poi = const [],
+      bool isCategory = false,
+      BBox? bbox,
+      List<SearchFeatureType>? customTypes}) {
+    final List<String> typesStr;
+    if (customTypes != null) {
+      typesStr = customTypes.map((e) => e.value).toList();
+    } else {
+      typesStr = types.map((e) => e.value).toList();
+    }
 
     final finalUri = Uri(
       scheme: _baseUri.scheme,
@@ -46,7 +47,7 @@ extension MapBoxSearchExtension on SearchBoxAPI {
         if (!isCategory) 'session_token': sessionUUID,
         'navigation_profile': 'walking',
         if (country != null) 'country': country,
-        if (limit != null) 'limit': limit.toString(),
+        'limit': isCategory ? kCategoryResultsLimit.toString() : kSuggestionResultsLimit.toString(),
         if (language != null) 'language': language,
         if (!isCategory && types.isNotEmpty) 'types': typesStr.join(','),
         if (bbox != null) 'bbox': bbox.asString,
@@ -100,11 +101,20 @@ extension MapBoxSearchExtension on SearchBoxAPI {
     Proximity proximity = const NoProximity(),
     Proximity origin = const NoProximity(),
     List<POICategory> poi = const [],
+    List<SearchFeatureType>? types,
   }) async {
     try {
       String? sessionUUID = await DeviceInfoHelper.getDeviceDetails();
       final uri = _createUrl(
-          apiKey, sessionUUID, queryText, proximity, origin, poi, false);
+        apiKey,
+        sessionUUID,
+        queryText,
+        proximity,
+        origin,
+        poi: poi,
+        isCategory: false,
+        customTypes: types,
+      );
       final response = await client.get(uri);
       if (response.statusCode != 200) {
         return (
@@ -138,11 +148,21 @@ extension MapBoxSearchExtension on SearchBoxAPI {
     Proximity origin = const NoProximity(),
     List<POICategory> poi = const [],
     BBox? bbox,
+    List<SearchFeatureType>? types,
   }) async {
     try {
       String? sessionUUID = await DeviceInfoHelper.getDeviceDetails();
-      final uri = _createUrl(apiKey, sessionUUID, categoryName, proximity,
-          origin, poi, true, bbox);
+      final uri = _createUrl(
+        apiKey,
+        sessionUUID,
+        categoryName,
+        proximity,
+        origin,
+        poi: poi,
+        isCategory: true,
+        bbox: bbox,
+        customTypes: types,
+      );
       final response = await client.get(uri);
       if (response.statusCode != 200) {
         return (

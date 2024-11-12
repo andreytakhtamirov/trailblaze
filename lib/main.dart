@@ -46,8 +46,6 @@ class MyApp extends StatelessWidget {
             onTertiary: Color(0xFFE8951B),
             error: Color(0xFFCE1515),
             onError: Color(0xFF000000),
-            background: Color(0xFFFFFFFF),
-            onBackground: Color(0xFF000000),
             surface: Color(0xFFF6FCFF),
             onSurface: Color(0xFF000000),
           ),

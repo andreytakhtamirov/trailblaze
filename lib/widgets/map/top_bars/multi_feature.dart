@@ -59,7 +59,6 @@ class _MultiFeatureTopBarState extends State<MultiFeatureTopBar> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: PlacePicker(
-                        transparentBackground: true,
                         selectedPlace: widget.selectedPlace,
                         onSelected: widget.onSelected,
                         onSelectFeatures: widget.onSelectFeatures,

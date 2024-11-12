@@ -2,11 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:trailblaze/constants/map_constants.dart';
-import 'package:trailblaze/constants/request_api_constants.dart';
 import 'package:trailblaze/data/feature.dart' as tb;
+import 'package:trailblaze/data/search_feature_type.dart';
 import 'package:trailblaze/util/search_item_helper.dart';
 import 'package:turf/turf.dart' as turf;
 import 'package:drift/drift.dart';
@@ -16,15 +17,56 @@ import 'package:trailblaze/extensions/mapbox_search_extension.dart';
 
 class PlaceManager {
   static AppDatabase db = AppDatabase();
-  SearchBoxAPI searchBoxAPI = SearchBoxAPI(
-    limit: kCategoryResultsLimit,
-    types: [
-      PlaceType.address,
-      PlaceType.place,
-      PlaceType.poi,
-      PlaceType.neighborhood
-    ],
-  );
+  SearchBoxAPI searchBoxAPI = SearchBoxAPI();
+
+  final bool ignoreCategory;
+  final List<SearchFeatureType> searchTypes = [
+    SearchFeatureType.address,
+    SearchFeatureType.place,
+    SearchFeatureType.poi,
+    SearchFeatureType.neighborhood
+  ];
+
+  PlaceManager({this.ignoreCategory = false}) {
+    if (!ignoreCategory) {
+      searchTypes.add(SearchFeatureType.category);
+    }
+  }
+
+  Future<List<SuggestionTb>?> resolveSearch(
+      String query, Client client, Position? location) async {
+    Completer<List<SuggestionTb>?> completer = Completer();
+    ApiResponse<SuggestionResponseTb> result =
+        await searchBoxAPI.getSuggestionsCustom(
+      kMapboxAccessToken,
+      query,
+      client,
+      proximity: location != null
+          ? Proximity.LatLong(
+              lat: location.latitude,
+              long: location.longitude,
+            )
+          : Proximity.LocationIp(),
+      origin: location != null
+          ? Proximity.LatLong(
+              lat: location.latitude,
+              long: location.longitude,
+            )
+          : Proximity.LocationNone(),
+    );
+
+    result.fold((sr) async {
+      final List<SuggestionTb> suggestions = sr.suggestions;
+      completer.complete(suggestions);
+    }, (failure) {
+      if (failure.error != null) {
+        log("Couldn't get suggestions: ${failure.error}");
+      }
+      completer.complete(null);
+    });
+
+    return completer.future;
+  }
 
   Future<List<tb.Feature>?> resolveCategory(
     Client client,
@@ -33,29 +75,27 @@ class PlaceManager {
   ) async {
     Completer<List<tb.Feature>?> completer = Completer();
     ApiResponse<mbm.FeatureCollection> result = await searchBoxAPI.getCategory(
-      kMapboxAccessToken,
-      categoryId ?? "",
-      client,
-      proximity: bounds != null
-          ? Proximity.LatLong(
-              lat: (bounds.southwest.coordinates.lat.toDouble() +
-                      bounds.northeast.coordinates.lat.toDouble()) /
-                  2,
-              long: (bounds.southwest.coordinates.lng.toDouble() +
-                      bounds.northeast.coordinates.lng.toDouble()) /
-                  2,
-            )
-          : Proximity.LocationNone(),
-      bbox: bounds != null
-          ? BBox(min: (
-              lat: bounds.southwest.coordinates.lat.toDouble(),
-              long: bounds.southwest.coordinates.lng.toDouble()
-            ), max: (
-              lat: bounds.northeast.coordinates.lat.toDouble(),
-              long: bounds.northeast.coordinates.lng.toDouble()
-            ))
-          : null,
-    );
+        kMapboxAccessToken, categoryId ?? "", client,
+        proximity: bounds != null
+            ? Proximity.LatLong(
+                lat: (bounds.southwest.coordinates.lat.toDouble() +
+                        bounds.northeast.coordinates.lat.toDouble()) /
+                    2,
+                long: (bounds.southwest.coordinates.lng.toDouble() +
+                        bounds.northeast.coordinates.lng.toDouble()) /
+                    2,
+              )
+            : Proximity.LocationNone(),
+        bbox: bounds != null
+            ? BBox(min: (
+                lat: bounds.southwest.coordinates.lat.toDouble(),
+                long: bounds.southwest.coordinates.lng.toDouble()
+              ), max: (
+                lat: bounds.northeast.coordinates.lat.toDouble(),
+                long: bounds.northeast.coordinates.lng.toDouble()
+              ))
+            : null,
+        types: searchTypes);
 
     result.fold((response) async {
       List<turf.Feature<turf.GeometryObject>> features = response.features;
