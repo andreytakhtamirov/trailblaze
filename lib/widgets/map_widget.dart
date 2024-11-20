@@ -732,9 +732,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
 
   Future<void> _updateRouteSelected(
       TrailblazeRoute route, bool isSelected) async {
-    // Make sure route is removed before we add it again.
-    await _removeRouteLayer(route);
     route.setActive(isSelected);
+    await _mapboxMap.style.updateLayer(route.lineLayer);
     await _drawRoute(route);
   }
 
