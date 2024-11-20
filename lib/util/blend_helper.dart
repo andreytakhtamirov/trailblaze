@@ -9,10 +9,8 @@ class BlendHelper {
   Future<List<int>> getMinMaxInfluences(
       MapBoxPlace? startingLocation, MapBoxPlace? endingLocation) async {
     final manhattanDistance = DistanceHelper.manhattanDistance(
-        DistanceHelper.centerToPoint(
-            startingLocation?.center?.cast<double>() ?? [0, 0]),
-        DistanceHelper.centerToPoint(
-            endingLocation?.center?.cast<double>() ?? [0, 0]));
+        DistanceHelper.placeToPoint(startingLocation),
+        DistanceHelper.placeToPoint(endingLocation));
     final minDistance = manhattanDistance.toDouble();
     final maxDistance =
         manhattanDistance.toDouble() * kBlendMaxInfluenceDistanceFactor;
@@ -28,15 +26,11 @@ class BlendHelper {
   Future<int> _getInfluenceForDistance(MapBoxPlace? startingLocation,
       MapBoxPlace? endingLocation, num target) async {
     final euclideanDistance = DistanceHelper.euclideanDistance(
-        DistanceHelper.centerToPoint(
-            startingLocation?.center?.cast<double>() ?? [0, 0]),
-        DistanceHelper.centerToPoint(
-            endingLocation?.center?.cast<double>() ?? [0, 0]));
+        DistanceHelper.placeToPoint(startingLocation),
+        DistanceHelper.placeToPoint(endingLocation));
     final manhattanDistance = DistanceHelper.manhattanDistance(
-        DistanceHelper.centerToPoint(
-            startingLocation?.center?.cast<double>() ?? [0, 0]),
-        DistanceHelper.centerToPoint(
-            endingLocation?.center?.cast<double>() ?? [0, 0]));
+        DistanceHelper.placeToPoint(startingLocation),
+        DistanceHelper.placeToPoint(endingLocation));
 
     final blendResult =
         _engine.predictForData(euclideanDistance, manhattanDistance, target);

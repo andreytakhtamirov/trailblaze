@@ -16,6 +16,9 @@ final kScreenHeight =
 final kScreenWidth =
     WidgetsBinding.instance.platformDispatcher.views.first.display.size.width /
         kDevicePixelRatio;
+final kSafeAreaPaddingTop =
+    WidgetsBinding.instance.platformDispatcher.views.first.padding.top /
+        kDevicePixelRatio;
 final kSafeAreaPaddingBottom =
     WidgetsBinding.instance.platformDispatcher.views.first.padding.bottom /
         kDevicePixelRatio;
@@ -48,10 +51,14 @@ final double kPanelFeaturesMaxHeight =
 final double kPanelShuffleMaxHeight =
     kScreenHeight / 3 - kSafeAreaPaddingBottom;
 
-const double kPanelFabHeight = kPanelMinContentHeight + 8;
+final double kAppPadding =
+    kAppBarHeight + kSafeAreaPaddingTop + kAndroidTopOffset;
 
+const double kMapExtraWidgetsHeight =
+    kOptionsPillHeight + kMapUiTopOffset + kPanelFabHeight + kSearchBarHeight;
+
+const double kPanelFabHeight = 8;
 final double kFeatureItemHeight = kScreenHeight / 6;
-
 const double kDefaultMapZoom = 12;
 
 final CameraState kDefaultCameraState = CameraState(
@@ -92,7 +99,6 @@ const List<String> kMapStyleOptions = [
   kMapStyleSatellite,
 ];
 
-final kMapTopOffset = Platform.isAndroid ? 8.0 : 0.0;
 final kAndroidTopOffset = Platform.isAndroid ? 8.0 : 0.0;
 const kMapUiPadding = 14.0;
 const kCompassTopOffset = 32.0;
@@ -156,11 +162,3 @@ final LogoSettings kDefaultLogoSettings = LogoSettings(
     marginBottom: kAttributionBottomOffset,
     marginLeft: kLogoLeftOffset,
     marginRight: 0);
-
-enum ViewMode {
-  search,
-  directions,
-  parks,
-  shuffle,
-  metricDetails,
-}

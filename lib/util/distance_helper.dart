@@ -1,4 +1,7 @@
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
+import 'package:mapbox_search/mapbox_search.dart';
 import 'package:turf/turf.dart';
+import 'dart:math' as math;
 
 class DistanceHelper {
   static num manhattanDistance(Point coordinate1, Point coordinate2) {
@@ -13,8 +16,10 @@ class DistanceHelper {
     return distance(coordinate1, coordinate2, Unit.meters);
   }
 
-  static Point centerToPoint(List<double> center) {
-    return Point(coordinates: Position(center[0], center[1]));
+  static Point placeToPoint(MapBoxPlace? place) {
+    return Point(
+        coordinates:
+            Position(place?.center?.long ?? 0, place?.center?.lat ?? 0));
   }
 
   static Position _computeCentroid(List<Position> points) {
@@ -47,5 +52,12 @@ class DistanceHelper {
     final polygon = _sortPoints(points);
     polygon.add(polygon.first); // Add first point again to close polygon.
     return polygon;
+  }
+
+  static double calculatePixelDistance(
+      mbm.ScreenCoordinate pixel1, mbm.ScreenCoordinate pixel2) {
+    final dx = pixel1.x - pixel2.x;
+    final dy = pixel1.y - pixel2.y;
+    return math.sqrt(dx * dx + dy * dy);
   }
 }

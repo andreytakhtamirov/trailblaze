@@ -44,17 +44,18 @@ class IconButtonSmall extends StatelessWidget {
           child: ElevatedButton.icon(
             onPressed: onTap,
             style: ButtonStyle(
-              backgroundColor: MaterialStateProperty.all<Color>(
+              backgroundColor: WidgetStateProperty.all<Color>(
                 backgroundColor,
               ),
-              shape: MaterialStateProperty.all<OutlinedBorder>(
+              shape: WidgetStateProperty.all<OutlinedBorder>(
                 RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(kBorderRadius),
                 ),
               ),
-              side: MaterialStateProperty.resolveWith<BorderSide?>(
+              side: WidgetStateProperty.resolveWith<BorderSide?>(
                 (states) => hasBorder
-                    ? const BorderSide(color: Colors.grey, width: 1.0)
+                    ? BorderSide(
+                        color: foregroundColor.withOpacity(0.5), width: 0.5)
                     : null,
               ),
             ),
@@ -116,7 +117,10 @@ class IconButtonSmall extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(kBorderRadius),
             color: backgroundColor,
-            border: hasBorder ? Border.all(color: Colors.grey, width: 1.0) : null,
+            border: hasBorder
+                ? Border.all(
+                    color: foregroundColor.withOpacity(0.5), width: 0.5)
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -125,7 +129,9 @@ class IconButtonSmall extends StatelessWidget {
                 padding: const EdgeInsets.all(8.0),
                 child: Icon(
                   icon,
-                  color: isEnabled ? foregroundColor : foregroundColor.withOpacity(0.4),
+                  color: isEnabled
+                      ? foregroundColor
+                      : foregroundColor.withOpacity(0.4),
                   size: iconFontSize,
                 ),
               ),

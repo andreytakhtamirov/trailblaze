@@ -25,10 +25,7 @@ class _PlaceInfoPanelState extends State<PlaceInfoPanel> {
       return null;
     }
 
-    return DistanceHelper.euclideanDistance(
-        mbm.Point(
-            coordinates: mbm.Position(widget.selectedPlace?.center?[0] ?? 0,
-                widget.selectedPlace?.center?[1] ?? 0)),
+    return DistanceHelper.euclideanDistance(DistanceHelper.placeToPoint(widget.selectedPlace),
         mbm.Point(
           coordinates: widget.userLocation!,
         ));
@@ -98,7 +95,7 @@ class _PlaceInfoPanelState extends State<PlaceInfoPanel> {
                 children: [
                   Expanded(
                     child: Text(
-                      "Coordinates: (${widget.selectedPlace?.center?[1].toStringAsFixed(6)}, ${widget.selectedPlace?.center?[0].toStringAsFixed(6)})",
+                      "Coordinates: (${widget.selectedPlace?.center?.lat.toStringAsFixed(6)}, ${widget.selectedPlace?.center?.long.toStringAsFixed(6)})",
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(

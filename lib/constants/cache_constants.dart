@@ -1,0 +1,1 @@
+const kSearchFeatureCacheLimit = 30;

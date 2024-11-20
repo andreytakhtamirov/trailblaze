@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trailblaze/constants/map_constants.dart';
+import 'package:trailblaze/data/annotation_state.dart';
 import 'package:trailblaze/data/feature.dart' as tb;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:trailblaze/data/trailblaze_route.dart';
@@ -18,30 +19,41 @@ class AnnotationAction {
 
 class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
   final mbm.PointAnnotationManager _annotationManager;
+  final mbm.PointAnnotationManager _pointAnnotationManager;
   final mbm.CircleAnnotationManager _circleAnnotationManager;
   final mbm.CircleAnnotationManager _metricAnnotationManager;
   final mbm.CircleAnnotationManager _avoidAnnotationManager;
   final mbm.PolygonAnnotationManager _polygonAnnotationManager;
   final Function() onAvoidAnnotationClick;
 
+  late final Uint8List _poiAnnotationImage;
+  late final Uint8List _locationPinImage;
   final List<mbm.PointAnnotationOptions> pointAnnotations = [];
   final List<mbm.CircleAnnotation> circleAnnotations = [];
   List<mbm.CircleAnnotation> avoidAnnotations = [];
   final List<mbm.PolygonAnnotation> polygonAnnotations = [];
   mbm.CircleAnnotation? selectOriginAnnotation;
+  mbm.CircleAnnotation? _metricAnnotation;
 
   late final SimpleStack _avoidAnnotationChanges;
 
-  mbm.CircleAnnotation? _metricAnnotation;
+  final List<AnnotationState> _annotationStates = [];
+  final List<mbm.PointAnnotation> _clusterPoints = [];
+  Map<String, int> currentClusters = {};
+  Map<String, mbm.PointAnnotation> activeAnnotations = {};
 
   AnnotationHelper(
     this._annotationManager,
+    this._pointAnnotationManager,
     this._circleAnnotationManager,
     this._metricAnnotationManager,
     this._avoidAnnotationManager,
     this._polygonAnnotationManager,
     this.onAvoidAnnotationClick,
   ) {
+    _pointAnnotationManager.setSymbolSortKey(1);
+    _pointAnnotationManager.setIconAllowOverlap(false);
+    _pointAnnotationManager.setTextAllowOverlap(false);
     _avoidAnnotationChanges = SimpleStack<List<mbm.CircleAnnotation>>(
       [],
       onUpdate: (val) {
@@ -50,6 +62,15 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
         redrawAvoidAnnotations(val);
       },
     );
+    _loadAnnotationImages();
+  }
+
+  Future<void> _loadAnnotationImages() async {
+    ByteData bytes = await rootBundle.load('assets/feature-puck.png');
+    _poiAnnotationImage = bytes.buffer.asUint8List();
+
+    bytes = await rootBundle.load('assets/location-pin.png');
+    _locationPinImage = bytes.buffer.asUint8List();
   }
 
   static Future<tb.Feature?> getFeatureByClickProximity(
@@ -150,12 +171,9 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
   }
 
   void drawSingleAnnotation(mbm.Position coordinates) async {
-    final ByteData bytes = await rootBundle.load('assets/location-pin.png');
-    final Uint8List list = bytes.buffer.asUint8List();
-
     var options = mbm.PointAnnotationOptions(
       geometry: mbm.Point(coordinates: coordinates),
-      image: list,
+      image: _locationPinImage,
       iconSize: kLocationPinSize,
     );
     final annotation = await showAnnotation(options);
@@ -219,22 +237,218 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
     return mbm.Polygon(coordinates: [DistanceHelper.buildPolygon(coordinates)]);
   }
 
-  void drawCircleAnnotationMulti(List<mbm.Point> points) async {
-    List<mbm.CircleAnnotationOptions> optionsList = [];
-    await _circleAnnotationManager.deleteAll();
-
-    for (var i = 0; i < points.length; i++) {
-      var options = mbm.CircleAnnotationOptions(
-        geometry: points[i],
-        circleStrokeColor: Colors.red.value,
-        circleColor: Colors.white.value,
-        circleStrokeWidth: kFeaturePinSize,
-      );
-      optionsList.add(options);
+  Future<void> drawPointAnnotationMulti(List<tb.Feature> features) async {
+    List<mbm.PointAnnotationOptions> optionsList = [];
+    for (tb.Feature feature in features) {
+      final state = AnnotationState.fromFeature(feature, _poiAnnotationImage);
+      _annotationStates.add(state);
+      optionsList.add(state.options);
     }
 
-    final annotations = await _circleAnnotationManager.createMulti(optionsList);
-    circleAnnotations.addAll(annotations.whereType<mbm.CircleAnnotation>());
+    final annotations = await _pointAnnotationManager.createMulti(optionsList);
+    for (int i = 0; i < annotations.length; i++) {
+      mbm.PointAnnotation? a = annotations[i];
+      if (a == null) continue;
+      _annotationStates[i].annotation = a;
+    }
+  }
+
+  Future<void> simplifyFeatures(mbm.MapboxMap map) async {
+    // List of clusters (each cluster is a list of annotations)
+    List<List<AnnotationState>> clusters = [];
+    Set<String> visited = {};
+
+    for (int i = 0; i < _annotationStates.length; i++) {
+      final state1 = _annotationStates[i];
+      final point1 = state1.options.geometry;
+      final pixelCoord1 = await map.pixelForCoordinate(point1);
+
+      if (pixelCoord1.x == -1 || pixelCoord1.y == -1) {
+        // Coordinate isn't on screen (out of camera bounds)
+        continue;
+      }
+
+      bool merged = false;
+
+      // Check for collisions with other points
+      for (int j = i + 1; j < _annotationStates.length; j++) {
+        final state2 = _annotationStates[j];
+        final point2 = state2.options.geometry;
+        final pixelCoord2 = await map.pixelForCoordinate(point2);
+
+        if (pixelCoord2.x == -1 || pixelCoord2.y == -1) {
+          continue;
+        }
+
+        final distanceInPixels =
+            DistanceHelper.calculatePixelDistance(pixelCoord1, pixelCoord2);
+
+        if (distanceInPixels < 22) {
+          List<AnnotationState>? cluster1;
+          List<AnnotationState>? cluster2;
+
+          // Find existing clusters for state1 and state2
+          for (var cluster in clusters) {
+            if (cluster.contains(state1)) cluster1 = cluster;
+            if (cluster.contains(state2)) cluster2 = cluster;
+          }
+
+          if (cluster1 != null && cluster2 != null && cluster1 != cluster2) {
+            // Merge the two clusters if they are different
+            cluster1.addAll(cluster2);
+            clusters.remove(cluster2);
+          } else if (cluster1 != null) {
+            // Add state2 to the existing cluster of state1
+            if (!cluster1.contains(state2)) {
+              cluster1.add(state2);
+            }
+          } else if (cluster2 != null) {
+            // Add state1 to the existing cluster of state2
+            if (!cluster2.contains(state1)) {
+              cluster2.add(state1);
+            }
+          } else {
+            // Create a new cluster for both points
+            clusters.add([state1, state2]);
+          }
+
+          // Mark both points as not visible (collided)
+          state1.isClustered = true;
+          state2.isClustered = true;
+
+          merged = true;
+          visited.add(state1.id);
+          visited.add(state2.id);
+        }
+      }
+
+      // If no merge occurred, mark state1 as a single point
+      if (!merged && !visited.contains(state1.id)) {
+        state1.isClustered = false;
+        clusters.add([state1]);
+      }
+    }
+
+    for (mbm.PointAnnotation p in _clusterPoints) {
+      _pointAnnotationManager.delete(p);
+    }
+    _clusterPoints.clear();
+
+    final clustersToRemove = Set<String>.from(currentClusters.keys);
+
+    for (int i = 0; i < clusters.length; i++) {
+      if (clusters[i].length > 1) {
+        for (var state in clusters[i]) {
+          state.isClustered = true;
+        }
+
+        final p = await _createPointsCluster(clusters[i]);
+        final String clusterKey = "${p.geometry.coordinates.lat},${p.geometry.coordinates.lng}";
+        activeAnnotations[clusterKey] = p;
+        clustersToRemove.remove(clusterKey);
+      } else {
+        clusters[i][0].isClustered = false;
+      }
+    }
+
+    // Now remove clusters that no longer exist
+    for (String clusterKey in clustersToRemove) {
+      await _pointAnnotationManager.delete(activeAnnotations[clusterKey]!);
+      activeAnnotations.remove(clusterKey);
+      currentClusters.remove(clusterKey);
+    }
+
+    _drawActiveAnnotations(_annotationStates);
+  }
+
+  Future<mbm.PointAnnotation> _createPointsCluster(
+      List<AnnotationState> clustered) async {
+    double totalLatitude = 0.0;
+    double totalLongitude = 0.0;
+
+    // Find the midpoint for a collection of points to form a cluster
+    for (AnnotationState s in clustered) {
+      final coordinates = s.options.geometry.coordinates;
+      totalLatitude += coordinates.lat;
+      totalLongitude += coordinates.lng;
+
+      if (s.annotation != null) {
+        // Delete the existing annotation
+        await _pointAnnotationManager.delete(s.annotation!);
+        s.annotation = null;
+      }
+    }
+
+    final int pointCount = clustered.length;
+    final double midpointLatitude = totalLatitude / pointCount;
+    final double midpointLongitude = totalLongitude / pointCount;
+    final midpointCoordinates = mbm.Position(
+      midpointLongitude,
+      midpointLatitude,
+    );
+
+    final String clusterKey = "$midpointLatitude,$midpointLongitude";
+    // Check if the cluster already exists or needs to be redrawn
+    if (currentClusters.containsKey(clusterKey)) {
+      if (currentClusters[clusterKey] == pointCount) {
+        // No change in the cluster, no need to redraw
+        return activeAnnotations[clusterKey]!;
+      } else {
+        // Cluster count changed, remove the old annotation and redraw
+        await _pointAnnotationManager.delete(activeAnnotations[clusterKey]!);
+      }
+    }
+
+    currentClusters[clusterKey] = pointCount;
+    return _drawCluster(midpointCoordinates, pointCount.toString());
+  }
+
+  Future<mbm.PointAnnotation> _drawCluster(
+      mbm.Position coordinates, String label) async {
+    final clusterOptions = mbm.PointAnnotationOptions(
+      geometry: mbm.Point(coordinates: coordinates),
+      image: _poiAnnotationImage,
+      iconSize: kLocationPinSize + 0.6,
+      textField: label,
+      textHaloWidth: 0.5,
+      textSize: 20,
+      textMaxWidth: 2,
+      textEmissiveStrength: 1,
+      textHaloColor: const Color.fromRGBO(255, 255, 255, 0.15).value,
+      textOcclusionOpacity: 0.4,
+      textColor: Colors.white.value,
+      symbolSortKey: 10,
+    );
+
+    return await _pointAnnotationManager.create(clusterOptions);
+  }
+
+  void _drawActiveAnnotations(List<AnnotationState> annotations) async {
+    List<mbm.PointAnnotationOptions> annotationsToCreate = [];
+    List<AnnotationState> annotationStatesToCreate = [];
+
+    for (AnnotationState s in annotations) {
+      if (s.isClustered || s.annotation != null) {
+        continue;
+      }
+      annotationsToCreate.add(s.options);
+      annotationStatesToCreate.add(s);
+    }
+
+    if (annotationsToCreate.isNotEmpty) {
+      final options =
+          await _pointAnnotationManager.createMulti(annotationsToCreate);
+      for (int i = 0; i < options.length; i++) {
+        annotationStatesToCreate[i].annotation = options[i];
+      }
+    }
+  }
+
+  Future<void> clearPointAnnotations() async {
+    currentClusters.clear();
+    activeAnnotations.clear();
+    _annotationStates.clear();
+    await _pointAnnotationManager.deleteAll();
   }
 
   void drawOriginAnnotation(mbm.Position coordinates) async {

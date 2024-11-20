@@ -8,7 +8,7 @@ import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/widgets/buttons/dropdown_button.dart';
 import 'package:trailblaze/widgets/list_items/metrics_item.dart';
 
-class MetricsWidget extends StatefulWidget {
+class MetricsTopBar extends StatefulWidget {
   final TrailblazeRoute? route;
   final MetricType metricType;
   final String? metricKey;
@@ -16,7 +16,7 @@ class MetricsWidget extends StatefulWidget {
   final Function() onBackClicked;
   final Function(List<num> coordinates)? onDrawPoint;
 
-  const MetricsWidget({
+  const MetricsTopBar({
     super.key,
     required this.route,
     required this.metricType,
@@ -27,10 +27,10 @@ class MetricsWidget extends StatefulWidget {
   });
 
   @override
-  State<MetricsWidget> createState() => _MetricsWidgetState();
+  State<MetricsTopBar> createState() => _MetricsTopBarState();
 }
 
-class _MetricsWidgetState extends State<MetricsWidget> {
+class _MetricsTopBarState extends State<MetricsTopBar> {
   late List<String> _keys;
   bool _isExpanded = false;
   double? _gridItemHeight;
@@ -45,7 +45,7 @@ class _MetricsWidgetState extends State<MetricsWidget> {
   }
 
   @override
-  void didUpdateWidget(covariant MetricsWidget oldWidget) {
+  void didUpdateWidget(covariant MetricsTopBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.metricType != oldWidget.metricType ||
         widget.route != oldWidget.route) {

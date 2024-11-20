@@ -8,15 +8,15 @@ class SetOriginButton extends StatelessWidget {
 
   ButtonStyle _getElevatedStyle(BuildContext context) {
     return ButtonStyle(
-      elevation: MaterialStateProperty.all<double>(4),
-      shadowColor: MaterialStateProperty.all<Color>(Colors.black),
-      backgroundColor: MaterialStateProperty.all<Color>(
-        Theme.of(context).colorScheme.primary.withOpacity(0.95),
+      elevation: WidgetStateProperty.all<double>(11),
+      shadowColor: WidgetStateProperty.all<Color>(Colors.black),
+      backgroundColor: WidgetStateProperty.all<Color>(
+        Colors.blueAccent.withOpacity(0.95),
       ),
-      shape: MaterialStateProperty.all<OutlinedBorder>(
+      shape: WidgetStateProperty.all<OutlinedBorder>(
         RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),
-          side: const BorderSide(color: Colors.black, width: 0.1),
+          side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 0),
         ),
       ),
     );
@@ -39,7 +39,7 @@ class SetOriginButton extends StatelessWidget {
           onPressed: () => {onAction(true)},
           style: _getElevatedStyle(context),
           child: const SizedBox(
-            height: 50,
+            height: 45,
             width: 100,
             child: FittedBox(
               fit: BoxFit.scaleDown,

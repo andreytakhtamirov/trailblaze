@@ -1,6 +1,8 @@
 import '../data/transportation_mode.dart';
 
 const geocodeResultsLimit = 5;
+const kCategoryResultsLimit = 25;
+const kSuggestionResultsLimit = 10;
 
 const kMapboxRoutePrecision = 6;
 const kGraphhopperRoutePrecision = 5;
@@ -10,7 +12,6 @@ const kGraphhopperRouteGeometryKey = 'points';
 
 const kDefaultTransportationMode = TransportationMode.none;
 
-const String staticMapStyle = 'streets-v12';
 const int kStaticMapWidth = 1200;
 const int kStaticMapHeight = 700;
 

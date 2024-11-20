@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:mapbox_search/mapbox_search.dart' as mbs;
 import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/data/app_settings.dart';
 import 'package:trailblaze/tabs/discover.dart';
@@ -18,6 +19,7 @@ Future<void> main() async {
   await FirebaseHelper.init();
   AppSettings.init();
   MapboxOptions.setAccessToken(kMapboxAccessToken);
+  mbs.MapBoxSearch.init(kMapboxAccessToken);
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -44,8 +46,6 @@ class MyApp extends StatelessWidget {
             onTertiary: Color(0xFFE8951B),
             error: Color(0xFFCE1515),
             onError: Color(0xFF000000),
-            background: Color(0xFFFFFFFF),
-            onBackground: Color(0xFF000000),
             surface: Color(0xFFF6FCFF),
             onSurface: Color(0xFF000000),
           ),
