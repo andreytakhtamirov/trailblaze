@@ -371,15 +371,345 @@ class SearchFeaturesCompanion extends UpdateCompanion<SearchFeature> {
   }
 }
 
+class $NearbyParksTable extends NearbyParks
+    with TableInfo<$NearbyParksTable, NearbyPark> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NearbyParksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _distanceMetersMeta =
+      const VerificationMeta('distanceMeters');
+  @override
+  late final GeneratedColumn<int> distanceMeters = GeneratedColumn<int>(
+      'distance_meters', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _latitudeMeta =
+      const VerificationMeta('latitude');
+  @override
+  late final GeneratedColumn<double> latitude = GeneratedColumn<double>(
+      'latitude', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _longitudeMeta =
+      const VerificationMeta('longitude');
+  @override
+  late final GeneratedColumn<double> longitude = GeneratedColumn<double>(
+      'longitude', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _featuresMeta =
+      const VerificationMeta('features');
+  @override
+  late final GeneratedColumn<String> features = GeneratedColumn<String>(
+      'features', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _lastUsedMeta =
+      const VerificationMeta('lastUsed');
+  @override
+  late final GeneratedColumn<int> lastUsed = GeneratedColumn<int>(
+      'last_used', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, distanceMeters, latitude, longitude, features, lastUsed];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nearby_parks';
+  @override
+  VerificationContext validateIntegrity(Insertable<NearbyPark> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('distance_meters')) {
+      context.handle(
+          _distanceMetersMeta,
+          distanceMeters.isAcceptableOrUnknown(
+              data['distance_meters']!, _distanceMetersMeta));
+    } else if (isInserting) {
+      context.missing(_distanceMetersMeta);
+    }
+    if (data.containsKey('latitude')) {
+      context.handle(_latitudeMeta,
+          latitude.isAcceptableOrUnknown(data['latitude']!, _latitudeMeta));
+    } else if (isInserting) {
+      context.missing(_latitudeMeta);
+    }
+    if (data.containsKey('longitude')) {
+      context.handle(_longitudeMeta,
+          longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta));
+    } else if (isInserting) {
+      context.missing(_longitudeMeta);
+    }
+    if (data.containsKey('features')) {
+      context.handle(_featuresMeta,
+          features.isAcceptableOrUnknown(data['features']!, _featuresMeta));
+    } else if (isInserting) {
+      context.missing(_featuresMeta);
+    }
+    if (data.containsKey('last_used')) {
+      context.handle(_lastUsedMeta,
+          lastUsed.isAcceptableOrUnknown(data['last_used']!, _lastUsedMeta));
+    } else if (isInserting) {
+      context.missing(_lastUsedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NearbyPark map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NearbyPark(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      distanceMeters: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}distance_meters'])!,
+      latitude: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}latitude'])!,
+      longitude: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}longitude'])!,
+      features: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}features'])!,
+      lastUsed: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}last_used'])!,
+    );
+  }
+
+  @override
+  $NearbyParksTable createAlias(String alias) {
+    return $NearbyParksTable(attachedDatabase, alias);
+  }
+}
+
+class NearbyPark extends DataClass implements Insertable<NearbyPark> {
+  final int id;
+  final int distanceMeters;
+  final double latitude;
+  final double longitude;
+  final String features;
+  final int lastUsed;
+  const NearbyPark(
+      {required this.id,
+      required this.distanceMeters,
+      required this.latitude,
+      required this.longitude,
+      required this.features,
+      required this.lastUsed});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['distance_meters'] = Variable<int>(distanceMeters);
+    map['latitude'] = Variable<double>(latitude);
+    map['longitude'] = Variable<double>(longitude);
+    map['features'] = Variable<String>(features);
+    map['last_used'] = Variable<int>(lastUsed);
+    return map;
+  }
+
+  NearbyParksCompanion toCompanion(bool nullToAbsent) {
+    return NearbyParksCompanion(
+      id: Value(id),
+      distanceMeters: Value(distanceMeters),
+      latitude: Value(latitude),
+      longitude: Value(longitude),
+      features: Value(features),
+      lastUsed: Value(lastUsed),
+    );
+  }
+
+  factory NearbyPark.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NearbyPark(
+      id: serializer.fromJson<int>(json['id']),
+      distanceMeters: serializer.fromJson<int>(json['distanceMeters']),
+      latitude: serializer.fromJson<double>(json['latitude']),
+      longitude: serializer.fromJson<double>(json['longitude']),
+      features: serializer.fromJson<String>(json['features']),
+      lastUsed: serializer.fromJson<int>(json['lastUsed']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'distanceMeters': serializer.toJson<int>(distanceMeters),
+      'latitude': serializer.toJson<double>(latitude),
+      'longitude': serializer.toJson<double>(longitude),
+      'features': serializer.toJson<String>(features),
+      'lastUsed': serializer.toJson<int>(lastUsed),
+    };
+  }
+
+  NearbyPark copyWith(
+          {int? id,
+          int? distanceMeters,
+          double? latitude,
+          double? longitude,
+          String? features,
+          int? lastUsed}) =>
+      NearbyPark(
+        id: id ?? this.id,
+        distanceMeters: distanceMeters ?? this.distanceMeters,
+        latitude: latitude ?? this.latitude,
+        longitude: longitude ?? this.longitude,
+        features: features ?? this.features,
+        lastUsed: lastUsed ?? this.lastUsed,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('NearbyPark(')
+          ..write('id: $id, ')
+          ..write('distanceMeters: $distanceMeters, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('features: $features, ')
+          ..write('lastUsed: $lastUsed')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, distanceMeters, latitude, longitude, features, lastUsed);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NearbyPark &&
+          other.id == this.id &&
+          other.distanceMeters == this.distanceMeters &&
+          other.latitude == this.latitude &&
+          other.longitude == this.longitude &&
+          other.features == this.features &&
+          other.lastUsed == this.lastUsed);
+}
+
+class NearbyParksCompanion extends UpdateCompanion<NearbyPark> {
+  final Value<int> id;
+  final Value<int> distanceMeters;
+  final Value<double> latitude;
+  final Value<double> longitude;
+  final Value<String> features;
+  final Value<int> lastUsed;
+  const NearbyParksCompanion({
+    this.id = const Value.absent(),
+    this.distanceMeters = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
+    this.features = const Value.absent(),
+    this.lastUsed = const Value.absent(),
+  });
+  NearbyParksCompanion.insert({
+    this.id = const Value.absent(),
+    required int distanceMeters,
+    required double latitude,
+    required double longitude,
+    required String features,
+    required int lastUsed,
+  })  : distanceMeters = Value(distanceMeters),
+        latitude = Value(latitude),
+        longitude = Value(longitude),
+        features = Value(features),
+        lastUsed = Value(lastUsed);
+  static Insertable<NearbyPark> custom({
+    Expression<int>? id,
+    Expression<int>? distanceMeters,
+    Expression<double>? latitude,
+    Expression<double>? longitude,
+    Expression<String>? features,
+    Expression<int>? lastUsed,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (distanceMeters != null) 'distance_meters': distanceMeters,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (features != null) 'features': features,
+      if (lastUsed != null) 'last_used': lastUsed,
+    });
+  }
+
+  NearbyParksCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? distanceMeters,
+      Value<double>? latitude,
+      Value<double>? longitude,
+      Value<String>? features,
+      Value<int>? lastUsed}) {
+    return NearbyParksCompanion(
+      id: id ?? this.id,
+      distanceMeters: distanceMeters ?? this.distanceMeters,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      features: features ?? this.features,
+      lastUsed: lastUsed ?? this.lastUsed,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (distanceMeters.present) {
+      map['distance_meters'] = Variable<int>(distanceMeters.value);
+    }
+    if (latitude.present) {
+      map['latitude'] = Variable<double>(latitude.value);
+    }
+    if (longitude.present) {
+      map['longitude'] = Variable<double>(longitude.value);
+    }
+    if (features.present) {
+      map['features'] = Variable<String>(features.value);
+    }
+    if (lastUsed.present) {
+      map['last_used'] = Variable<int>(lastUsed.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NearbyParksCompanion(')
+          ..write('id: $id, ')
+          ..write('distanceMeters: $distanceMeters, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('features: $features, ')
+          ..write('lastUsed: $lastUsed')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   _$AppDatabaseManager get managers => _$AppDatabaseManager(this);
   late final $SearchFeaturesTable searchFeatures = $SearchFeaturesTable(this);
+  late final $NearbyParksTable nearbyParks = $NearbyParksTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [searchFeatures];
+  List<DatabaseSchemaEntity> get allSchemaEntities =>
+      [searchFeatures, nearbyParks];
 }
 
 typedef $$SearchFeaturesTableInsertCompanionBuilder = SearchFeaturesCompanion
@@ -552,9 +882,164 @@ class $$SearchFeaturesTableOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
+typedef $$NearbyParksTableInsertCompanionBuilder = NearbyParksCompanion
+    Function({
+  Value<int> id,
+  required int distanceMeters,
+  required double latitude,
+  required double longitude,
+  required String features,
+  required int lastUsed,
+});
+typedef $$NearbyParksTableUpdateCompanionBuilder = NearbyParksCompanion
+    Function({
+  Value<int> id,
+  Value<int> distanceMeters,
+  Value<double> latitude,
+  Value<double> longitude,
+  Value<String> features,
+  Value<int> lastUsed,
+});
+
+class $$NearbyParksTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $NearbyParksTable,
+    NearbyPark,
+    $$NearbyParksTableFilterComposer,
+    $$NearbyParksTableOrderingComposer,
+    $$NearbyParksTableProcessedTableManager,
+    $$NearbyParksTableInsertCompanionBuilder,
+    $$NearbyParksTableUpdateCompanionBuilder> {
+  $$NearbyParksTableTableManager(_$AppDatabase db, $NearbyParksTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$NearbyParksTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$NearbyParksTableOrderingComposer(ComposerState(db, table)),
+          getChildManagerBuilder: (p) =>
+              $$NearbyParksTableProcessedTableManager(p),
+          getUpdateCompanionBuilder: ({
+            Value<int> id = const Value.absent(),
+            Value<int> distanceMeters = const Value.absent(),
+            Value<double> latitude = const Value.absent(),
+            Value<double> longitude = const Value.absent(),
+            Value<String> features = const Value.absent(),
+            Value<int> lastUsed = const Value.absent(),
+          }) =>
+              NearbyParksCompanion(
+            id: id,
+            distanceMeters: distanceMeters,
+            latitude: latitude,
+            longitude: longitude,
+            features: features,
+            lastUsed: lastUsed,
+          ),
+          getInsertCompanionBuilder: ({
+            Value<int> id = const Value.absent(),
+            required int distanceMeters,
+            required double latitude,
+            required double longitude,
+            required String features,
+            required int lastUsed,
+          }) =>
+              NearbyParksCompanion.insert(
+            id: id,
+            distanceMeters: distanceMeters,
+            latitude: latitude,
+            longitude: longitude,
+            features: features,
+            lastUsed: lastUsed,
+          ),
+        ));
+}
+
+class $$NearbyParksTableProcessedTableManager extends ProcessedTableManager<
+    _$AppDatabase,
+    $NearbyParksTable,
+    NearbyPark,
+    $$NearbyParksTableFilterComposer,
+    $$NearbyParksTableOrderingComposer,
+    $$NearbyParksTableProcessedTableManager,
+    $$NearbyParksTableInsertCompanionBuilder,
+    $$NearbyParksTableUpdateCompanionBuilder> {
+  $$NearbyParksTableProcessedTableManager(super.$state);
+}
+
+class $$NearbyParksTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $NearbyParksTable> {
+  $$NearbyParksTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get distanceMeters => $state.composableBuilder(
+      column: $state.table.distanceMeters,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get latitude => $state.composableBuilder(
+      column: $state.table.latitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get longitude => $state.composableBuilder(
+      column: $state.table.longitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get features => $state.composableBuilder(
+      column: $state.table.features,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get lastUsed => $state.composableBuilder(
+      column: $state.table.lastUsed,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$NearbyParksTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $NearbyParksTable> {
+  $$NearbyParksTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get distanceMeters => $state.composableBuilder(
+      column: $state.table.distanceMeters,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get latitude => $state.composableBuilder(
+      column: $state.table.latitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get longitude => $state.composableBuilder(
+      column: $state.table.longitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get features => $state.composableBuilder(
+      column: $state.table.features,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get lastUsed => $state.composableBuilder(
+      column: $state.table.lastUsed,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
 class _$AppDatabaseManager {
   final _$AppDatabase _db;
   _$AppDatabaseManager(this._db);
   $$SearchFeaturesTableTableManager get searchFeatures =>
       $$SearchFeaturesTableTableManager(_db, _db.searchFeatures);
+  $$NearbyParksTableTableManager get nearbyParks =>
+      $$NearbyParksTableTableManager(_db, _db.nearbyParks);
 }

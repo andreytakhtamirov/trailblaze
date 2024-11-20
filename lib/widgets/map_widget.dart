@@ -1419,7 +1419,6 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       _onSelectPlace(null);
     } else {
       FirebaseHelper.logScreen("NearbyParks");
-      // TODO use cache for park queries
       _loadParks(kDefaultFeatureDistanceMeters);
     }
   }
