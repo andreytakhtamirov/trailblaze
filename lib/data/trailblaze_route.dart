@@ -44,6 +44,7 @@ class TrailblazeRoute {
         lineJoin: LineJoin.ROUND,
         lineCap: LineCap.ROUND,
         lineColor: isActive ? Colors.red.value : Colors.grey.value,
+        lineSortKey: isActive ? 10 : 1,
         lineOpacity:
             isActive ? kRouteActiveLineOpacity : kRouteInactiveLineOpacity,
         lineWidth: kRouteLineWidth);
@@ -125,9 +126,11 @@ class TrailblazeRoute {
 
   void setActive(bool isActive) {
     if (isActive) {
+      lineLayer.lineSortKey = 10;
       lineLayer.lineColor = Colors.red.value;
       lineLayer.lineOpacity = kRouteActiveLineOpacity;
     } else {
+      lineLayer.lineSortKey = 1;
       lineLayer.lineColor = Colors.grey.value;
       lineLayer.lineOpacity = kRouteInactiveLineOpacity;
     }
