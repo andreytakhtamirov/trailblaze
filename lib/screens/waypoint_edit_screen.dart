@@ -103,7 +103,7 @@ class _WaypointEditScreenState extends State<WaypointEditScreen> {
                                   _locations[i] = place;
                                 });
                               },
-                              // TODO implement
+                              // Won't show category search item in waypoint edit screen
                               onSelectFeatures: (features, category) {},
                             ),
                             leading: const Icon(Icons.location_city_rounded),

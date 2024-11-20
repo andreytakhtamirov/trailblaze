@@ -54,10 +54,8 @@ final double kPanelShuffleMaxHeight =
 final double kAppPadding =
     kAppBarHeight + kSafeAreaPaddingTop + kAndroidTopOffset;
 
-const double kMapExtraWidgetsHeight = kOptionsPillHeight +
-    kMapUiTopOffset +
-    kPanelFabHeight +
-    kSearchBarHeight;
+const double kMapExtraWidgetsHeight =
+    kOptionsPillHeight + kMapUiTopOffset + kPanelFabHeight + kSearchBarHeight;
 
 const double kPanelFabHeight = 8;
 final double kFeatureItemHeight = kScreenHeight / 6;

@@ -91,6 +91,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   double? _selectedDistanceMeters = kDefaultFeatureDistanceMeters;
   mbm.Position? _userLocation;
   Timer? _cameraScrollTimer;
+  Timer? _checkPointsTimer;
   final GlobalKey _topWidgetKey = GlobalKey();
   final GlobalKey _directionsWidgetKey = GlobalKey();
   final GlobalKey _shareWidgetKey = GlobalKey();
@@ -141,7 +142,45 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           _loadRouteToDisplay();
         });
       }
+    } else if (!Platform.isAndroid) {
+      // For iOS we need to initialize the annotation manager AFTER showing the location
+      _mapInitializedCompleter.future.then((value) {
+        Future.delayed(const Duration(milliseconds: 300), () async {
+          _initAnnotationManager();
+        });
+        // Temporary fix for inconsistent behaviour between Mapbox SDK flavours
+      });
     }
+  }
+
+  Future<void> _initAnnotationManager() async {
+    final pointAnnotationManager = await _mapboxMap.annotations
+        .createPointAnnotationManager(
+            id: 'point-layer', below: 'multi-point-layer');
+    final multiPointAnnotationManager = await _mapboxMap.annotations
+        .createPointAnnotationManager(id: 'multi-point-layer');
+    final circleAnnotationManager = await _mapboxMap.annotations
+        .createCircleAnnotationManager(
+            id: 'circle-layer', below: 'point-layer');
+    final metricAnnotationManager = await _mapboxMap.annotations
+        .createCircleAnnotationManager(id: 'metric-layer');
+    final avoidAreaAnnotationManager = await _mapboxMap.annotations
+        .createCircleAnnotationManager(id: 'avoid-layer');
+    final polygonAnnotationManager = await _mapboxMap.annotations
+        .createPolygonAnnotationManager(id: 'poly-layer', below: 'avoid-layer');
+    annotationHelper = AnnotationHelper(
+      pointAnnotationManager,
+      multiPointAnnotationManager,
+      circleAnnotationManager,
+      metricAnnotationManager,
+      avoidAreaAnnotationManager,
+      polygonAnnotationManager,
+      () {
+        setState(() {
+          _isAvoidAnnotationClicked = true;
+        });
+      },
+    );
   }
 
   void _loadRouteToDisplay() async {
@@ -172,7 +211,9 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       // Only fly to user location if interactive
       await _goToUserLocation(isAnimated: false);
     }
-    _showUserLocationPuck();
+    if (!Platform.isAndroid) {
+      await _showUserLocationPuck();
+    }
     _setMapControlSettings();
 
     final camera = await _mapboxMap.getCameraState();
@@ -183,34 +224,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       ];
     });
 
-    final pointAnnotationManager = await mapboxMap.annotations
-        .createPointAnnotationManager(id: 'point-layer');
-    final multiPointAnnotationManager = await mapboxMap.annotations
-        .createPointAnnotationManager(
-            id: 'multi-point-layer', below: 'point-layer');
-    final circleAnnotationManager = await mapboxMap.annotations
-        .createCircleAnnotationManager(
-            id: 'circle-layer', below: 'point-layer');
-    final metricAnnotationManager = await mapboxMap.annotations
-        .createCircleAnnotationManager(id: 'metric-layer');
-    final avoidAreaAnnotationManager = await mapboxMap.annotations
-        .createCircleAnnotationManager(id: 'avoid-layer');
-    final polygonAnnotationManager = await mapboxMap.annotations
-        .createPolygonAnnotationManager(id: 'poly-layer', below: 'avoid-layer');
-    annotationHelper = AnnotationHelper(
-      pointAnnotationManager,
-      multiPointAnnotationManager,
-      circleAnnotationManager,
-      metricAnnotationManager,
-      avoidAreaAnnotationManager,
-      polygonAnnotationManager,
-      () {
-        setState(() {
-          _isAvoidAnnotationClicked = true;
-        });
-      },
-    );
-
+    // Temporary fix for inconsistent behaviour between Mapbox SDK flavours
+    if (Platform.isAndroid) {
+      await _initAnnotationManager();
+      await _showUserLocationPuck();
+    }
     _mapInitializedCompleter.complete();
   }
 
@@ -235,19 +253,12 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     final features = _viewModeContext.features;
     if (_viewModeContext.features == null) return;
 
-    final List<String> names = [];
-    final List<mbm.Point> coordinatesList = [];
-    for (var f in features!) {
-      names.add(f.tags['name']);
-      coordinatesList.add(mbm.Point(
-          coordinates: mbm.Position(f.center['lon'], f.center['lat'])));
-    }
+    await annotationHelper?.drawPointAnnotationMulti(features!);
+    annotationHelper?.simplifyFeatures(_mapboxMap);
 
-    annotationHelper?.drawPointAnnotationMulti(names, coordinatesList);
-
-    if (features.isNotEmpty) {
+    if (features!.isNotEmpty) {
       _pauseUiCallbacksForDuration(kMapFlyToDuration * 3);
-      await _flyToFeatures(coordinatesList: coordinatesList);
+      await _flyToFeatures();
     }
   }
 
@@ -263,14 +274,12 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     });
   }
 
-  Future<void> _flyToFeatures({List<mbm.Point>? coordinatesList}) async {
+  Future<void> _flyToFeatures() async {
     await _clearCameraPadding();
-    if (coordinatesList == null) {
-      coordinatesList = [];
-      for (var f in _viewModeContext.features!) {
-        coordinatesList.add(mbm.Point(
-            coordinates: mbm.Position(f.center['lon'], f.center['lat'])));
-      }
+    final List<mbm.Point> coordinatesList = [];
+    for (var f in _viewModeContext.features!) {
+      coordinatesList.add(mbm.Point(
+          coordinates: mbm.Position(f.center['lon'], f.center['lat'])));
     }
 
     if (coordinatesList.length == 1) {
@@ -932,14 +941,21 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     }
   }
 
-  void _showUserLocationPuck() async {
+  Future<void> _showUserLocationPuck() async {
     final ByteData bytes = await rootBundle.load('assets/location-puck.png');
     final Uint8List list = bytes.buffer.asUint8List();
 
-    _mapboxMap.location.updateSettings(mbm.LocationComponentSettings(
+    return await _mapboxMap.location.updateSettings(
+      mbm.LocationComponentSettings(
+        // Layer order behaves differently on each platform
+        layerAbove: Platform.isAndroid ? null : 'multi-point-layer',
+        layerBelow: Platform.isAndroid ? 'multi-point-layer' : null,
         locationPuck: mbm.LocationPuck(
-            locationPuck2D: mbm.LocationPuck2D(topImage: list)),
-        enabled: true));
+          locationPuck2D: mbm.LocationPuck2D(topImage: list),
+        ),
+        enabled: true,
+      ),
+    );
   }
 
   void _onSelectPlace(MapBoxPlace? place,
@@ -1162,10 +1178,25 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   }
 
   void _onMapCameraChangeListener(mbm.CameraChangedEventData data) {
+    if (_viewModeContext.features?.isNotEmpty == true) {
+      _debounceSimplifyFeatures();
+    }
+
     if (_pauseUiCallbacks) {
       return;
     }
     _debounceUpdateCameraState();
+  }
+
+  void _debounceSimplifyFeatures() {
+    if (_checkPointsTimer?.isActive ?? false) _checkPointsTimer!.cancel();
+    _checkPointsTimer = Timer(const Duration(milliseconds: 150), () {
+      _simplifyFeatures();
+    });
+  }
+
+  void _simplifyFeatures() {
+    annotationHelper?.simplifyFeatures(_mapboxMap);
   }
 
   void _selectOriginOnMap(List<double> coordinates) {
