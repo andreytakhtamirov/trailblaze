@@ -261,8 +261,12 @@ class PlaceManager {
     );
   }
 
-  Future<void> writeMapboxPlace(
-      String mapboxId, String placeName, String subtitle, String geometryJson) {
+  Future<Future<int>?> writeMapboxPlace(String mapboxId, String placeName,
+      String subtitle, String geometryJson) async {
+    if (await db.featureById(mapboxId) != null) {
+      db.updateLastUsed(mapboxId);
+      return null;
+    }
     return db.addFeature(
       SearchFeaturesCompanion(
         mapboxId: Value(mapboxId),

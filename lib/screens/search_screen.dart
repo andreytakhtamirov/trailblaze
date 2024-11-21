@@ -10,6 +10,7 @@ import 'package:trailblaze/data/search_feature_type.dart';
 import 'package:trailblaze/extensions/mapbox_search_extension.dart';
 import 'package:trailblaze/managers/map_state_notifier.dart';
 import 'package:trailblaze/managers/place_manager.dart';
+import 'package:trailblaze/util/coordinate_helper.dart';
 import 'package:trailblaze/util/distance_helper.dart';
 import 'package:trailblaze/util/search_item_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
@@ -121,36 +122,35 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       _showHistory();
       return;
     }
+
     geo.Position? currentLocation;
 
-    // If query doesn't contain comma (only separated with space, replace the space with a comma).
-    final queryWithComma =
-        !query.contains(',') ? query.replaceFirst(' ', ',') : query;
-    final coordinatePattern = RegExp(r'^-?\d+(\.\d+)?,\s?-?\d+(\.\d+)?$');
-    if (coordinatePattern.hasMatch(queryWithComma)) {
-      final coordinates = queryWithComma.split(',');
-      final lat = double.tryParse(coordinates[0].trim());
-      final lng = double.tryParse(coordinates[1].trim());
+    double? lat;
+    double? lng;
+    final degreesDirection = CoordinateHelper.stringToDegreesDirection(query);
+    final decimalDegrees = CoordinateHelper.stringToDecimalDegrees(query);
+    if (degreesDirection[0] != -1 && degreesDirection[1] != -1) {
+      lat = degreesDirection[0];
+      lng = degreesDirection[1];
+    } else if (decimalDegrees[0] != -1 && decimalDegrees[1] != -1) {
+      lat = decimalDegrees[0];
+      lng = decimalDegrees[1];
+    }
 
-      if (lat != null &&
-          lng != null &&
-          DistanceHelper.isValidCoordinate(lat, lng)) {
-        setState(() {
-          final suggestion = SuggestionTb(
-            name: "$lat, $lng",
-            mapboxId: "$lat,$lng",
-            featureType: SearchFeatureType.coordinates.value,
-            placeFormatted: "Search for coordinates (lat, lon)",
-          );
-          _results = [suggestion];
-          _isHistoryShowing = false;
-        });
-        return;
-      } else {
-        setState(() {
-          _clearResults();
-        });
-      }
+    if (lat != null &&
+        lng != null &&
+        DistanceHelper.isValidCoordinate(lat, lng)) {
+      setState(() {
+        final suggestion = SuggestionTb(
+          name: "$lat, $lng",
+          mapboxId: "$lat,$lng",
+          featureType: SearchFeatureType.coordinates.value,
+          placeFormatted: "Search for coordinates (lat, lon)",
+        );
+        _results = [suggestion];
+        _isHistoryShowing = false;
+      });
+      return;
     }
 
     if (_futureLocation != null) {
