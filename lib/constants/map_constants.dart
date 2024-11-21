@@ -55,9 +55,9 @@ final double kAppPadding =
     kAppBarHeight + kSafeAreaPaddingTop + kAndroidTopOffset;
 
 const double kMapExtraWidgetsHeight =
-    kOptionsPillHeight + kMapUiTopOffset + kPanelFabHeight + kSearchBarHeight;
+    kOptionsPillHeight + kMapUiTopOffset + kPanelFabPadding + kSearchBarHeight;
 
-const double kPanelFabHeight = 8;
+const double kPanelFabPadding = 8;
 final double kFeatureItemHeight = kScreenHeight / 6;
 const double kDefaultMapZoom = 12;
 

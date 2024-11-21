@@ -6,7 +6,7 @@ import 'package:trailblaze/requests/explore.dart';
 import 'package:trailblaze/util/ui_helper.dart';
 
 class FeatureManager {
-  static AppDatabase db = AppDatabase();
+  static AppDatabase db = Database.instance;
 
   static Future<List<Feature>> loadFeatures(
       BuildContext context, int distanceMeters, List<double> center) async {

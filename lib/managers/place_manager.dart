@@ -16,7 +16,7 @@ import 'package:trailblaze/database/database.dart';
 import 'package:trailblaze/extensions/mapbox_search_extension.dart';
 
 class PlaceManager {
-  static AppDatabase db = AppDatabase();
+  static AppDatabase db = Database.instance;
   SearchBoxAPI searchBoxAPI = SearchBoxAPI();
 
   final bool ignoreCategory;
