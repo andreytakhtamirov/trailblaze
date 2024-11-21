@@ -38,6 +38,15 @@ class NearbyParks extends Table {
   IntColumn get lastUsed => integer()();
 }
 
+// Singleton class to ensure single instance access to drift database
+class Database {
+  static final AppDatabase _db = AppDatabase();
+
+  Database._internal();
+
+  static AppDatabase get instance => _db;
+}
+
 @DriftDatabase(tables: [SearchFeatures, NearbyParks])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -163,9 +172,14 @@ class AppDatabase extends _$AppDatabase {
       ));
 
       final List<dynamic> featuresJson = jsonDecode(nearbyPark.features);
-      return featuresJson
-          .map((jsonItem) => Feature.fromJson(jsonItem))
-          .toList();
+      List<Feature> features = [];
+      for (var jsonItem in featuresJson) {
+        final feature = Feature.fromJson(jsonItem);
+        await Feature.loadAddress(feature);
+        features.add(feature);
+      }
+
+      return features;
     }
 
     return null;

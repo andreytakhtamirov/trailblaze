@@ -38,9 +38,11 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
   late final SimpleStack _avoidAnnotationChanges;
 
   final List<AnnotationState> _annotationStates = [];
-  final List<mbm.PointAnnotation> _clusterPoints = [];
-  Map<String, int> currentClusters = {};
-  Map<String, mbm.PointAnnotation> activeAnnotations = {};
+  final Map<String, int> _currentClusters = {};
+  final Map<String, mbm.PointAnnotation> _activeAnnotations = {};
+
+  // List of clusters (each cluster is a list of annotations)
+  final List<List<AnnotationState>> _clusters = [];
 
   AnnotationHelper(
     this._annotationManager,
@@ -237,6 +239,30 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
     return mbm.Polygon(coordinates: [DistanceHelper.buildPolygon(coordinates)]);
   }
 
+  List<mbm.Point>? coordinatesForCluster(tb.Feature feature) {
+    final featureId =
+        feature.center['lat'].toString() + feature.center['lon'].toString();
+
+    for (List<AnnotationState> cluster in _clusters) {
+      if (cluster.any((state) => state.id == featureId)) {
+        if (cluster.length == 1) {
+          // Single point cluster
+          return null;
+        }
+        return cluster.map((state) {
+          return mbm.Point(
+            coordinates: mbm.Position(
+              state.options.geometry.coordinates.lng,
+              state.options.geometry.coordinates.lat,
+            ),
+          );
+        }).toList();
+      }
+    }
+
+    return null;
+  }
+
   Future<void> drawPointAnnotationMulti(List<tb.Feature> features) async {
     List<mbm.PointAnnotationOptions> optionsList = [];
     for (tb.Feature feature in features) {
@@ -254,9 +280,8 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
   }
 
   Future<void> simplifyFeatures(mbm.MapboxMap map) async {
-    // List of clusters (each cluster is a list of annotations)
-    List<List<AnnotationState>> clusters = [];
     Set<String> visited = {};
+    _clusters.clear();
 
     for (int i = 0; i < _annotationStates.length; i++) {
       final state1 = _annotationStates[i];
@@ -288,7 +313,7 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
           List<AnnotationState>? cluster2;
 
           // Find existing clusters for state1 and state2
-          for (var cluster in clusters) {
+          for (var cluster in _clusters) {
             if (cluster.contains(state1)) cluster1 = cluster;
             if (cluster.contains(state2)) cluster2 = cluster;
           }
@@ -296,7 +321,7 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
           if (cluster1 != null && cluster2 != null && cluster1 != cluster2) {
             // Merge the two clusters if they are different
             cluster1.addAll(cluster2);
-            clusters.remove(cluster2);
+            _clusters.remove(cluster2);
           } else if (cluster1 != null) {
             // Add state2 to the existing cluster of state1
             if (!cluster1.contains(state2)) {
@@ -309,7 +334,7 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
             }
           } else {
             // Create a new cluster for both points
-            clusters.add([state1, state2]);
+            _clusters.add([state1, state2]);
           }
 
           // Mark both points as not visible (collided)
@@ -325,37 +350,33 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
       // If no merge occurred, mark state1 as a single point
       if (!merged && !visited.contains(state1.id)) {
         state1.isClustered = false;
-        clusters.add([state1]);
+        _clusters.add([state1]);
       }
     }
 
-    for (mbm.PointAnnotation p in _clusterPoints) {
-      _pointAnnotationManager.delete(p);
-    }
-    _clusterPoints.clear();
+    final clustersToRemove = Set<String>.from(_currentClusters.keys);
 
-    final clustersToRemove = Set<String>.from(currentClusters.keys);
-
-    for (int i = 0; i < clusters.length; i++) {
-      if (clusters[i].length > 1) {
-        for (var state in clusters[i]) {
+    for (int i = 0; i < _clusters.length; i++) {
+      if (_clusters[i].length > 1) {
+        for (var state in _clusters[i]) {
           state.isClustered = true;
         }
 
-        final p = await _createPointsCluster(clusters[i]);
-        final String clusterKey = "${p.geometry.coordinates.lat},${p.geometry.coordinates.lng}";
-        activeAnnotations[clusterKey] = p;
+        final p = await _createPointsCluster(_clusters[i]);
+        final String clusterKey =
+            "${p.geometry.coordinates.lat},${p.geometry.coordinates.lng}";
+        _activeAnnotations[clusterKey] = p;
         clustersToRemove.remove(clusterKey);
       } else {
-        clusters[i][0].isClustered = false;
+        _clusters[i][0].isClustered = false;
       }
     }
 
     // Now remove clusters that no longer exist
     for (String clusterKey in clustersToRemove) {
-      await _pointAnnotationManager.delete(activeAnnotations[clusterKey]!);
-      activeAnnotations.remove(clusterKey);
-      currentClusters.remove(clusterKey);
+      await _pointAnnotationManager.delete(_activeAnnotations[clusterKey]!);
+      _activeAnnotations.remove(clusterKey);
+      _currentClusters.remove(clusterKey);
     }
 
     _drawActiveAnnotations(_annotationStates);
@@ -389,17 +410,17 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
 
     final String clusterKey = "$midpointLatitude,$midpointLongitude";
     // Check if the cluster already exists or needs to be redrawn
-    if (currentClusters.containsKey(clusterKey)) {
-      if (currentClusters[clusterKey] == pointCount) {
+    if (_currentClusters.containsKey(clusterKey)) {
+      if (_currentClusters[clusterKey] == pointCount) {
         // No change in the cluster, no need to redraw
-        return activeAnnotations[clusterKey]!;
+        return _activeAnnotations[clusterKey]!;
       } else {
         // Cluster count changed, remove the old annotation and redraw
-        await _pointAnnotationManager.delete(activeAnnotations[clusterKey]!);
+        await _pointAnnotationManager.delete(_activeAnnotations[clusterKey]!);
       }
     }
 
-    currentClusters[clusterKey] = pointCount;
+    _currentClusters[clusterKey] = pointCount;
     return _drawCluster(midpointCoordinates, pointCount.toString());
   }
 
@@ -445,8 +466,9 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
   }
 
   Future<void> clearPointAnnotations() async {
-    currentClusters.clear();
-    activeAnnotations.clear();
+    _clusters.clear();
+    _currentClusters.clear();
+    _activeAnnotations.clear();
     _annotationStates.clear();
     await _pointAnnotationManager.deleteAll();
   }

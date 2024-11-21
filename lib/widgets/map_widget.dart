@@ -288,21 +288,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       return;
     }
 
-    final height = mounted ? MediaQuery.of(context).size.height : 0.0;
-    final width = mounted ? MediaQuery.of(context).size.width : 0.0;
-    final cameraForCoordinates = await CameraHelper.cameraOptionsForCoordinates(
-      _mapboxMap,
-      coordinatesList,
-      _getCameraPadding(ignoreBottom: true),
-      height,
-      width,
-    );
-
-    // Get SafeArea top padding (if any), for notched devices.
-    cameraForCoordinates.padding?.top +=
-        mounted ? MediaQuery.of(context).padding.top : 0;
-
-    await _mapFlyToOptions(cameraForCoordinates);
+    _flyToCoordinates(coordinatesList);
   }
 
   void _onManuallySelectFeature(tb.Feature feature) async {
@@ -701,6 +687,20 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           bearing: kDefaultCameraState.bearing,
           pitch: kDefaultCameraState.pitch),
     );
+  }
+
+  Future<void> _flyToCoordinates(List<mbm.Point> coordinates) async {
+    final height = mounted ? MediaQuery.of(context).size.height : 0.0;
+    final width = mounted ? MediaQuery.of(context).size.width : 0.0;
+    final cameraForCoordinates = await CameraHelper.cameraOptionsForCoordinates(
+      _mapboxMap,
+      coordinates,
+      _getCameraPadding(ignoreBottom: false),
+      height,
+      width,
+    );
+
+    await _mapFlyToOptions(cameraForCoordinates);
   }
 
   void _setSelectedRoute(TrailblazeRoute route) async {
@@ -1113,6 +1113,14 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           cameraState.zoom);
 
       if (closestFeature != null) {
+        final coordinates =
+            annotationHelper?.coordinatesForCluster(closestFeature);
+        if (coordinates != null) {
+          // Reveal clustered features
+          _flyToCoordinates(coordinates);
+          return;
+        }
+
         _onManuallySelectFeature(closestFeature);
         return;
       } else if (_viewModeContext.viewMode == ViewMode.parks) {
@@ -1602,7 +1610,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             _previousViewModeContext.viewMode == ViewMode.shuffle) &&
         _viewModeContext.viewMode != ViewMode.metricDetails) {
       await _removeRouteLayers();
-    } else if (_previousViewModeContext.viewMode == ViewMode.search) {
+    } else if (_previousViewModeContext.viewMode == ViewMode.search &&
+        _viewModeContext.viewMode != ViewMode.directions) {
       annotationHelper?.deletePointAnnotations();
     }
 
@@ -1955,7 +1964,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           ),
           if (_isContentLoading)
             Positioned(
-              bottom: bottomOffset + kPanelFabHeight,
+              bottom: bottomOffset + kPanelFabPadding,
               left: 0,
               right: 0,
               child: Center(
@@ -1978,7 +1987,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             )
           else if (_isOriginChanged && !isPanelCoveringScreen)
             Positioned(
-              bottom: bottomOffset + kPanelFabHeight,
+              bottom: bottomOffset + kPanelFabPadding,
               left: 0,
               right: 0,
               child: Center(
@@ -1989,7 +1998,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             )
           else if (isRefreshButtonVisible && isPanelClosedAndNotAnimating)
             Positioned(
-              bottom: bottomOffset + kPanelFabHeight,
+              bottom: bottomOffset + kPanelFabPadding,
               left: 0,
               right: 0,
               child: Center(
@@ -2006,7 +2015,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             )
           else if (isDirectionsButtonVisible)
             Positioned(
-              bottom: bottomOffset + kPanelFabHeight,
+              bottom: bottomOffset + kPanelFabPadding,
               right: 16,
               child: IconButtonSmall(
                 text: 'Directions',
@@ -2020,7 +2029,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             )
           else if (_viewModeContext.viewMode == ViewMode.parks)
             Positioned(
-              bottom: bottomOffset + kPanelFabHeight,
+              bottom: bottomOffset + kPanelFabPadding,
               right: 16,
               child: IconButtonSmall(
                 text:
