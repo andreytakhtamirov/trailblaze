@@ -161,6 +161,34 @@ class PlaceManager {
     return place;
   }
 
+  MapBoxPlace placeFromCoordinates(SuggestionTb s) {
+    MapBoxPlace place = MapBoxPlace(
+      placeName: s.name,
+      text: SearchFeatureType.coordinates.value,
+      center: (
+        lat: double.parse(s.mapboxId.split(',')[0]),
+        long: double.parse(s.mapboxId.split(',')[1]),
+      ),
+    );
+
+    writeMapboxPlace(
+      s.mapboxId,
+      place.placeName!,
+      place.text!,
+      jsonEncode(
+        {
+          "type": "Point",
+          "coordinates": [
+            place.center?.long,
+            place.center?.lat,
+          ]
+        },
+      ),
+    );
+
+    return place;
+  }
+
   Future<Feature?> fetchFeature(SuggestionTb s) async {
     Completer<Feature?> completer = Completer();
     ApiResponse<RetrieveResonse> result =
