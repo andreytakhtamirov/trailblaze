@@ -1610,7 +1610,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             _previousViewModeContext.viewMode == ViewMode.shuffle) &&
         _viewModeContext.viewMode != ViewMode.metricDetails) {
       await _removeRouteLayers();
-    } else if (_previousViewModeContext.viewMode == ViewMode.search) {
+    } else if (_previousViewModeContext.viewMode == ViewMode.search &&
+        _viewModeContext.viewMode != ViewMode.directions) {
       annotationHelper?.deletePointAnnotations();
     }
 
