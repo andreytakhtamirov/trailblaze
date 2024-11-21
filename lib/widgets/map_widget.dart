@@ -5,10 +5,12 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
 import 'package:trailblaze/constants/route_info_constants.dart';
+import 'package:trailblaze/data/search_feature_type.dart';
 import 'package:trailblaze/data/view_mode_context.dart';
 import 'package:trailblaze/managers/map_state_notifier.dart';
 import 'package:trailblaze/managers/place_manager.dart';
 import 'package:trailblaze/screens/distance_selector_screen.dart';
+import 'package:trailblaze/util/distance_helper.dart';
 import 'package:trailblaze/util/export_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/util/polyline_helper.dart';
@@ -965,6 +967,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
 
     if (place == null) {
       _setMapControlSettings();
+    } else if (!DistanceHelper.isValidCoordinate(
+        place.center!.lat, place.center!.long)) {
+      UiHelper.showSnackBar(context, "Invalid coordinates");
+      _onSelectPlace(null);
+      return;
     }
 
     if (isPlaceDataUpdate) {
@@ -1140,10 +1147,16 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       lat: coordinate.lat.toDouble()
     ));
 
+    _updateSelectedPlace(place);
+  }
+
+  Future<void> _updateSelectedPlace(MapBoxPlace place) async {
     _onSelectPlace(place);
 
-    final futureAddress = await geocoding.getAddress(
-        (lat: coordinate.lat.toDouble(), long: coordinate.lng.toDouble()));
+    final futureAddress = await geocoding.getAddress((
+      lat: place.center!.lat.toDouble(),
+      long: place.center!.long.toDouble()
+    ));
 
     futureAddress.fold((places) {
       String? placeName;
@@ -1165,11 +1178,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       }
 
       placeName ??=
-          "(${coordinate.lng.toStringAsFixed(4)}, ${coordinate.lat.toStringAsFixed(4)})";
+          "(${place.center!.long.toStringAsFixed(4)}, ${place.center!.lat.toStringAsFixed(4)})";
 
       MapBoxPlace updatedPlace = MapBoxPlace(placeName: placeName, center: (
-        long: coordinate.lng.toDouble(),
-        lat: coordinate.lat.toDouble()
+        long: place.center!.long.toDouble(),
+        lat: place.center!.lat.toDouble()
       ));
       _onSelectPlace(updatedPlace, isPlaceDataUpdate: true);
       _setMapControlSettings();
@@ -2152,6 +2165,10 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           onSelected: (place) async {
             await annotationHelper?.deletePointAnnotations();
             Future.delayed(const Duration(milliseconds: 100), () {
+              if (place?.text == SearchFeatureType.coordinates.value) {
+                _updateSelectedPlace(place!);
+                return;
+              }
               _onSelectPlace(place);
             });
           },
@@ -2239,6 +2256,10 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           await _setViewMode(ViewMode.search);
           await annotationHelper?.deletePointAnnotations();
           Future.delayed(const Duration(milliseconds: 100), () {
+            if (place?.text == SearchFeatureType.coordinates.value) {
+              _updateSelectedPlace(place!);
+              return;
+            }
             _onSelectPlace(place);
           });
         },

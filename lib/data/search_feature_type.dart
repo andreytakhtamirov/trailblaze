@@ -1,4 +1,5 @@
 enum SearchFeatureType {
+  coordinates('coordinates'),
   category('category'),
   poi('poi'),
   address('address'),
