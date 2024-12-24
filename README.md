@@ -80,11 +80,3 @@ Note:
 - The Mapbox access token and the app token are the only required fields to use the basic functionality of the app (Creating routes locally and exploring existing community routes).
 - Other fields are only required for accessing your Trailblaze account (saving routes, posting on the community page) and will not be shared to preserve app security.
 
-
-## About the Project
-
-Trailblaze was a 4-month long capstone project completed by Andrey Takhtamirov, Alex Braverman, and Filipe Brito (Conestoga College Software Engineering Technology 2023), including a client application (trailblaze-android) and a server application (trailblaze-server).
-
-Both projects are now open-sourced and available here:
-- https://dev.azure.com/trailblaze/trailblaze/_git/trailblaze-android
-- https://dev.azure.com/trailblaze/trailblaze/_git/trailblaze-server
