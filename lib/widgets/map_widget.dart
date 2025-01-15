@@ -1,22 +1,28 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
+import 'package:trailblaze/constants/request_api_constants.dart';
 import 'package:trailblaze/constants/route_info_constants.dart';
+import 'package:trailblaze/data/instruction.dart';
 import 'package:trailblaze/data/search_feature_type.dart';
 import 'package:trailblaze/data/view_mode_context.dart';
 import 'package:trailblaze/managers/map_state_notifier.dart';
+import 'package:trailblaze/managers/navigation_state_notifier.dart';
 import 'package:trailblaze/managers/place_manager.dart';
 import 'package:trailblaze/screens/distance_selector_screen.dart';
 import 'package:trailblaze/util/distance_helper.dart';
 import 'package:trailblaze/util/export_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
+import 'package:trailblaze/util/mapbox_layer_util.dart';
+import 'package:trailblaze/util/navigation_util.dart';
 import 'package:trailblaze/util/polyline_helper.dart';
+import 'package:trailblaze/widgets/map/directions_widget.dart';
 import 'package:trailblaze/widgets/map/top_bars/metrics.dart';
 import 'package:trailblaze/widgets/map/top_bars/multi_feature.dart';
 import 'package:trailblaze/widgets/map/top_bars/shuffle.dart';
+import 'package:trailblaze/widgets/panels/navigation_panel.dart';
 import 'package:turf/turf.dart' as turf;
 import 'package:dartz/dartz.dart' as dartz;
 import 'package:flutter/material.dart';
@@ -26,7 +32,6 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:mapbox_search/mapbox_search.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:trailblaze/constants/map_constants.dart';
-import 'package:trailblaze/constants/request_api_constants.dart';
 import 'package:trailblaze/constants/ui_control_constants.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:geolocator/geolocator.dart' as geo;
@@ -101,6 +106,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   bool _isOriginChanged = false;
   bool _isCameraLocked = false;
   bool _isAvoidAnnotationClicked = false;
+  bool _isFollowingLocation = false;
 
   List<double>? _currentOriginCoordinates;
   List<double>? _nextOriginCoordinates;
@@ -153,6 +159,32 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         // Temporary fix for inconsistent behaviour between Mapbox SDK flavours
       });
     }
+
+    _listenToLocation();
+  }
+
+  void _listenToLocation() {
+    ref.listenManual<NavigationState>(navigationStateProvider,
+        (previous, next) async {
+      if (previous?.snappedLocation != next.snappedLocation) {
+        if (next.snappedLocation == null) {
+          return;
+        }
+
+        if (_viewModeContext.viewMode != ViewMode.navigation) {
+          // Mode might have switched during update
+          MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
+          return;
+        }
+
+        final coordinates = NavigationUtil.getCoordsFromPointToStart(
+            next.snappedLocation!,
+            next.currentInstructionIndex,
+            _selectedRoute?.instructions);
+
+        MapboxLayerUtil.updateProgressLayer(_mapboxMap, coordinates);
+      }
+    });
   }
 
   Future<void> _initAnnotationManager() async {
@@ -317,6 +349,37 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     _loadParks(_selectedDistanceMeters!);
   }
 
+  Future<void> _onFlyToInstruction(Instruction instruction) async {
+    setState(() {
+      _isFollowingLocation = false;
+    });
+    await _togglePanel(false);
+    MapboxLayerUtil.drawInstructionLine(
+      _mapboxMap,
+      NavigationUtil.positionsToList(instruction.coordinates),
+    );
+
+    final List<mbm.Point> points = [];
+    for (turf.Position c in instruction.coordinates) {
+      points.add(mbm.Point(coordinates: c));
+    }
+    final cameraOptions = await _mapboxMap.cameraForCoordinatesPadding(
+        points,
+        mbm.CameraOptions(
+          padding: mbm.MbxEdgeInsets(
+            top: 300,
+            bottom: 300,
+            left: 50,
+            right: 50,
+          ),
+        ),
+        null,
+        null,
+        null);
+    await _mapboxMap.flyTo(cameraOptions,
+        mbm.MapAnimationOptions(duration: kMapFlyToDuration, startDelay: 0));
+  }
+
   Future<void> _loadParks(double distanceMeters) async {
     if (_currentOriginCoordinates == null) {
       UiHelper.showSnackBar(context, "Could not find selected location.");
@@ -384,7 +447,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
 
   void _setMapControlSettings() {
     Timer(const Duration(milliseconds: 300), () {
-      if (_isEditingAvoidArea) {
+      if (_isEditingAvoidArea ||
+          _viewModeContext.viewMode == ViewMode.navigation) {
         _mapboxMap.scaleBar
             .updateSettings(mbm.ScaleBarSettings(enabled: false));
         _mapboxMap.compass.updateSettings(mbm.CompassSettings(enabled: false));
@@ -741,25 +805,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
 
   Future<void> _drawRoute(TrailblazeRoute route) async {
     await annotationHelper?.deleteAllAnnotations();
-    try {
-      await _mapboxMap.style.addSource(route.geoJsonSource);
-    } catch (e) {
-      // Source might exist already
-    }
-
-    try {
-      await _mapboxMap.style.removeStyleLayer(route.lineLayer.id);
-    } catch (e) {
-      // Route layer might have been removed already.
-    }
-
-    try {
-      await _mapboxMap.style
-          .addLayerAt(route.lineLayer, mbm.LayerPosition(below: "road-label"));
-    } catch (e) {
-      // "road-label" may not have been created yet or doesn't exist.
-      await _mapboxMap.style.addLayer(route.lineLayer);
-    }
+    await _removeRouteLayer(route);
+    await MapboxLayerUtil.drawRoute(_mapboxMap, route);
 
     for (var i = 0; i < route.waypoints.length; i++) {
       final mbp = route.waypoints[i];
@@ -782,21 +829,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   }
 
   Future<void> _removeRouteLayer(TrailblazeRoute route) async {
-    try {
-      if (await _mapboxMap.style.styleLayerExists(route.layerId)) {
-        await _mapboxMap.style.removeStyleLayer(route.layerId);
-      }
-    } catch (e) {
-      log('Exception removing route style layer: $e');
-    }
-
-    try {
-      if (await _mapboxMap.style.styleSourceExists(route.sourceId)) {
-        await _mapboxMap.style.removeStyleSource(route.sourceId);
-      }
-    } catch (e) {
-      log('Exception removing route style source layer: $e');
-    }
+    await MapboxLayerUtil.deleteRoute(_mapboxMap, route);
   }
 
   Future<void> _drawMetric(MetricType type, String targetKey) async {
@@ -822,12 +855,12 @@ class _MapWidgetState extends ConsumerState<MapWidget>
 
     try {
       await _mapboxMap.style
-          .addSource(PolylineHelper.buildGeoJsonSource(polylines, key));
+          .addSource(PolylineHelper.buildMetricSource(polylines, key));
     } catch (e) {
       // Source might exist already
     }
 
-    await _mapboxMap.style.addLayerAt(PolylineHelper.buildLineLayer(key),
+    await _mapboxMap.style.addLayerAt(PolylineHelper.buildMetricLineLayer(key),
         mbm.LayerPosition(below: "road-label"));
   }
 
@@ -1082,6 +1115,10 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       return;
     }
 
+    if (_viewModeContext.viewMode == ViewMode.navigation) {
+      return;
+    }
+
     if (_viewModeContext.viewMode != ViewMode.directions ||
         _viewModeContext.viewMode == ViewMode.metricDetails) {
       await annotationHelper?.deletePointAnnotations();
@@ -1193,6 +1230,13 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     if (_isCameraLocked) {
       setState(() {
         _isCameraLocked = false;
+      });
+    }
+
+    if (_viewModeContext.viewMode == ViewMode.navigation &&
+        _isFollowingLocation) {
+      setState(() {
+        _isFollowingLocation = false;
       });
     }
   }
@@ -1346,24 +1390,32 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     await _mapboxMap.style.setStyleURI(styleUri);
 
     // Redraw routes to show them on top of the new style.
-    for (var route in routesList) {
-      if (route == _selectedRoute) {
-        continue;
-      }
-
-      await _removeRouteLayer(route);
-      _drawRoute(route);
-    }
-
-    if (_selectedRoute != null) {
-      await _removeRouteLayer(_selectedRoute!);
-      _drawRoute(_selectedRoute!);
-    }
+    await _redrawRoutes();
 
     if (_viewModeContext.viewMode == ViewMode.metricDetails &&
         _metricType != MetricType.elevation &&
         _metricKey != null) {
       _onMetricChanged(_metricType, _metricKey);
+    }
+  }
+
+  Future<void> _redrawRoutes() async {
+    for (var route in routesList) {
+      await _removeRouteLayer(route);
+
+      // Active route will be drawn last.
+      // During navigation we should only draw the active route.
+      if (route == _selectedRoute ||
+          _viewModeContext.viewMode == ViewMode.navigation) {
+        continue;
+      }
+
+      await _drawRoute(route);
+    }
+
+    // Draw active route last so it appears on top
+    if (_selectedRoute != null) {
+      _drawRoute(_selectedRoute!);
     }
   }
 
@@ -1476,6 +1528,14 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     }
   }
 
+  Future<void> _toggleNavigationMode() async {
+    if (_viewModeContext.viewMode == ViewMode.navigation) {
+      await _setViewMode(ViewMode.directions);
+    } else {
+      await _setViewMode(ViewMode.navigation);
+    }
+  }
+
   void _onMapControlChanged(bool isEditingAvoidArea) {
     setState(() {
       _isEditingAvoidArea = isEditingAvoidArea;
@@ -1516,7 +1576,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     } else if (_viewModeContext.viewMode == ViewMode.metricDetails) {
       return 0;
     } else if (_viewModeContext.viewMode == ViewMode.parks ||
-        _viewModeContext.viewMode == ViewMode.multiFeatures) {
+        _viewModeContext.viewMode == ViewMode.multiFeatures ||
+        _viewModeContext.viewMode == ViewMode.navigation) {
       final size = MediaQuery.sizeOf(context);
       final double screenHeight =
           size.height - kAppPadding - kMapExtraWidgetsHeight;
@@ -1554,6 +1615,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             _viewModeContext.viewMode == ViewMode.shuffle) &&
         _selectedRoute != null) {
       return kPanelRouteInfoMinHeight;
+    } else if (_viewModeContext.viewMode == ViewMode.navigation) {
+      return kPanelRouteInfoMinHeight;
     } else {
       return kPanelMinContentHeight;
     }
@@ -1563,7 +1626,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     // In the directions view, the panel appears over
     //  top of the map thus not affecting padding.
     return _viewModeContext.viewMode == ViewMode.directions ||
-        _viewModeContext.viewMode == ViewMode.shuffle;
+        _viewModeContext.viewMode == ViewMode.shuffle ||
+        _viewModeContext.viewMode == ViewMode.navigation;
   }
 
   bool _shouldShowDirectionsTopBar() {
@@ -1572,7 +1636,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             _viewModeContext.viewMode == ViewMode.directions) &&
         _viewModeContext.viewMode != ViewMode.multiFeatures &&
         _viewModeContext.viewMode != ViewMode.parks &&
-        _viewModeContext.viewMode != ViewMode.metricDetails;
+        _viewModeContext.viewMode != ViewMode.metricDetails &&
+        _viewModeContext.viewMode != ViewMode.navigation;
   }
 
   Future<void> _clearCameraPadding() async {
@@ -1621,11 +1686,24 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       annotationHelper?.clearPointAnnotations();
     } else if ((_previousViewModeContext.viewMode == ViewMode.directions ||
             _previousViewModeContext.viewMode == ViewMode.shuffle) &&
-        _viewModeContext.viewMode != ViewMode.metricDetails) {
+        _viewModeContext.viewMode != ViewMode.metricDetails &&
+        _viewModeContext.viewMode != ViewMode.navigation) {
       await _removeRouteLayers();
     } else if (_previousViewModeContext.viewMode == ViewMode.search &&
         _viewModeContext.viewMode != ViewMode.directions) {
       annotationHelper?.deletePointAnnotations();
+    } else if (_previousViewModeContext.viewMode == ViewMode.navigation) {
+      setState(() {
+        _isFollowingLocation = false;
+      });
+      MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
+      MapboxLayerUtil.deleteInstructionLine(_mapboxMap);
+      _redrawRoutes();
+      _previousViewModeContext = ViewModeContext(
+        viewMode: ViewMode.search,
+        categoryId: null,
+        features: null,
+      );
     }
 
     // Perform actions based on new ViewMode
@@ -1642,6 +1720,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       _updateFeatures();
     } else if (_viewModeContext.viewMode == ViewMode.search) {
       _togglePanel(false);
+    } else if (_viewModeContext.viewMode == ViewMode.navigation) {
+      _redrawRoutes();
+      setState(() {
+        _isFollowingLocation = true;
+      });
     }
 
     _setMapControlSettings();
@@ -1718,23 +1801,13 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   Widget build(BuildContext context) {
     super.build(context);
     final bottomOffset = _getBottomOffset();
-    final bool isParksButtonVisible = (widget.isInteractiveMap &&
-            _viewModeContext.viewMode != ViewMode.shuffle &&
-            _viewModeContext.viewMode != ViewMode.metricDetails &&
-            _viewModeContext.viewMode != ViewMode.multiFeatures &&
-            _viewModeContext.viewMode != ViewMode.directions) ||
-        _viewModeContext.viewMode == ViewMode.parks;
-    final bool isShuffleButtonVisible = (widget.isInteractiveMap &&
-        _viewModeContext.viewMode != ViewMode.shuffle &&
-        _viewModeContext.viewMode != ViewMode.metricDetails &&
-        _viewModeContext.viewMode != ViewMode.multiFeatures &&
-        _viewModeContext.viewMode != ViewMode.directions);
+    final bool isParksButtonVisible = widget.isInteractiveMap &&
+        (_viewModeContext.viewMode == ViewMode.search ||
+            _viewModeContext.viewMode == ViewMode.parks);
+    final bool isShuffleButtonVisible =
+        widget.isInteractiveMap && _viewModeContext.viewMode == ViewMode.search;
     final bool isDirectionsButtonVisible =
-        _viewModeContext.viewMode != ViewMode.directions &&
-            _viewModeContext.viewMode != ViewMode.shuffle &&
-            _viewModeContext.viewMode != ViewMode.parks &&
-            _viewModeContext.viewMode != ViewMode.metricDetails &&
-            _viewModeContext.viewMode != ViewMode.multiFeatures &&
+        _viewModeContext.viewMode == ViewMode.search &&
             _selectedPlace != null &&
             !_isOriginChanged;
 
@@ -1747,6 +1820,9 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         _viewModeContext.viewMode == ViewMode.metricDetails;
     final bool shouldShowMultiFeatureTopBar =
         _viewModeContext.viewMode == ViewMode.multiFeatures;
+    final bool shouldShowNavigationWidget = widget.isInteractiveMap &&
+        _viewModeContext.viewMode == ViewMode.navigation &&
+        _selectedRoute != null;
 
     final bool isPanelClosedAndNotAnimating = _panelController.isAttached &&
         _panelController.isPanelClosed &&
@@ -1777,10 +1853,6 @@ class _MapWidgetState extends ConsumerState<MapWidget>
               setState(() {
                 _panelPos = pos;
               });
-              if (_viewModeContext.viewMode == ViewMode.parks ||
-                  _viewModeContext.viewMode == ViewMode.multiFeatures) {
-                return;
-              }
             },
             borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(16.0), bottom: Radius.zero),
@@ -1815,6 +1887,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                     onMapTapListener: _onMapTapListener,
                     onScrollListener: _onMapScrollListener,
                     onCameraChangeListener: _onMapCameraChangeListener,
+                    isFollowingLocation: _isFollowingLocation,
                   ),
                 ),
                 SafeArea(
@@ -1910,6 +1983,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                               _showMetricsTopBar()
                             else if (shouldShowMultiFeatureTopBar)
                               _showMultiFeatureTopBar()
+                            else if (shouldShowNavigationWidget)
+                              _showNavigationWidget()
                             else
                               const SizedBox(),
                             SizedBox(
@@ -1986,7 +2061,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                   height: 70,
                   padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(
@@ -2099,6 +2174,34 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                 },
               ),
             ),
+          if (_viewModeContext.viewMode == ViewMode.navigation &&
+              !_isFollowingLocation)
+            Positioned(
+              left: 8,
+              bottom: bottomOffset + kPanelFabPadding,
+              child: IconButtonSmall(
+                icon: Icons.navigation_outlined,
+                foregroundColor: Theme.of(context).colorScheme.primary,
+                text: 'Follow',
+                onTap: () {
+                  MapboxLayerUtil.deleteInstructionLine(_mapboxMap);
+                  setState(() {
+                    _isFollowingLocation = true;
+                  });
+                },
+              ),
+            ),
+          if (_selectedRoute != null &&
+              _viewModeContext.viewMode != ViewMode.navigation)
+            Positioned(
+              left: 4,
+              bottom: bottomOffset + kPanelFabPadding,
+              child: IconButtonSmall(
+                text: "Go",
+                icon: Icons.navigation,
+                onTap: _toggleNavigationMode,
+              ),
+            ),
         ],
       ),
     );
@@ -2126,18 +2229,21 @@ class _MapWidgetState extends ConsumerState<MapWidget>
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: IconButtonSmall(
-              icon: Icons.navigation_rounded,
-              onTap: _onGpsButtonPressed,
+          if (_viewModeContext.viewMode != ViewMode.navigation)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: IconButtonSmall(
+                icon: Icons.navigation_rounded,
+                onTap: _onGpsButtonPressed,
+              ),
             ),
-          ),
         ],
       );
     }
 
-    if (_selectedRoute != null && !_isCameraLocked) {
+    if (_viewModeContext.viewMode == ViewMode.directions &&
+        _selectedRoute != null &&
+        !_isCameraLocked) {
       buttons.add(
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -2269,6 +2375,16 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     );
   }
 
+  Widget _showNavigationWidget() {
+    return Padding(
+      key: _topWidgetKey,
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+      child: DirectionsWidget(
+        _selectedRoute!,
+      ),
+    );
+  }
+
   List<Widget> _panels(bool panel, ScrollController scrollController) {
     List<Widget>? panels;
 
@@ -2298,6 +2414,18 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             panelPos: _panelPos,
             onSelectFeature: _onManuallySelectFeature,
             onDirectionsClick: _onFeatureDirectionsClick,
+          ),
+        ];
+        break;
+      case ViewMode.navigation:
+        panels = [
+          PanelWidgets.panelGrabber(scrollController),
+          NavigationPanel(
+            panelPos: _panelPos,
+            scrollController: scrollController,
+            route: _selectedRoute,
+            onExit: _toggleNavigationMode,
+            onSelectInstruction: _onFlyToInstruction,
           ),
         ];
         break;
