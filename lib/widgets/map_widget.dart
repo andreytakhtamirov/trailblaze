@@ -1854,8 +1854,10 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                 _panelPos = pos;
               });
             },
-            borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16.0), bottom: Radius.zero),
+            borderRadius: isPanelShown() == true
+                ? const BorderRadius.vertical(
+                    top: Radius.circular(16.0), bottom: Radius.circular(0))
+                : null,
             panelBuilder: (scrollController) {
               return GestureDetector(
                 onTap: () {
@@ -2383,6 +2385,26 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         _selectedRoute!,
       ),
     );
+  }
+
+  bool isPanelShown() {
+    switch (_viewModeContext.viewMode) {
+      case ViewMode.parks:
+        return true;
+      case ViewMode.multiFeatures:
+        return true;
+      case ViewMode.navigation:
+        return true;
+      default:
+        if (_selectedRoute != null) {
+          return true;
+        } else if (_selectedPlace != null &&
+            _viewModeContext.viewMode != ViewMode.directions) {
+          return true;
+        }
+        break;
+    }
+    return false;
   }
 
   List<Widget> _panels(bool panel, ScrollController scrollController) {
