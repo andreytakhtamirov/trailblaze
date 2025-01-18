@@ -21,7 +21,7 @@ class Feature {
       type: json['type'],
       id: json['id'].toString(),
       center: json['center'],
-      nodes: List<int>.from(json['nodes']),
+      nodes: json['nodes'] != null ? List<int>.from(json['nodes']) : [],
       tags: {'name': json['tags']['name']},
     );
   }
@@ -56,5 +56,18 @@ class Feature {
       nodes: [],
       tags: {'name': place.placeName, 'address': place.properties?.address},
     );
+  }
+
+  Map<String, dynamic> toJsonSimple() {
+    // Used for storing in database to cache Nearby Parks queries.
+    // We can ignore 'nodes' since it takes up a lot of room and is unnecessary.
+    return {
+      'type': type,
+      'id': id,
+      'center': center,
+      'tags': {
+        'name': tags['name'],
+      },
+    };
   }
 }

@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:trailblaze/constants/cache_constants.dart';
+import 'package:trailblaze/data/feature.dart';
+import 'package:trailblaze/util/distance_helper.dart';
 
 part 'database.g.dart';
 
@@ -20,7 +24,30 @@ class SearchFeatures extends Table {
   IntColumn get lastUsed => integer()();
 }
 
-@DriftDatabase(tables: [SearchFeatures])
+class NearbyParks extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  IntColumn get distanceMeters => integer()();
+
+  RealColumn get latitude => real()();
+
+  RealColumn get longitude => real()();
+
+  TextColumn get features => text()();
+
+  IntColumn get lastUsed => integer()();
+}
+
+// Singleton class to ensure single instance access to drift database
+class Database {
+  static final AppDatabase _db = AppDatabase();
+
+  Database._internal();
+
+  static AppDatabase get instance => _db;
+}
+
+@DriftDatabase(tables: [SearchFeatures, NearbyParks])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -85,5 +112,76 @@ class AppDatabase extends _$AppDatabase {
     }
 
     return into(searchFeatures).insert(feature);
+  }
+
+  Future<int> insertNearbyParks(
+    int queryDistance,
+    double queryLat,
+    double queryLon,
+    List<Feature> features,
+  ) async {
+    final numEntries = await nearbyParks.count().getSingle();
+    if (numEntries >= kNearbyParksCacheLimit) {
+      final oldestEntry = await (select(nearbyParks)
+            ..orderBy([(t) => OrderingTerm.asc(t.lastUsed)])
+            ..limit(1))
+          .getSingleOrNull();
+      if (oldestEntry != null) {
+        await (delete(nearbyParks)..where((t) => t.id.equals(oldestEntry.id)))
+            .go();
+      }
+    }
+
+    final truncatedLat = DistanceHelper.truncateCoordinate(queryLat);
+    final truncatedLon = DistanceHelper.truncateCoordinate(queryLon);
+    final featuresJson =
+        features.map((feature) => feature.toJsonSimple()).toList();
+
+    return into(nearbyParks).insert(
+      NearbyParksCompanion(
+        distanceMeters: Value(queryDistance),
+        longitude: Value(truncatedLon),
+        latitude: Value(truncatedLat),
+        features: Value(jsonEncode(featuresJson)),
+        lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
+      ),
+    );
+  }
+
+  Future<List<Feature>?> getNearbyParksByLocation(
+    int distance,
+    double lat,
+    double lon,
+  ) async {
+    final truncatedLat = DistanceHelper.truncateCoordinate(lat);
+    final truncatedLon = DistanceHelper.truncateCoordinate(lon);
+    final queryResult = await (select(nearbyParks)
+          ..where(
+            (t) =>
+                t.latitude.equals(truncatedLat) &
+                t.longitude.equals(truncatedLon) &
+                t.distanceMeters.equals(distance),
+          ))
+        .get();
+
+    if (queryResult.isNotEmpty) {
+      final nearbyPark = queryResult.first;
+      await (update(nearbyParks)..where((t) => t.id.equals(nearbyPark.id)))
+          .write(NearbyParksCompanion(
+        lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
+      ));
+
+      final List<dynamic> featuresJson = jsonDecode(nearbyPark.features);
+      List<Feature> features = [];
+      for (var jsonItem in featuresJson) {
+        final feature = Feature.fromJson(jsonItem);
+        await Feature.loadAddress(feature);
+        features.add(feature);
+      }
+
+      return features;
+    }
+
+    return null;
   }
 }

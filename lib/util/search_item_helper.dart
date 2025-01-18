@@ -7,6 +7,10 @@ import 'package:trailblaze/util/format_helper.dart';
 class SearchItemHelper {
   static Widget iconForFeatureType(SearchFeatureType type) {
     switch (type) {
+      case SearchFeatureType.coordinates:
+        return const Icon(
+          Icons.location_on,
+        );
       case SearchFeatureType.category:
         return Icon(
           Icons.search,
@@ -53,6 +57,7 @@ class SearchItemHelper {
             color: Colors.blue.shade900,
           ),
         );
+      case SearchFeatureType.coordinates:
       case SearchFeatureType.history:
       case SearchFeatureType.place:
       case SearchFeatureType.neighborhood:
@@ -113,6 +118,7 @@ class SearchItemHelper {
     final type = getFeatureTypeFromString(s.featureType);
     final String label;
     switch (type) {
+      case SearchFeatureType.coordinates:
       case SearchFeatureType.history:
       case SearchFeatureType.place:
       case SearchFeatureType.address:

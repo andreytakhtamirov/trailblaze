@@ -10,6 +10,8 @@ import 'package:trailblaze/data/search_feature_type.dart';
 import 'package:trailblaze/extensions/mapbox_search_extension.dart';
 import 'package:trailblaze/managers/map_state_notifier.dart';
 import 'package:trailblaze/managers/place_manager.dart';
+import 'package:trailblaze/util/coordinate_helper.dart';
+import 'package:trailblaze/util/distance_helper.dart';
 import 'package:trailblaze/util/search_item_helper.dart';
 import 'package:trailblaze/util/ui_helper.dart';
 import 'package:trailblaze/widgets/search/empty_search.dart';
@@ -120,7 +122,36 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       _showHistory();
       return;
     }
+
     geo.Position? currentLocation;
+
+    double? lat;
+    double? lng;
+    final degreesDirection = CoordinateHelper.stringToDegreesDirection(query);
+    final decimalDegrees = CoordinateHelper.stringToDecimalDegrees(query);
+    if (degreesDirection[0] != -1 && degreesDirection[1] != -1) {
+      lat = degreesDirection[0];
+      lng = degreesDirection[1];
+    } else if (decimalDegrees[0] != -1 && decimalDegrees[1] != -1) {
+      lat = decimalDegrees[0];
+      lng = decimalDegrees[1];
+    }
+
+    if (lat != null &&
+        lng != null &&
+        DistanceHelper.isValidCoordinate(lat, lng)) {
+      setState(() {
+        final suggestion = SuggestionTb(
+          name: "$lat, $lng",
+          mapboxId: "$lat,$lng",
+          featureType: SearchFeatureType.coordinates.value,
+          placeFormatted: "Search for coordinates (lat, lon)",
+        );
+        _results = [suggestion];
+        _isHistoryShowing = false;
+      });
+      return;
+    }
 
     if (_futureLocation != null) {
       currentLocation = _futureLocation;
@@ -161,6 +192,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           'features': features,
         });
       }
+    } else if (s.featureType == SearchFeatureType.coordinates.value) {
+      final place = _placeManager.placeFromCoordinates(s);
+      Navigator.of(context).pop(place);
     } else if (s.featureType != SearchFeatureType.userLocation.value) {
       // Fetch info about particular place.
       final place = await _placeManager.resolveFeature(s);

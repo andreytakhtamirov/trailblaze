@@ -60,4 +60,16 @@ class DistanceHelper {
     final dy = pixel1.y - pixel2.y;
     return math.sqrt(dx * dx + dy * dy);
   }
+
+  static double truncateCoordinate(double value) {
+    // 3 decimal places equals roughly 111m of precision
+    return double.parse(value.toStringAsFixed(3));
+  }
+
+  static bool isValidCoordinate(double latitude, double longitude) {
+    return latitude >= -90 &&
+        latitude <= 90 &&
+        longitude >= -180 &&
+        longitude <= 180;
+  }
 }

@@ -6,4 +6,4 @@ final Uri kTermsAndConditionsUri = Uri.parse("$homepage/blob/main/terms_and_cond
 const String kPackageHomeUrl = 'https://pub.dev/packages';
 const String kLicensePath = 'license';
 const String kContactEmail = 'trailblaze.team@outlook.com';
-const String kInfoFooter = '2024 Andrey Takhtamirov';
+const String kInfoFooter = '2025 Andrey Takhtamirov';

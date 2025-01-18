@@ -5,10 +5,12 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
 import 'package:trailblaze/constants/route_info_constants.dart';
+import 'package:trailblaze/data/search_feature_type.dart';
 import 'package:trailblaze/data/view_mode_context.dart';
 import 'package:trailblaze/managers/map_state_notifier.dart';
 import 'package:trailblaze/managers/place_manager.dart';
 import 'package:trailblaze/screens/distance_selector_screen.dart';
+import 'package:trailblaze/util/distance_helper.dart';
 import 'package:trailblaze/util/export_helper.dart';
 import 'package:trailblaze/util/format_helper.dart';
 import 'package:trailblaze/util/polyline_helper.dart';
@@ -288,21 +290,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       return;
     }
 
-    final height = mounted ? MediaQuery.of(context).size.height : 0.0;
-    final width = mounted ? MediaQuery.of(context).size.width : 0.0;
-    final cameraForCoordinates = await CameraHelper.cameraOptionsForCoordinates(
-      _mapboxMap,
-      coordinatesList,
-      _getCameraPadding(ignoreBottom: true),
-      height,
-      width,
-    );
-
-    // Get SafeArea top padding (if any), for notched devices.
-    cameraForCoordinates.padding?.top +=
-        mounted ? MediaQuery.of(context).padding.top : 0;
-
-    await _mapFlyToOptions(cameraForCoordinates);
+    _flyToCoordinates(coordinatesList);
   }
 
   void _onManuallySelectFeature(tb.Feature feature) async {
@@ -703,6 +691,20 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     );
   }
 
+  Future<void> _flyToCoordinates(List<mbm.Point> coordinates) async {
+    final height = mounted ? MediaQuery.of(context).size.height : 0.0;
+    final width = mounted ? MediaQuery.of(context).size.width : 0.0;
+    final cameraForCoordinates = await CameraHelper.cameraOptionsForCoordinates(
+      _mapboxMap,
+      coordinates,
+      _getCameraPadding(ignoreBottom: false),
+      height,
+      width,
+    );
+
+    await _mapFlyToOptions(cameraForCoordinates);
+  }
+
   void _setSelectedRoute(TrailblazeRoute route) async {
     setState(() {
       _selectedRoute = route;
@@ -732,9 +734,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
 
   Future<void> _updateRouteSelected(
       TrailblazeRoute route, bool isSelected) async {
-    // Make sure route is removed before we add it again.
-    await _removeRouteLayer(route);
     route.setActive(isSelected);
+    await _mapboxMap.style.updateLayer(route.lineLayer);
     await _drawRoute(route);
   }
 
@@ -966,6 +967,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
 
     if (place == null) {
       _setMapControlSettings();
+    } else if (!DistanceHelper.isValidCoordinate(
+        place.center!.lat, place.center!.long)) {
+      UiHelper.showSnackBar(context, "Invalid coordinates");
+      _onSelectPlace(null);
+      return;
     }
 
     if (isPlaceDataUpdate) {
@@ -1114,6 +1120,14 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           cameraState.zoom);
 
       if (closestFeature != null) {
+        final coordinates =
+            annotationHelper?.coordinatesForCluster(closestFeature);
+        if (coordinates != null) {
+          // Reveal clustered features
+          _flyToCoordinates(coordinates);
+          return;
+        }
+
         _onManuallySelectFeature(closestFeature);
         return;
       } else if (_viewModeContext.viewMode == ViewMode.parks) {
@@ -1133,10 +1147,16 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       lat: coordinate.lat.toDouble()
     ));
 
+    _updateSelectedPlace(place);
+  }
+
+  Future<void> _updateSelectedPlace(MapBoxPlace place) async {
     _onSelectPlace(place);
 
-    final futureAddress = await geocoding.getAddress(
-        (lat: coordinate.lat.toDouble(), long: coordinate.lng.toDouble()));
+    final futureAddress = await geocoding.getAddress((
+      lat: place.center!.lat.toDouble(),
+      long: place.center!.long.toDouble()
+    ));
 
     futureAddress.fold((places) {
       String? placeName;
@@ -1158,11 +1178,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       }
 
       placeName ??=
-          "(${coordinate.lng.toStringAsFixed(4)}, ${coordinate.lat.toStringAsFixed(4)})";
+          "(${place.center!.long.toStringAsFixed(4)}, ${place.center!.lat.toStringAsFixed(4)})";
 
       MapBoxPlace updatedPlace = MapBoxPlace(placeName: placeName, center: (
-        long: coordinate.lng.toDouble(),
-        lat: coordinate.lat.toDouble()
+        long: place.center!.long.toDouble(),
+        lat: place.center!.lat.toDouble()
       ));
       _onSelectPlace(updatedPlace, isPlaceDataUpdate: true);
       _setMapControlSettings();
@@ -1419,7 +1439,6 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       _onSelectPlace(null);
     } else {
       FirebaseHelper.logScreen("NearbyParks");
-      // TODO use cache for park queries
       _loadParks(kDefaultFeatureDistanceMeters);
     }
   }
@@ -1604,7 +1623,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             _previousViewModeContext.viewMode == ViewMode.shuffle) &&
         _viewModeContext.viewMode != ViewMode.metricDetails) {
       await _removeRouteLayers();
-    } else if (_previousViewModeContext.viewMode == ViewMode.search) {
+    } else if (_previousViewModeContext.viewMode == ViewMode.search &&
+        _viewModeContext.viewMode != ViewMode.directions) {
       annotationHelper?.deletePointAnnotations();
     }
 
@@ -1957,7 +1977,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           ),
           if (_isContentLoading)
             Positioned(
-              bottom: bottomOffset + kPanelFabHeight,
+              bottom: bottomOffset + kPanelFabPadding,
               left: 0,
               right: 0,
               child: Center(
@@ -1980,7 +2000,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             )
           else if (_isOriginChanged && !isPanelCoveringScreen)
             Positioned(
-              bottom: bottomOffset + kPanelFabHeight,
+              bottom: bottomOffset + kPanelFabPadding,
               left: 0,
               right: 0,
               child: Center(
@@ -1991,7 +2011,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             )
           else if (isRefreshButtonVisible && isPanelClosedAndNotAnimating)
             Positioned(
-              bottom: bottomOffset + kPanelFabHeight,
+              bottom: bottomOffset + kPanelFabPadding,
               left: 0,
               right: 0,
               child: Center(
@@ -2008,7 +2028,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             )
           else if (isDirectionsButtonVisible)
             Positioned(
-              bottom: bottomOffset + kPanelFabHeight,
+              bottom: bottomOffset + kPanelFabPadding,
               right: 16,
               child: IconButtonSmall(
                 text: 'Directions',
@@ -2022,7 +2042,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             )
           else if (_viewModeContext.viewMode == ViewMode.parks)
             Positioned(
-              bottom: bottomOffset + kPanelFabHeight,
+              bottom: bottomOffset + kPanelFabPadding,
               right: 16,
               child: IconButtonSmall(
                 text:
@@ -2145,6 +2165,10 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           onSelected: (place) async {
             await annotationHelper?.deletePointAnnotations();
             Future.delayed(const Duration(milliseconds: 100), () {
+              if (place?.text == SearchFeatureType.coordinates.value) {
+                _updateSelectedPlace(place!);
+                return;
+              }
               _onSelectPlace(place);
             });
           },
@@ -2232,6 +2256,10 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           await _setViewMode(ViewMode.search);
           await annotationHelper?.deletePointAnnotations();
           Future.delayed(const Duration(milliseconds: 100), () {
+            if (place?.text == SearchFeatureType.coordinates.value) {
+              _updateSelectedPlace(place!);
+              return;
+            }
             _onSelectPlace(place);
           });
         },
