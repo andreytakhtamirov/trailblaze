@@ -5,10 +5,14 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:trailblaze/constants/map_constants.dart';
 
 class PolylineHelper {
-  static LineLayer buildLineLayer(String key) {
+  static LineLayer buildMetricLineLayer(String key) {
+    return buildLineLayer(kMetricLayerIdPrefix + key);
+  }
+
+  static LineLayer buildLineLayer(String sourceId) {
     return LineLayer(
-      id: kMetricLayerIdPrefix + key,
-      sourceId: kMetricLayerIdPrefix + key,
+      id: sourceId,
+      sourceId: sourceId,
       lineJoin: LineJoin.ROUND,
       lineCap: LineCap.ROUND,
       lineColor: Colors.white.value,
@@ -19,8 +23,13 @@ class PolylineHelper {
     );
   }
 
-  static GeoJsonSource buildGeoJsonSource(
+  static GeoJsonSource buildMetricSource(
       List<List<List<num>>> allCoordinates, String key) {
+    return buildGeoJsonSource(allCoordinates, kMetricLayerIdPrefix + key);
+  }
+
+  static GeoJsonSource buildGeoJsonSource(
+      List<List<List<num>>> allCoordinates, String sourceId) {
     final fills = {"type": "FeatureCollection", "features": []};
 
     for (List<List<num>> coordinates in allCoordinates) {
@@ -34,8 +43,7 @@ class PolylineHelper {
       });
     }
 
-    return GeoJsonSource(
-        id: kMetricLayerIdPrefix + key, data: json.encode(fills));
+    return GeoJsonSource(id: sourceId, data: json.encode(fills));
   }
 
   static Map<String, Object> buildFlatLineString(

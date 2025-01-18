@@ -172,7 +172,7 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
     return 1000000 / math.pow(zoom, 6);
   }
 
-  void drawSingleAnnotation(mbm.Position coordinates) async {
+  Future<void> drawSingleAnnotation(mbm.Position coordinates) async {
     var options = mbm.PointAnnotationOptions(
       geometry: mbm.Point(coordinates: coordinates),
       image: _locationPinImage,
@@ -487,7 +487,7 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
     selectOriginAnnotation = await _circleAnnotationManager.create(options);
   }
 
-  void drawStartAnnotation(mbm.Position coordinates) async {
+  Future<void> drawStartAnnotation(mbm.Position coordinates) async {
     await _circleAnnotationManager.deleteAll();
 
     var options = mbm.CircleAnnotationOptions(

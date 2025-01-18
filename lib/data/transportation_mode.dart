@@ -1,9 +1,3 @@
-/*  The types of available transportation modes.
-*     The value corresponds to available profiles
-*     in the Mapbox Directions API:
-*     https://docs.mapbox.com/api/navigation/directions/#routing-profiles,
-*     as well as custom profiles in the private Trailblaze API.
-*/
 enum TransportationMode {
   none("none"),
   walking("walking"),
