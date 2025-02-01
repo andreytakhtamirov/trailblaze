@@ -167,7 +167,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     ref.listenManual<NavigationState>(navigationStateProvider,
         (previous, next) async {
       if (previous?.snappedLocation != next.snappedLocation) {
-        if (next.snappedLocation == null) {
+        if (next.snappedLocation == null || next.currentInstructionIndex == kInvalidInstruction) {
           return;
         }
 
@@ -1698,6 +1698,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       });
       MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
       MapboxLayerUtil.deleteInstructionLine(_mapboxMap);
+      ref.read(navigationStateProvider.notifier).clearState();
       _redrawRoutes();
       _previousViewModeContext = ViewModeContext(
         viewMode: ViewMode.search,

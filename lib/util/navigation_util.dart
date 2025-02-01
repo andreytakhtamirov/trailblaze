@@ -1,24 +1,24 @@
+import 'dart:math';
+
 import 'package:trailblaze/data/instruction.dart';
 import 'package:turf/distance.dart';
 import 'package:turf/helpers.dart';
 
 class NavigationUtil {
-  static num? calculateDistanceToInstruction(Position position, Instruction instruction) {
-    // Define the base tolerance in meters
-    const double baseToleranceMeters = 40;
+  static num? calculateDistanceToInstruction(
+      Position position, Instruction instruction,
+      {required bool includeTolerance}) {
+    // If a user has gone off course, we'll guide them back
+    // to the last matched point (exactly, without tolerance).
+    final double baseToleranceMeters = includeTolerance ? 20 : 10;
 
-    // Convert user's position to Turf Point
     final userPoint = Point(coordinates: Position(position.lng, position.lat));
-
-    // Get instruction line segments as pairs of coordinates
     final lineCoordinates = instruction.coordinates;
 
-    // Function to calculate the minimum distance between a point and a line
     num calculatePointToLineDistance(Point point, List<Position> line) {
       num minDistance = double.infinity;
 
       for (int i = 0; i < line.length - 1; i++) {
-        // Get the current segment start and end
         final start = Point(coordinates: line[i]);
         final end = Point(coordinates: line[i + 1]);
 
@@ -32,18 +32,19 @@ class NavigationUtil {
       return minDistance;
     }
 
-    // Calculate the distance from the user's position to the instruction line
-    final distanceMeters = calculatePointToLineDistance(userPoint, lineCoordinates);
+    final distanceMeters =
+        calculatePointToLineDistance(userPoint, lineCoordinates);
 
-    // Return the distance if within tolerance, otherwise return a large value
     return distanceMeters <= baseToleranceMeters ? distanceMeters : null;
   }
 
-  static Position snapToRoute(Position userPosition, Instruction? instruction) {
+  static Position? snapToRoute(
+      Position userPosition, Instruction? instruction) {
     final lineCoordinates = instruction?.coordinates;
 
-    Position findClosestPointOnLine(Position userPosition, List<Position> line) {
-      Position closestPoint = userPosition;
+    Position? findClosestPointOnLine(
+        Position userPosition, List<Position> line) {
+      Position? closestPoint;
       num minDistance = double.infinity;
 
       for (int i = 0; i < line.length - 1; i++) {
@@ -51,7 +52,8 @@ class NavigationUtil {
         final segmentEnd = line[i + 1];
 
         // Compute the closest point along the segment
-        final projectedPoint = _projectPointOnSegment(userPosition, segmentStart, segmentEnd);
+        final projectedPoint =
+            _projectPointOnSegment(userPosition, segmentStart, segmentEnd);
 
         // Compute the distance to the projected point
         final distanceToProjected = distance(
@@ -69,19 +71,27 @@ class NavigationUtil {
       return closestPoint;
     }
 
-    return lineCoordinates != null ? findClosestPointOnLine(userPosition, lineCoordinates) : userPosition;
+    return lineCoordinates != null
+        ? findClosestPointOnLine(userPosition, lineCoordinates)
+        : null;
   }
 
-  static double calculateCurrentRouteDistance(List<Instruction>? instructions, int? currentInstructionIndex, Position? point) {
-    if (instructions == null || instructions.isEmpty || currentInstructionIndex == null || point == null) {
+  static double calculateCurrentRouteDistance(List<Instruction>? instructions,
+      int? currentInstructionIndex, Position? point) {
+    if (instructions == null ||
+        instructions.isEmpty ||
+        currentInstructionIndex == null ||
+        point == null) {
       return 0;
     }
 
-    final List<Position> allCoordinates = instructionsToPositions(instructions, minIndex: currentInstructionIndex);
+    final List<Position> allCoordinates = instructionsToPositions(instructions,
+        minIndex: currentInstructionIndex);
     return calculateDistanceFromPointToEnd(point, allCoordinates);
   }
 
-  static double calculateDistanceFromPointToEnd(Position point, List<Position> line) {
+  static double calculateDistanceFromPointToEnd(
+      Position point, List<Position> line) {
     double totalDistance = 0;
 
     if (line.isEmpty) {
@@ -93,9 +103,11 @@ class NavigationUtil {
     // Calculate distance from the point to the end of its segment
     final segmentStart = line[index];
     final segmentEnd = line[index + 1];
-    final projectedPoint = _projectPointOnSegment(point, segmentStart, segmentEnd);
+    final projectedPoint =
+        _projectPointOnSegment(point, segmentStart, segmentEnd);
 
-    totalDistance += _calculateDistanceBetweenPoints(projectedPoint, segmentEnd);
+    totalDistance +=
+        _calculateDistanceBetweenPoints(projectedPoint, segmentEnd);
 
     // Add distances of all subsequent segments
     for (int i = index + 1; i < line.length - 1; i++) {
@@ -106,30 +118,35 @@ class NavigationUtil {
   }
 
   static List<List<num>> getCoordsFromPointToStart(
-        Position point, int? instructionIndex, List<Instruction>? instructions) {
-      final List<Position> positions = [];
+      Position point, int? instructionIndex, List<Instruction>? instructions) {
+    final List<Position> positions = [];
 
-      if (instructions == null || instructions.isEmpty || instructionIndex == null) {
-        return [];
-      }
-
-      final List<Position> line = instructionsToPositions(instructions, maxIndex: instructionIndex + 1);
-
-      final segmentIndex = _segmentIndexForPoint(point, line);
-      final segmentStart = line[segmentIndex];
-      final segmentEnd = line[segmentIndex + 1];
-      final projectedPoint = _projectPointOnSegment(point, segmentStart, segmentEnd);
-      positions.add(projectedPoint);
-
-      // Add all preceding positions from the segment start back to the start of the route
-      for (int i = segmentIndex + 1; i > 0; i--) {
-        positions.add(line[i - 1]);
-      }
-
-      return positionsToList(positions);
+    if (instructions == null ||
+        instructions.isEmpty ||
+        instructionIndex == null) {
+      return [];
     }
 
-    static num _pointToSegmentDistance(Point point, Point segmentStart, Point segmentEnd) {
+    final List<Position> line =
+        instructionsToPositions(instructions, maxIndex: instructionIndex + 1);
+
+    final segmentIndex = _segmentIndexForPoint(point, line);
+    final segmentStart = line[segmentIndex];
+    final segmentEnd = line[segmentIndex + 1];
+    final projectedPoint =
+        _projectPointOnSegment(point, segmentStart, segmentEnd);
+    positions.add(projectedPoint);
+
+    // Add all preceding positions from the segment start back to the start of the route
+    for (int i = segmentIndex + 1; i > 0; i--) {
+      positions.add(line[i - 1]);
+    }
+
+    return positionsToList(positions);
+  }
+
+  static num _pointToSegmentDistance(
+      Point point, Point segmentStart, Point segmentEnd) {
     final p = point.coordinates;
     final a = segmentStart.coordinates;
     final b = segmentEnd.coordinates;
@@ -164,7 +181,8 @@ class NavigationUtil {
       // Closest to the segment
       final projx = ax + t * abx;
       final projy = ay + t * aby;
-      return distance(Point(coordinates: Position(projx, projy)), point, Unit.meters);
+      return distance(
+          Point(coordinates: Position(projx, projy)), point, Unit.meters);
     }
   }
 
@@ -211,7 +229,8 @@ class NavigationUtil {
       final end = Point(coordinates: coordinates[i + 1]);
 
       // Calculate the distance from the point to the segment
-      num segmentDistance = _pointToSegmentDistance(Point(coordinates: point), start, end);
+      num segmentDistance =
+          _pointToSegmentDistance(Point(coordinates: point), start, end);
       if (segmentDistance < minDistance) {
         minDistance = segmentDistance;
         minSegment = i;
@@ -221,7 +240,8 @@ class NavigationUtil {
     return minSegment;
   }
 
-  static List<Position> instructionsToPositions(List<Instruction> instructions, {int minIndex = 0, int? maxIndex}) {
+  static List<Position> instructionsToPositions(List<Instruction> instructions,
+      {int minIndex = 0, int? maxIndex}) {
     final List<Position> allCoordinates = [];
 
     maxIndex ??= instructions.length;
@@ -239,5 +259,28 @@ class NavigationUtil {
     }).toList();
 
     return coordinates;
+  }
+
+  static double calculateBearing(
+      Position currentPosition, Position targetPosition) {
+    final lat1 = currentPosition.lat * pi / 180.0;
+    final lon1 = currentPosition.lng * pi / 180.0;
+    final lat2 = targetPosition.lat * pi / 180.0;
+    final lon2 = targetPosition.lng * pi / 180.0;
+
+    final dLon = lon2 - lon1;
+
+    // Calculate the bearing
+    final y = sin(dLon) * cos(lat2);
+    final x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon);
+    final bearing = atan2(y, x);
+
+    return (bearing * 180.0 / pi + 360.0) % 360.0;
+  }
+
+  static double calculateTurnAngle(
+      double currentBearing, double targetBearing) {
+    final turnAngle = (targetBearing - currentBearing + 360) % 360;
+    return turnAngle <= 180 ? turnAngle : turnAngle - 360;
   }
 }

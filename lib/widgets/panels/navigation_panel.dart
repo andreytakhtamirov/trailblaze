@@ -89,8 +89,8 @@ class NavigationPanel extends ConsumerWidget {
                   boxShadow: const [
                     BoxShadow(
                       color: Colors.black12,
-                      offset: Offset(0, 3),
-                      blurRadius: 8,
+                      offset: Offset(0, 1),
+                      blurRadius: 3,
                     ),
                   ]),
               padding: const EdgeInsets.symmetric(vertical: 8),
