@@ -14,6 +14,15 @@ class MapboxLayerUtil {
 
   static Future<void> drawRoute(
       mbm.MapboxMap mapboxMap, TrailblazeRoute route) async {
+
+    if (await mapboxMap.style.styleSourceExists(route.geoJsonSource.id)) {
+      await mapboxMap.style.removeStyleSource(route.geoJsonSource.id);
+    }
+
+    if (await mapboxMap.style.styleLayerExists(route.layerId)) {
+      await mapboxMap.style.removeStyleLayer(route.layerId);
+    }
+
     try {
       await mapboxMap.style.addSource(route.geoJsonSource);
     } catch (e) {

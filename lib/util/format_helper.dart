@@ -89,6 +89,42 @@ class FormatHelper {
     }
   }
 
+  static String formatSpeed(num? speedMetersPerSecond,
+      {bool noRemainder = false}) {
+    if (AppSettings.isMetric) {
+      return "${_formatSpeedMetric(speedMetersPerSecond, noRemainder: noRemainder)}\nkm/h";
+    } else {
+      return "${_formatSpeedImperial(speedMetersPerSecond,
+          noRemainder: noRemainder)}\nmph";
+    }
+  }
+
+  static String _formatSpeedMetric(num? speedMetersPerSecond,
+      {bool noRemainder = false}) {
+    if (speedMetersPerSecond == null) return '0';
+
+    num speedKph = speedMetersPerSecond * 3.6;
+
+    if (noRemainder) {
+      return speedKph.toStringAsFixed(0);
+    } else {
+      return speedKph.toStringAsFixed(2);
+    }
+  }
+
+  static String _formatSpeedImperial(num? speedMetersPerSecond,
+      {bool noRemainder = false}) {
+    if (speedMetersPerSecond == null) return '0';
+
+    num speedMph = speedMetersPerSecond * 2.23694;
+
+    if (noRemainder) {
+      return speedMph.toStringAsFixed(0);
+    } else {
+      return speedMph.toStringAsFixed(2);
+    }
+  }
+
   static String formatElevationDistance(num? distanceMeters,
       {bool noRemainder = false}) {
     if (AppSettings.isMetric) {

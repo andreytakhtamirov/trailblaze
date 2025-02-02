@@ -78,6 +78,7 @@ class MapWidget extends ConsumerStatefulWidget {
 class _MapWidgetState extends ConsumerState<MapWidget>
     with AutomaticKeepAliveClientMixin<MapWidget> {
   late mbm.MapboxMap _mapboxMap;
+  ProviderSubscription<NavigationState>? _navigationListener;
   MapBoxPlace? _selectedPlace;
   MapBoxPlace _startingLocation = MapBoxPlace(placeName: "My Location");
   String _selectedMode = kDefaultTransportationMode.value;
@@ -159,21 +160,20 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         // Temporary fix for inconsistent behaviour between Mapbox SDK flavours
       });
     }
-
-    _listenToLocation();
   }
 
   void _listenToLocation() {
-    ref.listenManual<NavigationState>(navigationStateProvider,
+    _navigationListener = ref.listenManual<NavigationState>(navigationStateProvider,
         (previous, next) async {
       if (previous?.snappedLocation != next.snappedLocation) {
-        if (next.snappedLocation == null || next.currentInstructionIndex == kInvalidInstruction) {
+        if (next.snappedLocation == null ||
+            next.currentInstructionIndex == kInvalidInstruction) {
           return;
         }
 
         if (_viewModeContext.viewMode != ViewMode.navigation) {
           // Mode might have switched during update
-          MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
+          await MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
           return;
         }
 
@@ -182,9 +182,13 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             next.currentInstructionIndex,
             _selectedRoute?.instructions);
 
-        MapboxLayerUtil.updateProgressLayer(_mapboxMap, coordinates);
+        await MapboxLayerUtil.updateProgressLayer(_mapboxMap, coordinates);
       }
     });
+  }
+
+  void _stopListeningToLocation() {
+    _navigationListener?.close();
   }
 
   Future<void> _initAnnotationManager() async {
@@ -1531,8 +1535,12 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   Future<void> _toggleNavigationMode() async {
     if (_viewModeContext.viewMode == ViewMode.navigation) {
       await _setViewMode(ViewMode.directions);
+      _stopListeningToLocation();
+      MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
     } else {
       await _setViewMode(ViewMode.navigation);
+      MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
+      _listenToLocation();
     }
   }
 
@@ -1722,7 +1730,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     } else if (_viewModeContext.viewMode == ViewMode.search) {
       _togglePanel(false);
     } else if (_viewModeContext.viewMode == ViewMode.navigation) {
-      _redrawRoutes();
+      await _redrawRoutes();
       setState(() {
         _isFollowingLocation = true;
       });
@@ -1834,6 +1842,12 @@ class _MapWidgetState extends ConsumerState<MapWidget>
 
     if (_mapInitializedCompleter.isCompleted) {
       _setMapControlSettings();
+    }
+
+    String? userSpeed;
+    if (_viewModeContext.viewMode == ViewMode.navigation) {
+      final userPos = ref.watch(navigationStateProvider).userPosition;
+      userSpeed = FormatHelper.formatSpeed(userPos?.speed, noRemainder: true);
     }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -2177,27 +2191,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                 },
               ),
             ),
-          if (_viewModeContext.viewMode == ViewMode.navigation &&
-              !_isFollowingLocation)
-            Positioned(
-              left: 8,
-              bottom: bottomOffset + kPanelFabPadding,
-              child: IconButtonSmall(
-                icon: Icons.navigation_outlined,
-                foregroundColor: Theme.of(context).colorScheme.primary,
-                text: 'Follow',
-                onTap: () {
-                  MapboxLayerUtil.deleteInstructionLine(_mapboxMap);
-                  setState(() {
-                    _isFollowingLocation = true;
-                  });
-                },
-              ),
-            ),
+          _showNavigationWidgets(bottomOffset, userSpeed),
           if (_selectedRoute != null &&
               _viewModeContext.viewMode != ViewMode.navigation)
             Positioned(
-              left: 4,
+              right: 16,
               bottom: bottomOffset + kPanelFabPadding,
               child: IconButtonSmall(
                 text: "Go",
@@ -2208,6 +2206,51 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         ],
       ),
     );
+  }
+
+  Widget _showNavigationWidgets(double bottomOffset, String? userSpeed) {
+    if (_viewModeContext.viewMode == ViewMode.navigation && bottomOffset <= _getMinPanelHeight()) {
+      return Positioned(
+        left: 16,
+        bottom: bottomOffset + kPanelFabPadding + 26,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 8,
+          children: [
+            if (userSpeed != null)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  userSpeed,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            if (!_isFollowingLocation)
+              IconButtonSmall(
+                icon: Icons.navigation_outlined,
+                foregroundColor: Theme.of(context).colorScheme.primary,
+                text: 'Follow',
+                onTap: () {
+                  MapboxLayerUtil.deleteInstructionLine(_mapboxMap);
+                  setState(() {
+                    _isFollowingLocation = true;
+                  });
+                },
+              ),
+          ],
+        ),
+      );
+    }
+    return const SizedBox();
   }
 
   Widget _showMapControlButtons() {

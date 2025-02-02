@@ -113,26 +113,44 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
     TrailblazeRoute? closestRoute;
     num? closestDistance;
 
-    final touchCoordinates = mbm.Point(
-      coordinates: mbm.Position(touchLon, touchLat),
-    );
+    final touchPoint = turf.Point(
+        coordinates: turf.Position(
+      touchLon.toDouble(),
+      touchLat.toDouble(),
+    ));
 
     for (TrailblazeRoute route in routes) {
-      if (route.coordinates == null) {
+      if (route.coordinates == null || route.coordinates!.isEmpty) {
         continue;
       }
-      for (List<dynamic> coordinate in route.coordinates!) {
-        final featureCoordinates = mbm.Point(
-          coordinates: mbm.Position(coordinate[0], coordinate[1]),
-        );
 
-        final distance = turf.distance(
-            featureCoordinates, touchCoordinates, turf.Unit.kilometers);
-        if (distance < _getCurrentThreshold(currentZoom)) {
-          if (closestDistance == null || distance < closestDistance) {
-            closestDistance = distance;
-            closestRoute = route;
-          }
+      List<turf.Position> lineCoordinates = route.coordinates!
+          .map((coordinate) =>
+              turf.Position(coordinate[0].toDouble(), coordinate[1].toDouble()))
+          .toList();
+
+      final routeLine = turf.LineString(coordinates: lineCoordinates);
+      final nearestPoint = turf
+          .nearestPointOnLine(
+            routeLine,
+            touchPoint,
+          )
+          .geometry;
+
+      if (nearestPoint == null) {
+        continue;
+      }
+
+      final distance = turf.distance(
+        nearestPoint,
+        touchPoint,
+        turf.Unit.kilometers,
+      );
+
+      if (distance < _getCurrentThreshold(currentZoom)) {
+        if (closestDistance == null || distance < closestDistance) {
+          closestDistance = distance;
+          closestRoute = route;
         }
       }
     }

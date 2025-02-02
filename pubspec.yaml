@@ -37,7 +37,7 @@ dependencies:
   secure_dotenv: ^1.0.0
   geolocator: ^9.0.2
   polyline_codec: ^0.1.6
-  turf: ^0.0.7
+  turf: ^0.0.9
   infinite_scroll_pagination: ^4.0.0
   syncfusion_flutter_charts: ^21.2.8
   expandable: ^5.0.1

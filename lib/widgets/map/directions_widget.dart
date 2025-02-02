@@ -58,7 +58,13 @@ class _DirectionsWidgetState extends ConsumerState<DirectionsWidget> {
     final directionToRoute =
         ref.watch(navigationStateProvider).directionToRoute;
 
+    final nextNextInstruction =
+        (currIndex >= 0 && currIndex + 2 < (_instructions?.length ?? 0))
+            ? _instructions![currIndex + 2]
+            : null;
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AnimatedContainer(
           duration: kAnimationDuration,
@@ -73,6 +79,7 @@ class _DirectionsWidgetState extends ConsumerState<DirectionsWidget> {
                 nextInstruction, distanceToNext, directionToRoute),
           ),
         ),
+        instructionPreview(nextNextInstruction),
       ],
     );
   }
@@ -178,6 +185,39 @@ class _DirectionsWidgetState extends ConsumerState<DirectionsWidget> {
           ),
         )
       ],
+    );
+  }
+
+  Widget instructionPreview(Instruction? instruction) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 26),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade600.withValues(alpha: 0.95),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Then",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              instruction?.sign.icon,
+              size: 28,
+              color: Colors.white,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
