@@ -79,7 +79,8 @@ class _DirectionsWidgetState extends ConsumerState<DirectionsWidget> {
                 nextInstruction, distanceToNext, directionToRoute),
           ),
         ),
-        instructionPreview(nextNextInstruction),
+        if (nextNextInstruction != null)
+          instructionPreview(nextNextInstruction),
       ],
     );
   }
