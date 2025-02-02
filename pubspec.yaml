@@ -80,6 +80,7 @@ dependencies:
   drift_flutter: ^0.1.0
   geocoding: ^3.0.0
   fixnum: any
+  keep_screen_on: ^3.0.0
 
 dev_dependencies:
   flutter_test:

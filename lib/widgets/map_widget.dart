@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
+import 'package:keep_screen_on/keep_screen_on.dart';
 import 'package:trailblaze/constants/request_api_constants.dart';
 import 'package:trailblaze/constants/route_info_constants.dart';
 import 'package:trailblaze/data/instruction.dart';
@@ -160,6 +161,12 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         // Temporary fix for inconsistent behaviour between Mapbox SDK flavours
       });
     }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    KeepScreenOn.turnOn(on: false); // Clear screen on flag
   }
 
   void _listenToLocation() {
@@ -1537,10 +1544,12 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       await _setViewMode(ViewMode.directions);
       _stopListeningToLocation();
       MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
+      KeepScreenOn.turnOn(on: false); // Don't keep screen on
     } else {
       await _setViewMode(ViewMode.navigation);
       MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
       _listenToLocation();
+      KeepScreenOn.turnOn(on: true); // Keep screen on while navigating
     }
   }
 
