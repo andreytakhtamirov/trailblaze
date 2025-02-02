@@ -1,0 +1,1 @@
+-keepclassmembers enum * { *; }
