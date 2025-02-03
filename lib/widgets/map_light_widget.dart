@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:trailblaze/constants/map_constants.dart';
@@ -9,12 +10,14 @@ class MapLightWidget extends StatelessWidget {
     required this.onMapCreated,
     required this.onScrollListener,
     this.onCameraChangeListener,
+    this.isFollowingLocation = false,
   }) : super(key: key);
 
   final void Function(mbm.MapContentGestureContext context) onMapTapListener;
   final void Function(mbm.MapboxMap mapboxMap) onMapCreated;
   final void Function(mbm.MapContentGestureContext context) onScrollListener;
   final void Function(mbm.CameraChangedEventData data)? onCameraChangeListener;
+  final bool isFollowingLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +33,14 @@ class MapLightWidget extends StatelessWidget {
           pitch: kDefaultCameraState.pitch),
       onMapCreated: onMapCreated,
       onScrollListener: onScrollListener,
+      viewport: isFollowingLocation
+          ? mbm.FollowPuckViewportState(
+              pitch: null,
+              bearing: defaultTargetPlatform == TargetPlatform.android
+                  ? const mbm.FollowPuckViewportStateBearingHeading()
+                  : const mbm.FollowPuckViewportStateBearingCourse(),
+            )
+          : const mbm.CameraViewportState(),
     );
   }
 }

@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:math' as math;
 
 import 'package:auth0_flutter/auth0_flutter.dart';
@@ -16,7 +15,6 @@ import 'package:trailblaze/data/profile.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/managers/credential_manager.dart';
 import 'package:trailblaze/managers/profile_manager.dart';
-import 'package:trailblaze/requests/route_metrics.dart';
 import 'package:trailblaze/requests/user_profile.dart';
 import 'package:trailblaze/util/chart_helper.dart';
 import 'package:trailblaze/util/firebase_helper.dart';
@@ -51,7 +49,6 @@ class RouteInfoPanel extends ConsumerStatefulWidget {
 class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
   late TrackballBehavior _elevationTrackball;
   http.Client _client = http.Client();
-  bool _isFetchingMetrics = false;
   String? _savedRouteId;
   bool _isLoadingRouteUpdate = false;
   bool _setHeight = false;
@@ -71,19 +68,14 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
             widget.route?.elevationMetrics?[trackballDetails.pointIndex!],
           );
         });
-    setState(() {
-      _isFetchingMetrics = false;
-    });
-    _fetchMetricsIfNeeded();
   }
 
   @override
   void didUpdateWidget(covariant RouteInfoPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.route?.geoJsonSource != oldWidget.route?.geoJsonSource) {
+    if (widget.route?.geometryJson != oldWidget.route?.geometryJson) {
       _client.close();
       _client = http.Client();
-      _fetchMetricsIfNeeded();
       setState(() {
         _savedRouteId = null;
         _isLoadingRouteUpdate = false;
@@ -97,13 +89,6 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
   void dispose() {
     super.dispose();
     _client.close();
-  }
-
-  void _fetchMetricsIfNeeded() {
-    if (widget.route?.surfaceMetrics == null &&
-        widget.route?.elevationMetrics == null) {
-      _fetchRouteMetrics();
-    }
   }
 
   void _onSaveRoute(
@@ -300,47 +285,6 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
     }
   }
 
-  void _fetchRouteMetrics() async {
-    setState(() {
-      _isFetchingMetrics = true;
-    });
-    Map<String, dynamic>? metrics =
-        await getRouteMetrics(_client, widget.route?.routeJson);
-
-    // At this point this widget might be unmounted.
-    if (mounted) {
-      setState(() {
-        _isFetchingMetrics = false;
-      });
-    }
-
-    if (metrics == null) {
-      log('Could not fetch metrics for route.');
-      return;
-    }
-
-    // Only fetch surface metrics for now.
-    List<dynamic>? elevationMetrics = metrics['elevationMetrics']['elevations'];
-    Map<String, dynamic>? surfaceMetrics = metrics['surfaceMetrics'];
-    if (mounted) {
-      setState(() {
-        widget.route?.elevationMetrics = elevationMetrics?.cast<num>();
-        widget.route?.surfaceMetrics = surfaceMetrics?.cast<String, num>();
-      });
-    } else {
-      // If the widget isn't mounted, update the metrics silently.
-      widget.route?.elevationMetrics = elevationMetrics?.cast<num>();
-      widget.route?.surfaceMetrics = surfaceMetrics?.cast<String, num>();
-    }
-
-    // Update panel height.
-    if (mounted) {
-      setState(() {
-        _setHeight = false;
-      });
-    }
-  }
-
   String _saveRouteButtonText() {
     if (_isLoadingRouteUpdate && _savedRouteId == null) {
       return 'Saving...';
@@ -425,8 +369,10 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
         final double roadClassMetricsHeight =
             _roadClassMetricKey.currentContext?.size?.height ?? 0;
 
-        _smallCardHeight =
-            math.max(surfaceMetricsHeight, roadClassMetricsHeight);
+        setState(() {
+          _smallCardHeight =
+              math.max(surfaceMetricsHeight, roadClassMetricsHeight);
+        });
       });
     }
 
@@ -524,8 +470,7 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
             const SizedBox(
               height: 30,
             ),
-            _isFetchingMetrics == false &&
-                    widget.route!.elevationMetrics != null &&
+            widget.route!.elevationMetrics != null &&
                     widget.route!.surfaceMetrics != null
                 ? Column(
                     children: [
@@ -545,39 +490,22 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
                               height: _smallCardHeight,
                             ),
                           ),
-                          // Not supported in every mode
-                          widget.route!.roadClassMetrics != null
-                              ? Flexible(
-                                  child: _buildMetricCard(
-                                    widget.route!.roadClassMetrics!,
-                                    MetricType.roadClass,
-                                    false,
-                                    key: _roadClassMetricKey,
-                                    height: _smallCardHeight,
-                                  ),
-                                )
-                              : const SizedBox(),
+                          Flexible(
+                            child: _buildMetricCard(
+                              widget.route!.roadClassMetrics!,
+                              MetricType.roadClass,
+                              false,
+                              key: _roadClassMetricKey,
+                              height: _smallCardHeight,
+                            ),
+                          ),
                         ],
                       ),
                     ],
                   )
-                : _isFetchingMetrics == true &&
-                        widget.route!.elevationMetrics == null &&
-                        widget.route!.surfaceMetrics == null
-                    ? const Center(
-                        child: Column(
-                          children: [
-                            Text('Fetching route metrics'),
-                            SizedBox(
-                              height: 24,
-                            ),
-                            CircularProgressIndicator(),
-                          ],
-                        ),
-                      )
-                    : const Center(
-                        child: Text('Could not fetch route metrics'),
-                      ),
+                : const Center(
+                    child: Text('This route does not have metrics'),
+                  ),
           ],
         ),
       ),

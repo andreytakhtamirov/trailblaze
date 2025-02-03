@@ -7,6 +7,7 @@ enum ViewMode {
   shuffle,
   metricDetails,
   multiFeatures,
+  navigation,
 }
 
 class ViewModeContext {
