@@ -365,6 +365,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       _isFollowingLocation = false;
     });
     await _togglePanel(false);
+    await MapboxLayerUtil.deleteInstructionLine(_mapboxMap);
     MapboxLayerUtil.drawInstructionLine(
       _mapboxMap,
       NavigationUtil.positionsToList(instruction.coordinates),
@@ -1546,6 +1547,9 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
       KeepScreenOn.turnOn(on: false); // Don't keep screen on
     } else {
+      if (!await PositionHelper.hasLocationPermission(context)) {
+        return;
+      }
       await _setViewMode(ViewMode.navigation);
       MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
       _listenToLocation();
@@ -1838,7 +1842,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         _viewModeContext.viewMode == ViewMode.metricDetails;
     final bool shouldShowMultiFeatureTopBar =
         _viewModeContext.viewMode == ViewMode.multiFeatures;
-    final bool shouldShowNavigationWidget = widget.isInteractiveMap &&
+    final bool shouldShowNavigationWidget =
         _viewModeContext.viewMode == ViewMode.navigation &&
         _selectedRoute != null;
 
