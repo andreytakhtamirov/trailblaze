@@ -1131,8 +1131,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       return;
     }
 
-    if (_viewModeContext.viewMode != ViewMode.directions ||
-        _viewModeContext.viewMode == ViewMode.metricDetails) {
+    if (_viewModeContext.viewMode == ViewMode.search) {
       await annotationHelper?.deletePointAnnotations();
     }
 
@@ -2180,6 +2179,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                     ),
                   );
 
+                  if (distanceKm == null) {
+                    // Back button pressed
+                    return;
+                  }
+
                   _onFeatureDistanceChanged(distanceKm * 1000);
                 },
                 backgroundColor: Theme.of(context).colorScheme.tertiary,
@@ -2456,6 +2460,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         return true;
       case ViewMode.navigation:
         return true;
+      case ViewMode.metricDetails:
+        return false;
       default:
         if (_selectedRoute != null) {
           return true;
@@ -2463,7 +2469,6 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             _viewModeContext.viewMode != ViewMode.directions) {
           return true;
         }
-        break;
     }
     return false;
   }
