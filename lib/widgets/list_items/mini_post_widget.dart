@@ -28,7 +28,7 @@ class MiniPostView extends ConsumerWidget {
 
     return Dismissible(
       direction: item.isDismissible
-          ? DismissDirection.horizontal
+          ? DismissDirection.endToStart // Disable startToEnd action.
           : DismissDirection.none,
       key: Key(
         item.hashCode.toString(),
@@ -81,7 +81,8 @@ class MiniPostView extends ConsumerWidget {
               onItemDeleted(item.id);
             }
           }
-        } else if (direction == DismissDirection.startToEnd) {
+        }
+        else if (direction == DismissDirection.startToEnd) {
           // TODO Post action
           UiHelper.showSnackBar(context, 'Creating posts is not possible yet.');
         }
