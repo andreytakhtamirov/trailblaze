@@ -6,7 +6,6 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:mapbox_search/mapbox_search.dart' as mbs;
 import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/data/app_settings.dart';
-import 'package:trailblaze/tabs/discover.dart';
 import 'package:trailblaze/tabs/map.dart';
 import 'package:trailblaze/tabs/profile/profile.dart';
 import 'package:trailblaze/util/firebase_helper.dart';
@@ -104,7 +103,7 @@ class _MainPageState extends ConsumerState<MainPage> {
 
   final List<Widget> _pages = [
     const MapPage(),
-    const DiscoverPage(),
+    // const DiscoverPage(), // Hide discover page for now
     const ProfilePage(),
   ];
 
@@ -156,10 +155,10 @@ class _MainPageState extends ConsumerState<MainPage> {
               icon: Icon(Icons.route),
               label: 'Map',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.public),
-              label: 'Discover',
-            ),
+            // BottomNavigationBarItem(
+            //   icon: Icon(Icons.public),
+            //   label: 'Discover',
+            // ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person),
               label: 'Profile',

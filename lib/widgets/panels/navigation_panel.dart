@@ -42,13 +42,14 @@ class NavigationPanel extends ConsumerWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              Text(
-                FormatHelper.formatDuration(route?.duration),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
+              // TODO calculate time from distance
+              // Text(
+              //   FormatHelper.formatDuration(route?.duration),
+              //   style: const TextStyle(
+              //     fontSize: 14,
+              //     fontWeight: FontWeight.w400,
+              //   ),
+              // ),
             ],
           ),
           IconButtonSmall(

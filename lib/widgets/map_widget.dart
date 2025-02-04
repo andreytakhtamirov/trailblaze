@@ -170,8 +170,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   }
 
   void _listenToLocation() {
-    _navigationListener = ref.listenManual<NavigationState>(navigationStateProvider,
-        (previous, next) async {
+    _navigationListener = ref.listenManual<NavigationState>(
+        navigationStateProvider, (previous, next) async {
       if (previous?.snappedLocation != next.snappedLocation) {
         if (next.snappedLocation == null ||
             next.currentInstructionIndex == kInvalidInstruction) {
@@ -1547,7 +1547,10 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
       KeepScreenOn.turnOn(on: false); // Don't keep screen on
     } else {
-      if (!await PositionHelper.hasLocationPermission(context)) {
+      if (!await PositionHelper.hasLocationPermission(
+        context,
+        needPrecise: true,
+      )) {
         return;
       }
       await _setViewMode(ViewMode.navigation);
@@ -1844,7 +1847,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         _viewModeContext.viewMode == ViewMode.multiFeatures;
     final bool shouldShowNavigationWidget =
         _viewModeContext.viewMode == ViewMode.navigation &&
-        _selectedRoute != null;
+            _selectedRoute != null;
 
     final bool isPanelClosedAndNotAnimating = _panelController.isAttached &&
         _panelController.isPanelClosed &&
@@ -2222,7 +2225,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   }
 
   Widget _showNavigationWidgets(double bottomOffset, String? userSpeed) {
-    if (_viewModeContext.viewMode == ViewMode.navigation && bottomOffset <= _getMinPanelHeight()) {
+    if (_viewModeContext.viewMode == ViewMode.navigation &&
+        bottomOffset <= _getMinPanelHeight()) {
       return Positioned(
         left: 16,
         bottom: bottomOffset + kPanelFabPadding + 26,

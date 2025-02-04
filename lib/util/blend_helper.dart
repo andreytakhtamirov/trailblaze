@@ -52,7 +52,17 @@ class BlendHelper {
            we'll have to double check that the outputs are consistent and don't
            ruin the rest of the routing engine logic.
      */
-    if (minInfluence > maxInfluence) {
+    if (minInfluence > maxInfluence &&
+        minInfluence / 1e3.toInt() < maxInfluence) {
+      // Make sure there is room to "speed up" the route,
+      // making sure that the new min stays in bounds
+      // (not larger than the limit, since bounds are opposite).
+      int newMin = maxInfluence * 1e3.toInt();
+      if (newMin > kBlendMinInfluence) {
+        newMin = kBlendMinInfluence;
+      }
+      return [newMin, maxInfluence];
+    } else if (minInfluence > maxInfluence) {
       return [minInfluence, maxInfluence];
     } else if (minInfluence == maxInfluence) {
       return [minInfluence, maxInfluence ~/ 100];
