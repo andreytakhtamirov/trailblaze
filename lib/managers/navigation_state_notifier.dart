@@ -93,3 +93,5 @@ final navigationStateProvider =
     StateNotifierProvider<NavigationStateNotifier, NavigationState>(
   (ref) => NavigationStateNotifier(),
 );
+
+final isNavigationModeOnProvider = StateProvider<bool>((ref) => false);

@@ -6,6 +6,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:mapbox_search/mapbox_search.dart' as mbs;
 import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/data/app_settings.dart';
+import 'package:trailblaze/managers/navigation_state_notifier.dart';
 import 'package:trailblaze/tabs/map.dart';
 import 'package:trailblaze/tabs/profile/profile.dart';
 import 'package:trailblaze/util/firebase_helper.dart';
@@ -136,6 +137,8 @@ class _MainPageState extends ConsumerState<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isNavigating = ref.watch(isNavigationModeOnProvider);
+
     return Scaffold(
       body: PageView(
         controller: _pageController,
@@ -147,7 +150,8 @@ class _MainPageState extends ConsumerState<MainPage> {
           });
         },
       ),
-      bottomNavigationBar: SizedBox(
+      bottomNavigationBar: isNavigating ? const SafeArea(child: SizedBox()) :
+      SizedBox(
         height: kAppBarHeight,
         child: BottomNavigationBar(
           items: const <BottomNavigationBarItem>[

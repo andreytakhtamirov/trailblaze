@@ -166,6 +166,8 @@ class _DirectionsWidgetState extends ConsumerState<DirectionsWidget> {
               children: [
                 Text(
                   instructionLabel,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
@@ -175,6 +177,8 @@ class _DirectionsWidgetState extends ConsumerState<DirectionsWidget> {
                 const SizedBox(height: 8),
                 Text(
                   instructionStreet,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -200,21 +204,34 @@ class _DirectionsWidgetState extends ConsumerState<DirectionsWidget> {
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
               "Then",
               style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             Icon(
               instruction?.sign.icon,
-              size: 28,
+              size: 25,
               color: Colors.white,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              FormatHelper.formatDistancePrecise(
+                instruction?.distance,
+                noRemainder: false,
+              ),
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+                color: Colors.white,
+              ),
             ),
           ],
         ),

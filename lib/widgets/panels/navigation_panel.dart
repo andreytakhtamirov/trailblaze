@@ -170,11 +170,7 @@ class NavigationPanel extends ConsumerWidget {
                     child: MediaQuery.removePadding(
                       context: context,
                       removeTop: true,
-                      child: Scrollbar(
-                        trackVisibility: true,
-                        thumbVisibility: true,
-                        child: instructionsList(),
-                      ),
+                      child: instructionsList(),
                     ),
                   ),
 
