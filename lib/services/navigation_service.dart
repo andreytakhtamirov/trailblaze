@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:geolocator/geolocator.dart';
 import 'package:trailblaze/constants/navigation_constants.dart';
 import 'package:trailblaze/data/instruction.dart';
@@ -10,6 +11,7 @@ import 'package:turf/turf.dart' as turf;
 class NavigationService {
   StreamSubscription<Position>? _positionStream;
   turf.Position? _lastSnappedLocation;
+  Position? _lastPosition;
   int? _lastInstructionIndex;
 
   void initializeLocationStream(
@@ -20,7 +22,30 @@ class NavigationService {
             locationSettings: kNavigationLocationSettings)
         .listen((Position? position) {
       if (position != null && instructions != null) {
-        _calculateLocation(position, notifier, instructions);
+        Position? pos = position;
+        if (Platform.isAndroid && _lastPosition != null) {
+          // FollowPuckViewportStateBearingCourse doesn't support Android.
+          // We can calculate a heading by comparing the current position to
+          // the one before.
+          final bearing = Geolocator.bearingBetween(_lastPosition!.latitude,
+              _lastPosition!.longitude, position.latitude, position.longitude);
+          pos = Position(
+            accuracy: position.accuracy,
+            longitude: position.longitude,
+            latitude: position.latitude,
+            timestamp: position.timestamp,
+            altitude: position.altitude,
+            altitudeAccuracy: position.altitudeAccuracy,
+            heading: bearing,
+            headingAccuracy: position.headingAccuracy,
+            speed: position.speed,
+            speedAccuracy: position.speedAccuracy,
+            floor: position.floor,
+            isMocked: position.isMocked,
+          );
+        }
+
+        _calculateLocation(pos, notifier, instructions);
       }
     });
   }
@@ -35,6 +60,10 @@ class NavigationService {
     num? minDistance;
     final coordinates = turf.Position(position.longitude, position.latitude);
     final bool userCurrentlyOnRoute = _lastInstructionIndex != kInvalidInstruction;
+
+    if (Platform.isAndroid) {
+      _lastPosition = position;
+    }
 
     for (int i = 0; i < instructions.length; i++) {
       final instruction = instructions[i];

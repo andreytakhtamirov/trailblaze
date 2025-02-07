@@ -1595,11 +1595,15 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     } else if (_viewModeContext.viewMode == ViewMode.metricDetails) {
       return 0;
     } else if (_viewModeContext.viewMode == ViewMode.parks ||
-        _viewModeContext.viewMode == ViewMode.multiFeatures ||
-        _viewModeContext.viewMode == ViewMode.navigation) {
+        _viewModeContext.viewMode == ViewMode.multiFeatures) {
       final size = MediaQuery.sizeOf(context);
       final double screenHeight =
           size.height - kAppPadding - kMapExtraWidgetsHeight;
+      return screenHeight;
+    } else if (_viewModeContext.viewMode == ViewMode.navigation) {
+      final size = MediaQuery.sizeOf(context);
+      final double screenHeight =
+          size.height - kSafeAreaPaddingBottom - kSafeAreaPaddingTop;
       return screenHeight;
     } else if (_viewModeContext.viewMode == ViewMode.directions ||
         _viewModeContext.viewMode == ViewMode.shuffle) {
@@ -2208,14 +2212,19 @@ class _MapWidgetState extends ConsumerState<MapWidget>
               ),
             ),
           _showNavigationWidgets(bottomOffset, userSpeed),
-          if (_selectedRoute != null &&
+          if (_selectedRoute != null && _panelPos <= 0 &&
               _viewModeContext.viewMode != ViewMode.navigation)
             Positioned(
               right: 16,
               bottom: bottomOffset + kPanelFabPadding,
               child: IconButtonSmall(
                 text: "Go",
+                iconFontSize: 28.0,
+                textFontSize: 17,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 icon: Icons.navigation,
+                hasBorder: true,
                 onTap: () => _toggleNavigationMode(ref),
               ),
             ),

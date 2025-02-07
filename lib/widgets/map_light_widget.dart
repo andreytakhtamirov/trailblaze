@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
 import 'package:trailblaze/constants/map_constants.dart';
+import 'package:trailblaze/managers/navigation_state_notifier.dart';
 
-class MapLightWidget extends StatelessWidget {
+class MapLightWidget extends ConsumerWidget {
   const MapLightWidget({
     Key? key,
     required this.onMapTapListener,
@@ -20,7 +24,13 @@ class MapLightWidget extends StatelessWidget {
   final bool isFollowingLocation;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    double? heading;
+    if (Platform.isAndroid) {
+      // Android isn't compatible with FollowPuckViewportStateBearingCourse,
+      // so use manual heading value.
+      heading = ref.watch(navigationStateProvider).userPosition?.heading;
+    }
     return mbm.MapWidget(
       styleUri: kMapStyleDefaultUri,
       onTapListener: onMapTapListener,
@@ -37,7 +47,9 @@ class MapLightWidget extends StatelessWidget {
           ? mbm.FollowPuckViewportState(
               pitch: null,
               bearing: defaultTargetPlatform == TargetPlatform.android
-                  ? const mbm.FollowPuckViewportStateBearingHeading()
+                  ? heading != null
+                      ? mbm.FollowPuckViewportStateBearingConstant(heading)
+                      : const mbm.FollowPuckViewportStateBearingHeading()
                   : const mbm.FollowPuckViewportStateBearingCourse(),
             )
           : const mbm.CameraViewportState(),

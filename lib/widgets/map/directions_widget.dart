@@ -80,7 +80,7 @@ class _DirectionsWidgetState extends ConsumerState<DirectionsWidget> {
           ),
         ),
         if (nextNextInstruction != null)
-          instructionPreview(nextNextInstruction),
+          instructionPreview(nextInstruction, nextNextInstruction),
       ],
     );
   }
@@ -169,7 +169,7 @@ class _DirectionsWidgetState extends ConsumerState<DirectionsWidget> {
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
@@ -193,7 +193,7 @@ class _DirectionsWidgetState extends ConsumerState<DirectionsWidget> {
     );
   }
 
-  Widget instructionPreview(Instruction? instruction) {
+  Widget instructionPreview(Instruction? currentInstruction, Instruction? nextInstruction) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 26),
       decoration: BoxDecoration(
@@ -217,14 +217,14 @@ class _DirectionsWidgetState extends ConsumerState<DirectionsWidget> {
             ),
             const SizedBox(width: 4),
             Icon(
-              instruction?.sign.icon,
+              nextInstruction?.sign.icon,
               size: 25,
               color: Colors.white,
             ),
             const SizedBox(width: 4),
             Text(
               FormatHelper.formatDistancePrecise(
-                instruction?.distance,
+                currentInstruction?.distance,
                 noRemainder: false,
               ),
               style: const TextStyle(
