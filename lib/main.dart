@@ -139,37 +139,40 @@ class _MainPageState extends ConsumerState<MainPage> {
   Widget build(BuildContext context) {
     final isNavigating = ref.watch(isNavigationModeOnProvider);
 
-    return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: _pages,
-        onPageChanged: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-      ),
-      bottomNavigationBar: isNavigating ? const SafeArea(child: SizedBox()) :
-      SizedBox(
-        height: kAppBarHeight,
-        child: BottomNavigationBar(
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.route),
-              label: 'Map',
-            ),
-            // BottomNavigationBarItem(
-            //   icon: Icon(Icons.public),
-            //   label: 'Discover',
-            // ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
+    return PopScope(
+      canPop: false, // Disable back gesture on Android
+      child: Scaffold(
+        body: PageView(
+          controller: _pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: _pages,
+          onPageChanged: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+        ),
+        bottomNavigationBar: isNavigating ? const SafeArea(child: SizedBox()) :
+        SizedBox(
+          height: kAppBarHeight,
+          child: BottomNavigationBar(
+            items: const <BottomNavigationBarItem>[
+              BottomNavigationBarItem(
+                icon: Icon(Icons.route),
+                label: 'Map',
+              ),
+              // BottomNavigationBarItem(
+              //   icon: Icon(Icons.public),
+              //   label: 'Discover',
+              // ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+          ),
         ),
       ),
     );
