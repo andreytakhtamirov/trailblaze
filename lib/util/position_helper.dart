@@ -39,19 +39,15 @@ class PositionHelper {
         }
         return false;
       } else if (needPrecise &&
-          await geo.Geolocator.getLocationAccuracy() !=
-              geo.LocationAccuracyStatus.precise) {
-        final status = await geo.Geolocator.requestTemporaryFullAccuracy(
-            purposeKey: "Precise location is needed for navigation");
-        if (status == geo.LocationAccuracyStatus.reduced) {
-          if (context.mounted) {
-            UiHelper.showSnackBar(
-              context,
-              'Precise location permissions are needed for navigation.',
-            );
-          }
-          return false;
+          await geo.Geolocator.getLocationAccuracy() ==
+              geo.LocationAccuracyStatus.reduced) {
+        if (context.mounted) {
+          UiHelper.showSnackBar(
+            context,
+            'Precise location permissions are needed for navigation.',
+          );
         }
+        return false;
       }
     } catch (e) {
       log('Failed to check or request location permission: $e');

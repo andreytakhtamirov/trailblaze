@@ -141,17 +141,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     });
 
     if (widget.routeToDisplay != null) {
-      if (Platform.isAndroid) {
-        Future.delayed(const Duration(milliseconds: 50), () {
-          _mapInitializedCompleter.future.then((value) {
-            _loadRouteToDisplay();
-          });
-        });
-      } else {
+      Future.delayed(const Duration(milliseconds: 200), () {
         _mapInitializedCompleter.future.then((value) {
           _loadRouteToDisplay();
         });
-      }
+      });
     } else if (!Platform.isAndroid) {
       // For iOS we need to initialize the annotation manager AFTER showing the location
       _mapInitializedCompleter.future.then((value) {
@@ -170,8 +164,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   }
 
   void _listenToLocation() {
-    _navigationListener = ref.listenManual<NavigationState>(navigationStateProvider,
-        (previous, next) async {
+    _navigationListener = ref.listenManual<NavigationState>(
+        navigationStateProvider, (previous, next) async {
       if (previous?.snappedLocation != next.snappedLocation) {
         if (next.snappedLocation == null ||
             next.currentInstructionIndex == kInvalidInstruction) {
@@ -459,13 +453,9 @@ class _MapWidgetState extends ConsumerState<MapWidget>
 
   void _setMapControlSettings() {
     Timer(const Duration(milliseconds: 300), () {
-      if (_isEditingAvoidArea ||
-          _viewModeContext.viewMode == ViewMode.navigation) {
-        _mapboxMap.scaleBar
-            .updateSettings(mbm.ScaleBarSettings(enabled: false));
-        _mapboxMap.compass.updateSettings(mbm.CompassSettings(enabled: false));
-        return;
-      }
+      final shouldHideMapTools = _isEditingAvoidArea ||
+          _viewModeContext.viewMode == ViewMode.navigation;
+      final isNavigationMode = _viewModeContext.viewMode == ViewMode.navigation;
 
       double topOffset = _getTopOffset();
 
@@ -483,14 +473,14 @@ class _MapWidgetState extends ConsumerState<MapWidget>
 
       if (!widget.forceTopBottomPadding) {
         compassSettings = mbm.CompassSettings(
-            enabled: true,
+            enabled: !shouldHideMapTools,
             position: kDefaultCompassSettings.position,
             marginTop: kDefaultCompassSettings.marginTop! + topOffset,
             marginBottom: kDefaultCompassSettings.marginBottom,
             marginLeft: kDefaultCompassSettings.marginLeft,
             marginRight: kDefaultCompassSettings.marginRight);
         scaleBarSettings = mbm.ScaleBarSettings(
-            enabled: true,
+            enabled: !shouldHideMapTools,
             isMetricUnits: kDefaultScaleBarSettings.isMetricUnits,
             position: kDefaultScaleBarSettings.position,
             marginTop: kDefaultScaleBarSettings.marginTop! + topOffset,
@@ -499,14 +489,14 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             marginRight: kDefaultScaleBarSettings.marginRight);
       } else {
         compassSettings = mbm.CompassSettings(
-            enabled: true,
+            enabled: !shouldHideMapTools,
             position: kPostDetailsCompassSettings.position,
             marginTop: kPostDetailsCompassSettings.marginTop! + topOffset,
             marginBottom: kPostDetailsCompassSettings.marginBottom,
             marginLeft: kPostDetailsCompassSettings.marginLeft,
             marginRight: kPostDetailsCompassSettings.marginRight);
         scaleBarSettings = mbm.ScaleBarSettings(
-            enabled: true,
+            enabled: !shouldHideMapTools,
             isMetricUnits: kPostDetailsScaleBarSettings.isMetricUnits,
             position: kPostDetailsScaleBarSettings.position,
             marginTop: kPostDetailsScaleBarSettings.marginTop! + topOffset,
@@ -521,14 +511,17 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           mbm.AttributionSettings(
               position: mbm.OrnamentPosition.BOTTOM_LEFT,
               marginTop: 0,
-              marginBottom: kAttributionBottomOffset + bottomOffset,
+              marginBottom:
+                  (!isNavigationMode ? kAttributionBottomOffset : 0.0) +
+                      bottomOffset,
               marginLeft: kAttributionLeftOffset,
               marginRight: 0);
 
       final mbm.LogoSettings kDefaultLogoSettings = mbm.LogoSettings(
           position: mbm.OrnamentPosition.BOTTOM_LEFT,
           marginTop: 0,
-          marginBottom: kAttributionBottomOffset + bottomOffset,
+          marginBottom: (!isNavigationMode ? kAttributionBottomOffset : 0.0) +
+              bottomOffset,
           marginLeft: kLogoLeftOffset,
           marginRight: 0);
 
@@ -1131,8 +1124,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       return;
     }
 
-    if (_viewModeContext.viewMode != ViewMode.directions ||
-        _viewModeContext.viewMode == ViewMode.metricDetails) {
+    if (_viewModeContext.viewMode == ViewMode.search) {
       await annotationHelper?.deletePointAnnotations();
     }
 
@@ -1540,16 +1532,22 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     }
   }
 
-  Future<void> _toggleNavigationMode() async {
+  Future<void> _toggleNavigationMode(WidgetRef ref) async {
     if (_viewModeContext.viewMode == ViewMode.navigation) {
+      ref.read(isNavigationModeOnProvider.notifier).state = false;
       await _setViewMode(ViewMode.directions);
       _stopListeningToLocation();
       MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
       KeepScreenOn.turnOn(on: false); // Don't keep screen on
     } else {
-      if (!await PositionHelper.hasLocationPermission(context)) {
+      if (!await PositionHelper.hasLocationPermission(
+        context,
+        needPrecise: true,
+      )) {
         return;
       }
+
+      ref.read(isNavigationModeOnProvider.notifier).state = true;
       await _setViewMode(ViewMode.navigation);
       MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
       _listenToLocation();
@@ -1597,11 +1595,15 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     } else if (_viewModeContext.viewMode == ViewMode.metricDetails) {
       return 0;
     } else if (_viewModeContext.viewMode == ViewMode.parks ||
-        _viewModeContext.viewMode == ViewMode.multiFeatures ||
-        _viewModeContext.viewMode == ViewMode.navigation) {
+        _viewModeContext.viewMode == ViewMode.multiFeatures) {
       final size = MediaQuery.sizeOf(context);
       final double screenHeight =
           size.height - kAppPadding - kMapExtraWidgetsHeight;
+      return screenHeight;
+    } else if (_viewModeContext.viewMode == ViewMode.navigation) {
+      final size = MediaQuery.sizeOf(context);
+      final double screenHeight =
+          size.height - kSafeAreaPaddingBottom - kSafeAreaPaddingTop;
       return screenHeight;
     } else if (_viewModeContext.viewMode == ViewMode.directions ||
         _viewModeContext.viewMode == ViewMode.shuffle) {
@@ -1844,7 +1846,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         _viewModeContext.viewMode == ViewMode.multiFeatures;
     final bool shouldShowNavigationWidget =
         _viewModeContext.viewMode == ViewMode.navigation &&
-        _selectedRoute != null;
+            _selectedRoute != null;
 
     final bool isPanelClosedAndNotAnimating = _panelController.isAttached &&
         _panelController.isPanelClosed &&
@@ -2177,6 +2179,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                     ),
                   );
 
+                  if (distanceKm == null) {
+                    // Back button pressed
+                    return;
+                  }
+
                   _onFeatureDistanceChanged(distanceKm * 1000);
                 },
                 backgroundColor: Theme.of(context).colorScheme.tertiary,
@@ -2205,15 +2212,20 @@ class _MapWidgetState extends ConsumerState<MapWidget>
               ),
             ),
           _showNavigationWidgets(bottomOffset, userSpeed),
-          if (_selectedRoute != null &&
+          if (_selectedRoute != null && _panelPos <= 0 &&
               _viewModeContext.viewMode != ViewMode.navigation)
             Positioned(
               right: 16,
               bottom: bottomOffset + kPanelFabPadding,
               child: IconButtonSmall(
                 text: "Go",
+                iconFontSize: 28.0,
+                textFontSize: 17,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 icon: Icons.navigation,
-                onTap: _toggleNavigationMode,
+                hasBorder: true,
+                onTap: () => _toggleNavigationMode(ref),
               ),
             ),
         ],
@@ -2222,7 +2234,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   }
 
   Widget _showNavigationWidgets(double bottomOffset, String? userSpeed) {
-    if (_viewModeContext.viewMode == ViewMode.navigation && bottomOffset <= _getMinPanelHeight()) {
+    if (_viewModeContext.viewMode == ViewMode.navigation &&
+        bottomOffset <= _getMinPanelHeight()) {
       return Positioned(
         left: 16,
         bottom: bottomOffset + kPanelFabPadding + 26,
@@ -2452,6 +2465,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         return true;
       case ViewMode.navigation:
         return true;
+      case ViewMode.metricDetails:
+        return false;
       default:
         if (_selectedRoute != null) {
           return true;
@@ -2459,7 +2474,6 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             _viewModeContext.viewMode != ViewMode.directions) {
           return true;
         }
-        break;
     }
     return false;
   }
@@ -2503,7 +2517,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             panelPos: _panelPos,
             scrollController: scrollController,
             route: _selectedRoute,
-            onExit: _toggleNavigationMode,
+            onExit: () => _toggleNavigationMode(ref),
             onSelectInstruction: _onFlyToInstruction,
           ),
         ];

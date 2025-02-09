@@ -5,5 +5,5 @@ final Uri kPrivacyPolicyUri = Uri.parse("$homepage/blob/main/privacy_policy.md#p
 final Uri kTermsAndConditionsUri = Uri.parse("$homepage/blob/main/terms_and_conditions.md#terms-and-conditions");
 const String kPackageHomeUrl = 'https://pub.dev/packages';
 const String kLicensePath = 'license';
-const String kContactEmail = 'trailblaze.team@outlook.com';
-const String kInfoFooter = '2025 Andrey Takhtamirov';
+const String kContactEmail = 'support@trailblaze.cc';
+const String kInfoFooter = '2025 Trailblaze';

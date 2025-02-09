@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mapbox_search/mapbox_search.dart';
+import 'package:trailblaze/widgets/map/icon_button_small.dart';
 import 'package:trailblaze/widgets/map/place_picker_widget.dart';
 import 'package:trailblaze/data/feature.dart' as tb;
 
@@ -44,10 +45,10 @@ class _PlaceSearchBarState extends State<PlaceSearchBar> {
                 animationDuration: const Duration(milliseconds: 300),
                 elevation: 5,
                 borderRadius: BorderRadius.circular(20),
-                child: IconButton(
-                  iconSize: 32,
-                  icon: const Icon(Icons.arrow_back_ios_new),
-                  onPressed: widget.onBackClick,
+                child: IconButtonSmall(
+                  iconFontSize: 30,
+                  icon: Icons.arrow_back_ios_new,
+                  onTap: widget.onBackClick,
                 ),
               ),
             ),

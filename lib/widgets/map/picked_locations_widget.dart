@@ -85,26 +85,29 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
     _blendHelper.release();
   }
 
-  void _calculateControlBounds() async {
-    final minMaxList = await _blendHelper.getMinMaxInfluences(
-        widget.startingLocation, widget.endingLocation);
-    _minDistance = minMaxList[0].toDouble();
-    _maxDistance = minMaxList[1].toDouble();
+  void _calculateControlBounds() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final minMaxList = await _blendHelper.getMinMaxInfluences(
+          widget.startingLocation, widget.endingLocation);
+      _minDistance = minMaxList[0].toDouble();
+      _maxDistance = minMaxList[1].toDouble();
 
-    if (!mounted) {
-      return;
-    }
+      if (!mounted) {
+        return;
+      }
 
-    setState(() {
-      _minDistanceBounds =
-          -(math.log(_minDistance) / math.log(10)).ceilToDouble();
-      _maxDistanceBounds =
-          -(math.log(_maxDistance) / math.log(10)).ceilToDouble();
-      _selectedValue = ((_minDistanceBounds! + _maxDistanceBounds!) / 2)
-          .floorToDouble(); // Initially select the mean of the min and max.
+      setState(() {
+        _minDistanceBounds =
+            -(math.log(_minDistance) / math.log(10)).ceilToDouble();
+        _maxDistanceBounds =
+            -(math.log(_maxDistance) / math.log(10)).ceilToDouble();
+        _selectedValue = ((_minDistanceBounds! + _maxDistanceBounds!) / 2)
+            .floorToDouble(); // Initially select the mean of the min and max.
+      });
+
+      _onSliderChanged(_selectedValue);
+      _onSliderChangeEnd(_selectedValue, isSilentUpdate: true);
     });
-    _onSliderChanged(_selectedValue);
-    _onSliderChangeEnd(_selectedValue, isSilentUpdate: true);
   }
 
   void _onSliderChanged(double value) {
@@ -272,7 +275,7 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
             children: <Widget>[
               Expanded(
                 flex: 3,
-                child: _slider(),
+                child: _showBlendSlider(),
               ),
               const SizedBox(width: 16),
               TransportationModeSmallWidget(
@@ -401,21 +404,20 @@ class _PickedLocationsWidgetState extends State<PickedLocationsWidget> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: showTitle
+                  ? const EdgeInsets.symmetric(horizontal: 8)
+                  : EdgeInsets.zero,
               child: _slider(),
             ),
             // For debugging bounds (Blend)
-            // Visibility(
-            //   visible: showTitle,
-            //   child: Row(
-            //     crossAxisAlignment: CrossAxisAlignment.center,
-            //     mainAxisAlignment: MainAxisAlignment.spaceAround,
-            //     children: [
-            //       Text("min ${_minDistance.toStringAsExponential(0)}"),
-            //       Text("curr ${_selectedDistance.toStringAsExponential(0)}"),
-            //       Text("max ${_maxDistance.toStringAsExponential(0)}"),
-            //     ],
-            //   ),
+            // Row(
+            //   crossAxisAlignment: CrossAxisAlignment.center,
+            //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+            //   children: [
+            //     Text("min ${_minDistance.toStringAsExponential(0)}"),
+            //     Text("curr ${_selectedDistance.toStringAsExponential(0)}"),
+            //     Text("max ${_maxDistance.toStringAsExponential(0)}"),
+            //   ],
             // ),
           ],
         ),

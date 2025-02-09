@@ -42,13 +42,14 @@ class NavigationPanel extends ConsumerWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              Text(
-                FormatHelper.formatDuration(route?.duration),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
+              // TODO calculate time from distance
+              // Text(
+              //   FormatHelper.formatDuration(route?.duration),
+              //   style: const TextStyle(
+              //     fontSize: 14,
+              //     fontWeight: FontWeight.w400,
+              //   ),
+              // ),
             ],
           ),
           IconButtonSmall(
@@ -73,60 +74,84 @@ class NavigationPanel extends ConsumerWidget {
       itemCount: route?.instructions?.length,
       itemBuilder: (BuildContext context, int index) {
         final instruction = route?.instructions![index];
-        return InkWell(
-          onTap: () => onSelectInstruction(instruction!),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Container(
-              decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    width: 1,
-                    color: Colors.black26,
-                    strokeAlign: BorderSide.strokeAlignInside,
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black12,
-                      offset: Offset(0, 1),
-                      blurRadius: 3,
+        return Column(
+          children: [
+            instructionItem(instruction),
+            if (index < (route?.instructions!.length ?? 1) - 1)
+              // Separator with distance
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                color: Colors.white,
+                child: Row(
+                  children: [
+                    const Expanded(
+                      flex: 3,
+                      child: SizedBox(),
                     ),
-                  ]),
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                children: [
-                  // Icon and Distance
-                  Expanded(
-                    flex: 1,
-                    child: Column(
-                      children: [
-                        Icon(
-                          instruction?.sign.icon,
-                          size: 30,
-                          color: Colors.black,
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        textAlign: TextAlign.start,
+                        FormatHelper.formatDistancePrecise(
+                            instruction?.distance),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black54,
                         ),
-                        Text(
-                          FormatHelper.formatDistancePrecise(
-                              instruction?.distance),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
+                    Expanded(
+                      flex: 7,
+                      child: Container(
+                        decoration: BoxDecoration(
+                            color: Colors.grey.withValues(alpha: 0.4)),
+                        height: 2,
+                      ),
+                    )
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget instructionItem(Instruction? instruction) {
+    return InkWell(
+      onTap: () => onSelectInstruction(instruction!),
+      child: Container(
+        decoration: const BoxDecoration(color: Colors.white),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                // Icon and Distance
+                Expanded(
+                  flex: 1,
+                  child: Column(
+                    children: [
+                      Icon(
+                        instruction?.sign.icon,
+                        size: 34,
+                        color: Colors.black,
+                      ),
+                    ],
                   ),
-                  Expanded(
-                    flex: 3,
+                ),
+                Expanded(
+                  flex: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           instruction?.text ?? "",
                           style: const TextStyle(
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.w600,
                             color: Colors.black87,
                           ),
@@ -134,20 +159,20 @@ class NavigationPanel extends ConsumerWidget {
                         Text(
                           instruction?.streetName ?? "",
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black87,
+                            color: Colors.black54,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 
@@ -169,11 +194,7 @@ class NavigationPanel extends ConsumerWidget {
                     child: MediaQuery.removePadding(
                       context: context,
                       removeTop: true,
-                      child: Scrollbar(
-                        trackVisibility: true,
-                        thumbVisibility: true,
-                        child: instructionsList(),
-                      ),
+                      child: instructionsList(),
                     ),
                   ),
 
@@ -185,6 +206,12 @@ class NavigationPanel extends ConsumerWidget {
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.7),
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Colors.grey.withValues(alpha: 0.2),
+                            width: 2,
+                          ),
+                        ),
                       ),
                       child: ClipRect(
                         child: BackdropFilter(

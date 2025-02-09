@@ -106,7 +106,7 @@ class FormatHelper {
     num speedKph = speedMetersPerSecond * 3.6;
 
     if (noRemainder) {
-      return speedKph.toStringAsFixed(0);
+      return speedKph.round().toStringAsFixed(0);
     } else {
       return speedKph.toStringAsFixed(2);
     }
@@ -119,7 +119,7 @@ class FormatHelper {
     num speedMph = speedMetersPerSecond * 2.23694;
 
     if (noRemainder) {
-      return speedMph.toStringAsFixed(0);
+      return speedMph.round().toStringAsFixed(0);
     } else {
       return speedMph.toStringAsFixed(2);
     }
