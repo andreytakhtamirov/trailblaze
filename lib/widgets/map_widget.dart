@@ -77,7 +77,8 @@ class MapWidget extends ConsumerStatefulWidget {
 }
 
 class _MapWidgetState extends ConsumerState<MapWidget>
-    with AutomaticKeepAliveClientMixin<MapWidget> implements mbm.OnPointAnnotationClickListener {
+    with AutomaticKeepAliveClientMixin<MapWidget>
+    implements mbm.OnPointAnnotationClickListener {
   late mbm.MapboxMap _mapboxMap;
   ProviderSubscription<NavigationState>? _navigationListener;
   MapBoxPlace? _selectedPlace;
@@ -228,7 +229,10 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   void onPointAnnotationClick(mbm.PointAnnotation annotation) async {
     final point = annotation.geometry;
     final screenCoordinates = await _mapboxMap.pixelForCoordinate(point);
-    _onMapTapListener(mbm.MapContentGestureContext(touchPosition: screenCoordinates, point: point, gestureState: mbm.GestureState.ended));
+    _onMapTapListener(mbm.MapContentGestureContext(
+        touchPosition: screenCoordinates,
+        point: point,
+        gestureState: mbm.GestureState.ended));
   }
 
   void _loadRouteToDisplay() async {
@@ -247,7 +251,6 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         _flyToRoute(_selectedRoute!, isAnimated: false);
       }
     });
-
 
     _setMapControlSettings();
   }
@@ -2222,7 +2225,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
               ),
             ),
           _showNavigationWidgets(bottomOffset, userSpeed),
-          if (_selectedRoute != null && _panelPos <= 0 &&
+          if (_selectedRoute != null &&
+              _panelPos <= 0 &&
               _viewModeContext.viewMode != ViewMode.navigation)
             Positioned(
               right: 16,
