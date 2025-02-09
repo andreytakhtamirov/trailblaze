@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:trailblaze/constants/map_constants.dart';
@@ -45,14 +47,17 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
   final List<List<AnnotationState>> _clusters = [];
 
   AnnotationHelper(
-    this._annotationManager,
-    this._pointAnnotationManager,
-    this._circleAnnotationManager,
-    this._metricAnnotationManager,
-    this._avoidAnnotationManager,
-    this._polygonAnnotationManager,
-    this.onAvoidAnnotationClick,
-  ) {
+      this._annotationManager,
+      this._pointAnnotationManager,
+      this._circleAnnotationManager,
+      this._metricAnnotationManager,
+      this._avoidAnnotationManager,
+      this._polygonAnnotationManager,
+      this.onAvoidAnnotationClick,
+      mbm.OnPointAnnotationClickListener listener) {
+    if (Platform.isAndroid) {
+      _pointAnnotationManager.addOnPointAnnotationClickListener(listener);
+    }
     _pointAnnotationManager.setSymbolSortKey(1);
     _pointAnnotationManager.setIconAllowOverlap(false);
     _pointAnnotationManager.setTextAllowOverlap(false);
@@ -156,32 +161,6 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
     }
 
     return closestRoute;
-  }
-
-  static Future<mbm.CircleAnnotation?> getCircleAnnotationByClickProximity(
-      List<mbm.CircleAnnotation> annotations,
-      num touchLon,
-      num touchLat,
-      double currentZoom) async {
-    mbm.CircleAnnotation? closest;
-    num? closestDistance;
-
-    final touchCoordinates = mbm.Point(
-      coordinates: mbm.Position(touchLon, touchLat),
-    );
-
-    for (mbm.CircleAnnotation a in annotations) {
-      final distance =
-          turf.distance(a.geometry, touchCoordinates, turf.Unit.kilometers);
-      if (distance < _getCurrentThreshold(currentZoom)) {
-        if (closestDistance == null || distance < closestDistance) {
-          closestDistance = distance;
-          closest = a;
-        }
-      }
-    }
-
-    return closest;
   }
 
   static double _getCurrentThreshold(double zoom) {
@@ -306,7 +285,7 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
       final point1 = state1.options.geometry;
       final pixelCoord1 = await map.pixelForCoordinate(point1);
 
-      if (pixelCoord1.x == -1 || pixelCoord1.y == -1) {
+      if (pixelCoord1.x < 0 || pixelCoord1.y < 0) {
         // Coordinate isn't on screen (out of camera bounds)
         continue;
       }

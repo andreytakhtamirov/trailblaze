@@ -77,7 +77,7 @@ class MapWidget extends ConsumerStatefulWidget {
 }
 
 class _MapWidgetState extends ConsumerState<MapWidget>
-    with AutomaticKeepAliveClientMixin<MapWidget> {
+    with AutomaticKeepAliveClientMixin<MapWidget> implements mbm.OnPointAnnotationClickListener {
   late mbm.MapboxMap _mapboxMap;
   ProviderSubscription<NavigationState>? _navigationListener;
   MapBoxPlace? _selectedPlace;
@@ -220,7 +220,15 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           _isAvoidAnnotationClicked = true;
         });
       },
+      this,
     );
+  }
+
+  @override
+  void onPointAnnotationClick(mbm.PointAnnotation annotation) async {
+    final point = annotation.geometry;
+    final screenCoordinates = await _mapboxMap.pixelForCoordinate(point);
+    _onMapTapListener(mbm.MapContentGestureContext(touchPosition: screenCoordinates, point: point, gestureState: mbm.GestureState.ended));
   }
 
   void _loadRouteToDisplay() async {
