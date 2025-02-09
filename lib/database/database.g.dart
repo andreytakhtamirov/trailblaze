@@ -229,6 +229,20 @@ class SearchFeature extends DataClass implements Insertable<SearchFeature> {
         hidden: hidden ?? this.hidden,
         lastUsed: lastUsed ?? this.lastUsed,
       );
+  SearchFeature copyWithCompanion(SearchFeaturesCompanion data) {
+    return SearchFeature(
+      id: data.id.present ? data.id.value : this.id,
+      mapboxId: data.mapboxId.present ? data.mapboxId.value : this.mapboxId,
+      placeName: data.placeName.present ? data.placeName.value : this.placeName,
+      subtitle: data.subtitle.present ? data.subtitle.value : this.subtitle,
+      geometryJson: data.geometryJson.present
+          ? data.geometryJson.value
+          : this.geometryJson,
+      hidden: data.hidden.present ? data.hidden.value : this.hidden,
+      lastUsed: data.lastUsed.present ? data.lastUsed.value : this.lastUsed,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('SearchFeature(')
@@ -571,6 +585,19 @@ class NearbyPark extends DataClass implements Insertable<NearbyPark> {
         features: features ?? this.features,
         lastUsed: lastUsed ?? this.lastUsed,
       );
+  NearbyPark copyWithCompanion(NearbyParksCompanion data) {
+    return NearbyPark(
+      id: data.id.present ? data.id.value : this.id,
+      distanceMeters: data.distanceMeters.present
+          ? data.distanceMeters.value
+          : this.distanceMeters,
+      latitude: data.latitude.present ? data.latitude.value : this.latitude,
+      longitude: data.longitude.present ? data.longitude.value : this.longitude,
+      features: data.features.present ? data.features.value : this.features,
+      lastUsed: data.lastUsed.present ? data.lastUsed.value : this.lastUsed,
+    );
+  }
+
   @override
   String toString() {
     return (StringBuffer('NearbyPark(')
@@ -701,7 +728,7 @@ class NearbyParksCompanion extends UpdateCompanion<NearbyPark> {
 
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
-  _$AppDatabaseManager get managers => _$AppDatabaseManager(this);
+  $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $SearchFeaturesTable searchFeatures = $SearchFeaturesTable(this);
   late final $NearbyParksTable nearbyParks = $NearbyParksTable(this);
   @override
@@ -712,7 +739,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       [searchFeatures, nearbyParks];
 }
 
-typedef $$SearchFeaturesTableInsertCompanionBuilder = SearchFeaturesCompanion
+typedef $$SearchFeaturesTableCreateCompanionBuilder = SearchFeaturesCompanion
     Function({
   Value<int> id,
   required String mapboxId,
@@ -733,27 +760,127 @@ typedef $$SearchFeaturesTableUpdateCompanionBuilder = SearchFeaturesCompanion
   Value<int> lastUsed,
 });
 
+class $$SearchFeaturesTableFilterComposer
+    extends Composer<_$AppDatabase, $SearchFeaturesTable> {
+  $$SearchFeaturesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get mapboxId => $composableBuilder(
+      column: $table.mapboxId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get placeName => $composableBuilder(
+      column: $table.placeName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get subtitle => $composableBuilder(
+      column: $table.subtitle, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get geometryJson => $composableBuilder(
+      column: $table.geometryJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get hidden => $composableBuilder(
+      column: $table.hidden, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get lastUsed => $composableBuilder(
+      column: $table.lastUsed, builder: (column) => ColumnFilters(column));
+}
+
+class $$SearchFeaturesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SearchFeaturesTable> {
+  $$SearchFeaturesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get mapboxId => $composableBuilder(
+      column: $table.mapboxId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get placeName => $composableBuilder(
+      column: $table.placeName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get subtitle => $composableBuilder(
+      column: $table.subtitle, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get geometryJson => $composableBuilder(
+      column: $table.geometryJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get hidden => $composableBuilder(
+      column: $table.hidden, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get lastUsed => $composableBuilder(
+      column: $table.lastUsed, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SearchFeaturesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SearchFeaturesTable> {
+  $$SearchFeaturesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get mapboxId =>
+      $composableBuilder(column: $table.mapboxId, builder: (column) => column);
+
+  GeneratedColumn<String> get placeName =>
+      $composableBuilder(column: $table.placeName, builder: (column) => column);
+
+  GeneratedColumn<String> get subtitle =>
+      $composableBuilder(column: $table.subtitle, builder: (column) => column);
+
+  GeneratedColumn<String> get geometryJson => $composableBuilder(
+      column: $table.geometryJson, builder: (column) => column);
+
+  GeneratedColumn<bool> get hidden =>
+      $composableBuilder(column: $table.hidden, builder: (column) => column);
+
+  GeneratedColumn<int> get lastUsed =>
+      $composableBuilder(column: $table.lastUsed, builder: (column) => column);
+}
+
 class $$SearchFeaturesTableTableManager extends RootTableManager<
     _$AppDatabase,
     $SearchFeaturesTable,
     SearchFeature,
     $$SearchFeaturesTableFilterComposer,
     $$SearchFeaturesTableOrderingComposer,
-    $$SearchFeaturesTableProcessedTableManager,
-    $$SearchFeaturesTableInsertCompanionBuilder,
-    $$SearchFeaturesTableUpdateCompanionBuilder> {
+    $$SearchFeaturesTableAnnotationComposer,
+    $$SearchFeaturesTableCreateCompanionBuilder,
+    $$SearchFeaturesTableUpdateCompanionBuilder,
+    (
+      SearchFeature,
+      BaseReferences<_$AppDatabase, $SearchFeaturesTable, SearchFeature>
+    ),
+    SearchFeature,
+    PrefetchHooks Function()> {
   $$SearchFeaturesTableTableManager(
       _$AppDatabase db, $SearchFeaturesTable table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer:
-              $$SearchFeaturesTableFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $$SearchFeaturesTableOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) =>
-              $$SearchFeaturesTableProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          createFilteringComposer: () =>
+              $$SearchFeaturesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SearchFeaturesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SearchFeaturesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<String> mapboxId = const Value.absent(),
             Value<String> placeName = const Value.absent(),
@@ -771,7 +898,7 @@ class $$SearchFeaturesTableTableManager extends RootTableManager<
             hidden: hidden,
             lastUsed: lastUsed,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String mapboxId,
             required String placeName,
@@ -789,100 +916,29 @@ class $$SearchFeaturesTableTableManager extends RootTableManager<
             hidden: hidden,
             lastUsed: lastUsed,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $$SearchFeaturesTableProcessedTableManager extends ProcessedTableManager<
+typedef $$SearchFeaturesTableProcessedTableManager = ProcessedTableManager<
     _$AppDatabase,
     $SearchFeaturesTable,
     SearchFeature,
     $$SearchFeaturesTableFilterComposer,
     $$SearchFeaturesTableOrderingComposer,
-    $$SearchFeaturesTableProcessedTableManager,
-    $$SearchFeaturesTableInsertCompanionBuilder,
-    $$SearchFeaturesTableUpdateCompanionBuilder> {
-  $$SearchFeaturesTableProcessedTableManager(super.$state);
-}
-
-class $$SearchFeaturesTableFilterComposer
-    extends FilterComposer<_$AppDatabase, $SearchFeaturesTable> {
-  $$SearchFeaturesTableFilterComposer(super.$state);
-  ColumnFilters<int> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get mapboxId => $state.composableBuilder(
-      column: $state.table.mapboxId,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get placeName => $state.composableBuilder(
-      column: $state.table.placeName,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get subtitle => $state.composableBuilder(
-      column: $state.table.subtitle,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get geometryJson => $state.composableBuilder(
-      column: $state.table.geometryJson,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<bool> get hidden => $state.composableBuilder(
-      column: $state.table.hidden,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<int> get lastUsed => $state.composableBuilder(
-      column: $state.table.lastUsed,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $$SearchFeaturesTableOrderingComposer
-    extends OrderingComposer<_$AppDatabase, $SearchFeaturesTable> {
-  $$SearchFeaturesTableOrderingComposer(super.$state);
-  ColumnOrderings<int> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get mapboxId => $state.composableBuilder(
-      column: $state.table.mapboxId,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get placeName => $state.composableBuilder(
-      column: $state.table.placeName,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get subtitle => $state.composableBuilder(
-      column: $state.table.subtitle,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get geometryJson => $state.composableBuilder(
-      column: $state.table.geometryJson,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<bool> get hidden => $state.composableBuilder(
-      column: $state.table.hidden,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<int> get lastUsed => $state.composableBuilder(
-      column: $state.table.lastUsed,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
-
-typedef $$NearbyParksTableInsertCompanionBuilder = NearbyParksCompanion
+    $$SearchFeaturesTableAnnotationComposer,
+    $$SearchFeaturesTableCreateCompanionBuilder,
+    $$SearchFeaturesTableUpdateCompanionBuilder,
+    (
+      SearchFeature,
+      BaseReferences<_$AppDatabase, $SearchFeaturesTable, SearchFeature>
+    ),
+    SearchFeature,
+    PrefetchHooks Function()>;
+typedef $$NearbyParksTableCreateCompanionBuilder = NearbyParksCompanion
     Function({
   Value<int> id,
   required int distanceMeters,
@@ -901,26 +957,115 @@ typedef $$NearbyParksTableUpdateCompanionBuilder = NearbyParksCompanion
   Value<int> lastUsed,
 });
 
+class $$NearbyParksTableFilterComposer
+    extends Composer<_$AppDatabase, $NearbyParksTable> {
+  $$NearbyParksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get distanceMeters => $composableBuilder(
+      column: $table.distanceMeters,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get latitude => $composableBuilder(
+      column: $table.latitude, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get longitude => $composableBuilder(
+      column: $table.longitude, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get features => $composableBuilder(
+      column: $table.features, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get lastUsed => $composableBuilder(
+      column: $table.lastUsed, builder: (column) => ColumnFilters(column));
+}
+
+class $$NearbyParksTableOrderingComposer
+    extends Composer<_$AppDatabase, $NearbyParksTable> {
+  $$NearbyParksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get distanceMeters => $composableBuilder(
+      column: $table.distanceMeters,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get latitude => $composableBuilder(
+      column: $table.latitude, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get longitude => $composableBuilder(
+      column: $table.longitude, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get features => $composableBuilder(
+      column: $table.features, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get lastUsed => $composableBuilder(
+      column: $table.lastUsed, builder: (column) => ColumnOrderings(column));
+}
+
+class $$NearbyParksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NearbyParksTable> {
+  $$NearbyParksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get distanceMeters => $composableBuilder(
+      column: $table.distanceMeters, builder: (column) => column);
+
+  GeneratedColumn<double> get latitude =>
+      $composableBuilder(column: $table.latitude, builder: (column) => column);
+
+  GeneratedColumn<double> get longitude =>
+      $composableBuilder(column: $table.longitude, builder: (column) => column);
+
+  GeneratedColumn<String> get features =>
+      $composableBuilder(column: $table.features, builder: (column) => column);
+
+  GeneratedColumn<int> get lastUsed =>
+      $composableBuilder(column: $table.lastUsed, builder: (column) => column);
+}
+
 class $$NearbyParksTableTableManager extends RootTableManager<
     _$AppDatabase,
     $NearbyParksTable,
     NearbyPark,
     $$NearbyParksTableFilterComposer,
     $$NearbyParksTableOrderingComposer,
-    $$NearbyParksTableProcessedTableManager,
-    $$NearbyParksTableInsertCompanionBuilder,
-    $$NearbyParksTableUpdateCompanionBuilder> {
+    $$NearbyParksTableAnnotationComposer,
+    $$NearbyParksTableCreateCompanionBuilder,
+    $$NearbyParksTableUpdateCompanionBuilder,
+    (NearbyPark, BaseReferences<_$AppDatabase, $NearbyParksTable, NearbyPark>),
+    NearbyPark,
+    PrefetchHooks Function()> {
   $$NearbyParksTableTableManager(_$AppDatabase db, $NearbyParksTable table)
       : super(TableManagerState(
           db: db,
           table: table,
-          filteringComposer:
-              $$NearbyParksTableFilterComposer(ComposerState(db, table)),
-          orderingComposer:
-              $$NearbyParksTableOrderingComposer(ComposerState(db, table)),
-          getChildManagerBuilder: (p) =>
-              $$NearbyParksTableProcessedTableManager(p),
-          getUpdateCompanionBuilder: ({
+          createFilteringComposer: () =>
+              $$NearbyParksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NearbyParksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NearbyParksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<int> distanceMeters = const Value.absent(),
             Value<double> latitude = const Value.absent(),
@@ -936,7 +1081,7 @@ class $$NearbyParksTableTableManager extends RootTableManager<
             features: features,
             lastUsed: lastUsed,
           ),
-          getInsertCompanionBuilder: ({
+          createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required int distanceMeters,
             required double latitude,
@@ -952,92 +1097,29 @@ class $$NearbyParksTableTableManager extends RootTableManager<
             features: features,
             lastUsed: lastUsed,
           ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
         ));
 }
 
-class $$NearbyParksTableProcessedTableManager extends ProcessedTableManager<
+typedef $$NearbyParksTableProcessedTableManager = ProcessedTableManager<
     _$AppDatabase,
     $NearbyParksTable,
     NearbyPark,
     $$NearbyParksTableFilterComposer,
     $$NearbyParksTableOrderingComposer,
-    $$NearbyParksTableProcessedTableManager,
-    $$NearbyParksTableInsertCompanionBuilder,
-    $$NearbyParksTableUpdateCompanionBuilder> {
-  $$NearbyParksTableProcessedTableManager(super.$state);
-}
+    $$NearbyParksTableAnnotationComposer,
+    $$NearbyParksTableCreateCompanionBuilder,
+    $$NearbyParksTableUpdateCompanionBuilder,
+    (NearbyPark, BaseReferences<_$AppDatabase, $NearbyParksTable, NearbyPark>),
+    NearbyPark,
+    PrefetchHooks Function()>;
 
-class $$NearbyParksTableFilterComposer
-    extends FilterComposer<_$AppDatabase, $NearbyParksTable> {
-  $$NearbyParksTableFilterComposer(super.$state);
-  ColumnFilters<int> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<int> get distanceMeters => $state.composableBuilder(
-      column: $state.table.distanceMeters,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<double> get latitude => $state.composableBuilder(
-      column: $state.table.latitude,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<double> get longitude => $state.composableBuilder(
-      column: $state.table.longitude,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get features => $state.composableBuilder(
-      column: $state.table.features,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<int> get lastUsed => $state.composableBuilder(
-      column: $state.table.lastUsed,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-}
-
-class $$NearbyParksTableOrderingComposer
-    extends OrderingComposer<_$AppDatabase, $NearbyParksTable> {
-  $$NearbyParksTableOrderingComposer(super.$state);
-  ColumnOrderings<int> get id => $state.composableBuilder(
-      column: $state.table.id,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<int> get distanceMeters => $state.composableBuilder(
-      column: $state.table.distanceMeters,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<double> get latitude => $state.composableBuilder(
-      column: $state.table.latitude,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<double> get longitude => $state.composableBuilder(
-      column: $state.table.longitude,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get features => $state.composableBuilder(
-      column: $state.table.features,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<int> get lastUsed => $state.composableBuilder(
-      column: $state.table.lastUsed,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-}
-
-class _$AppDatabaseManager {
+class $AppDatabaseManager {
   final _$AppDatabase _db;
-  _$AppDatabaseManager(this._db);
+  $AppDatabaseManager(this._db);
   $$SearchFeaturesTableTableManager get searchFeatures =>
       $$SearchFeaturesTableTableManager(_db, _db.searchFeatures);
   $$NearbyParksTableTableManager get nearbyParks =>

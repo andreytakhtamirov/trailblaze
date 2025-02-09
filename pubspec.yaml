@@ -21,7 +21,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.6.0
 
 environment:
-  sdk: '>=3.4.0'
+  sdk: '>=3.6.0'
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -34,7 +34,7 @@ dependencies:
   auth0_flutter: ^1.4.1
   mapbox_search: ^4.2.2
   http: ^1.1.0
-  secure_dotenv: ^1.0.0
+  flutter_secure_dotenv: ^1.0.1
   geolocator: ^9.0.2
   polyline_codec: ^0.1.6
   turf: ^0.0.9
@@ -62,8 +62,8 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   dartz: ^0.10.1
-  firebase_core: ^3.1.1
-  firebase_analytics: ^11.1.0
+  firebase_core: ^3.11.0
+  firebase_analytics: ^11.4.2
   onnxruntime: ^1.4.1
   undo: ^1.5.0
   xml: ^6.5.0
@@ -76,8 +76,8 @@ dependencies:
   uuid: ^4.4.2
   json_annotation: ^4.9.0
   device_info_plus: ^10.1.1
-  drift: ^2.18.0
-  drift_flutter: ^0.1.0
+  drift: ^2.25.0
+  drift_flutter: ^0.2.4
   geocoding: ^3.0.0
   fixnum: any
   keep_screen_on: ^3.0.0
@@ -85,13 +85,16 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  analyzer: ^5.13.0
+  analyzer: ^7.2.0
   flutter_launcher_icons: "^0.13.1"
   build_runner: ^2.4.6
   pubspec_generator: ^3.0.1
-  secure_dotenv_generator: ^1.0.0
+  flutter_secure_dotenv_generator: ^1.0.3
   json_serializable: ^6.8.0
-  drift_dev: ^2.18.0
+  drift_dev: ^2.25.0
+
+dependency_overrides:
+  collection: ^1.19.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

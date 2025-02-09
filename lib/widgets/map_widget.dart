@@ -142,7 +142,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
 
     if (widget.routeToDisplay != null) {
       Future.delayed(const Duration(milliseconds: 200), () {
-        _mapInitializedCompleter.future.then((value) {
+        _mapInitializedCompleter.future.then((value) async {
+          await _initAnnotationManager();
           _loadRouteToDisplay();
         });
       });
@@ -238,6 +239,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         _flyToRoute(_selectedRoute!, isAnimated: false);
       }
     });
+
 
     _setMapControlSettings();
   }
@@ -1546,7 +1548,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       )) {
         return;
       }
-
+      FirebaseHelper.logScreen("Navigation");
       ref.read(isNavigationModeOnProvider.notifier).state = true;
       await _setViewMode(ViewMode.navigation);
       MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
