@@ -20,20 +20,14 @@ Android release and development builds:
 - Find new routes to your favourite destinations with directions for walking and cycling.
 - Take advantage of optimized routing for gravel cycling, prioritizing unpaved trails/roads.
 - Customize your route by selecting the ideal mix of trails and specifying an area to avoid.
+- Navigate your routes with live turn-by-turn directions.
 
 ## Additional Features:
 - Explore nearby parks within your preferred travel distance.
-- View trip details such as distance, estimated time, and surface information.
+- View trip details, including distance, estimated time, and surface information.
 - Sign in to personalize and manage your profile, including saving routes for future adventures.
 - Export routes to GPX.
 - Route Explorer: Choose a distance and discover nearby loops.
-
-<br>
-
-
-## Coming Soon
-- Discover page with routes from other users.
-- Save and share your own routes.
 
 <br>
 <br>
