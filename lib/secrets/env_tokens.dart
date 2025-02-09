@@ -1,4 +1,4 @@
-import 'package:secure_dotenv/secure_dotenv.dart';
+import 'package:flutter_secure_dotenv/flutter_secure_dotenv.dart';
 part 'env_tokens.g.dart';
 
 @DotEnvGen(
