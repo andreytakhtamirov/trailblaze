@@ -16,7 +16,14 @@ A route-planning app that finds the scenic way to get to places.
 
 
 ## Releases
-Available on the [App Store](https://apps.apple.com/ca/app/trailblaze/id6450859439) for iOS
+iOS/macOS:
+
+<a href="https://apps.apple.com/ca/app/trailblaze/id6450859439" target="_blank">
+  <img src="https://github.com/user-attachments/assets/69286f77-4961-408a-9f74-ecf4e808dd4c" width="19%">
+</a>
+
+<br>
+<br>
 
 Android release and development builds:
 [![Latest Release](https://img.shields.io/github/v/release/andreytakhtamirov/trailblaze-flutter?include_prereleases&style=flat)](https://github.com/andreytakhtamirov/trailblaze-flutter/releases/latest)
