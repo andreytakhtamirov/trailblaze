@@ -3,15 +3,15 @@
 
 A route-planning app that finds the scenic way to get to places. 
 
-<img src="https://github.com/user-attachments/assets/16999276-5cc0-421f-b778-d380d7366154" width="19%">
-<img src="https://github.com/user-attachments/assets/05472f96-39ba-4ee8-9912-44d0753399e3" width="19%">
-<img src="https://github.com/user-attachments/assets/52704bb3-112e-46cc-b0c0-abf7cd072e5d" width="19%">
-<img src="https://github.com/user-attachments/assets/e3695e5e-938b-4257-9b1b-3cc8445b3dc0" width="19%">
+<img src="https://github.com/user-attachments/assets/16999276-5cc0-421f-b778-d380d7366154" width="23%">
+<img src="https://github.com/user-attachments/assets/05472f96-39ba-4ee8-9912-44d0753399e3" width="23%">
+<img src="https://github.com/user-attachments/assets/52704bb3-112e-46cc-b0c0-abf7cd072e5d" width="23%">
+<img src="https://github.com/user-attachments/assets/e3695e5e-938b-4257-9b1b-3cc8445b3dc0" width="23%">
 <br>
-<img src="https://github.com/user-attachments/assets/b83dda7a-5638-48c1-9dff-f9c48e503ce3" width="19%">
-<img src="https://github.com/user-attachments/assets/ebdb6833-5292-41ec-a6a8-c4d29a39ad4c" width="19%">
-<img src="https://github.com/user-attachments/assets/f2ab765d-f664-49cf-ad6b-05c39a4a93b0" width="19%">
-<img src="https://github.com/user-attachments/assets/8bf16503-19b3-4e1f-90a8-c542f7675e8b" width="19%">
+<img src="https://github.com/user-attachments/assets/b83dda7a-5638-48c1-9dff-f9c48e503ce3" width="23%">
+<img src="https://github.com/user-attachments/assets/ebdb6833-5292-41ec-a6a8-c4d29a39ad4c" width="23%">
+<img src="https://github.com/user-attachments/assets/f2ab765d-f664-49cf-ad6b-05c39a4a93b0" width="23%">
+<img src="https://github.com/user-attachments/assets/8bf16503-19b3-4e1f-90a8-c542f7675e8b" width="23%">
 
 
 
