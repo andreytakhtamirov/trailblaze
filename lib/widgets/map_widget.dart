@@ -407,7 +407,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       _mapboxMap,
       NavigationUtil.positionsToList(instruction.coordinates),
     );
-    await annotationHelper?.drawInstructionPreviewArrow(instruction);
+    await annotationHelper?.drawInstructionArrow(instruction, isPreview: true);
 
     final List<mbm.Point> points = [];
     for (turf.Position c in instruction.coordinates) {

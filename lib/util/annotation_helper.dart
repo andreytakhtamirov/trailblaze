@@ -512,75 +512,40 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
     circleAnnotations.add(annotation);
   }
 
-  Future<void> drawInstructionArrow(Instruction next) async {
-    if (next.coordinates.length == 1) {
-      // Likely the last and only point left in the route
-      deleteInstructionArrow();
-      return;
-    }
-
-    final bearing = NavigationUtil.calculateBearing(
-        next.coordinates.first, next.coordinates[1]);
-
-    if (_instructionAnnotation != null) {
-      _instructionAnnotation!.iconRotate = bearing;
-      _instructionAnnotation!.geometry =
-          mbm.Point(coordinates: next.coordinates.first);
-      _instructionAnnotation!.iconAnchor =
-          next.distance > 5 ? mbm.IconAnchor.BOTTOM : mbm.IconAnchor.CENTER;
-
-      _instructionAnnotation!.symbolSortKey = 1;
-
-      await _instructionAnnotationManager.update(_instructionAnnotation!);
-      return;
-    }
-
-    final options = mbm.PointAnnotationOptions(
-      image: _instructionAnnotationImage,
-      iconSize: 0.6,
-      iconRotate: bearing,
-      geometry: mbm.Point(coordinates: next.coordinates.first),
-      iconAnchor:
-          next.distance > 5 ? mbm.IconAnchor.BOTTOM : mbm.IconAnchor.CENTER,
-    );
-
-    _instructionAnnotation =
-        await _instructionAnnotationManager.create(options);
-  }
-
-  Future<void> drawInstructionPreviewArrow(Instruction instruction) async {
+  Future<void> drawInstructionArrow(Instruction instruction, {bool isPreview = false}) async {
     if (instruction.coordinates.length == 1) {
       // Likely the last and only point left in the route
-      deleteInstructionPreviewArrow();
+      if (isPreview) {
+        deleteInstructionPreviewArrow();
+      } else {
+        deleteInstructionArrow();
+      }
       return;
     }
 
-    final bearing = NavigationUtil.calculateBearing(
-        instruction.coordinates.first, instruction.coordinates[1]);
-    if (_instructionPreviewAnnotation != null) {
-      _instructionPreviewAnnotation!.iconRotate = bearing;
-      _instructionPreviewAnnotation!.geometry =
-          mbm.Point(coordinates: instruction.coordinates.first);
-      _instructionPreviewAnnotation!.iconAnchor = instruction.distance > 5
-          ? mbm.IconAnchor.BOTTOM
-          : mbm.IconAnchor.CENTER;
-      await _instructionAnnotationManager
-          .update(_instructionPreviewAnnotation!);
+    final bearing = NavigationUtil.calculateBearing(instruction.coordinates.first, instruction.coordinates[1]);
+    var annotation = isPreview ? _instructionPreviewAnnotation : _instructionAnnotation;
+    if (annotation != null) {
+      annotation.iconRotate = bearing;
+      annotation.geometry = mbm.Point(coordinates: instruction.coordinates.first);
+      annotation.iconAnchor = instruction.distance > 5 ? mbm.IconAnchor.BOTTOM : mbm.IconAnchor.CENTER;
+      await _instructionAnnotationManager.update(annotation);
       return;
     }
 
     final options = mbm.PointAnnotationOptions(
       image: _instructionAnnotationImage,
-      iconSize: 1,
+      iconSize: isPreview ? 1 : 0.6,
       iconRotate: bearing,
       geometry: mbm.Point(coordinates: instruction.coordinates.first),
-      iconAnchor: instruction.distance > 5
-          ? mbm.IconAnchor.BOTTOM
-          : mbm.IconAnchor.CENTER,
+      iconAnchor: instruction.distance > 5 ? mbm.IconAnchor.BOTTOM : mbm.IconAnchor.CENTER,
     );
 
-    _instructionPreviewAnnotation =
-        await _instructionAnnotationManager.create(options);
+    if (isPreview) {
+      _instructionPreviewAnnotation = await _instructionAnnotationManager.create(options);
+    } else {
+      _instructionAnnotation = await _instructionAnnotationManager.create(options);
+    }
   }
 
   void drawSingleMetricAnnotation(
