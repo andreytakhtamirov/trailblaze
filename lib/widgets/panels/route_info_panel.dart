@@ -28,6 +28,7 @@ import 'package:trailblaze/widgets/map/icon_button_small.dart';
 class RouteInfoPanel extends ConsumerStatefulWidget {
   const RouteInfoPanel({
     Key? key,
+    required this.scrollController,
     required this.route,
     required this.panelHeight,
     required this.onPreviewMetric,
@@ -35,6 +36,8 @@ class RouteInfoPanel extends ConsumerStatefulWidget {
     required this.isPanelFullyOpen,
     this.hideSaveRoute = false,
   }) : super(key: key);
+
+  final ScrollController scrollController;
   final TrailblazeRoute? route;
   final bool hideSaveRoute;
   final bool isPanelFullyOpen;
@@ -378,6 +381,7 @@ class _RouteInfoPanelState extends ConsumerState<RouteInfoPanel> {
 
     return Expanded(
       child: SingleChildScrollView(
+        controller: widget.scrollController,
         physics: widget.isPanelFullyOpen
             ? null
             : const NeverScrollableScrollPhysics(),

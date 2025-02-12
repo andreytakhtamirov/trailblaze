@@ -2584,6 +2584,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
           panels = [
             PanelWidgets.panelGrabber(scrollController),
             RouteInfoPanel(
+              scrollController: scrollController,
               route: _selectedRoute,
               hideSaveRoute: !widget.isInteractiveMap,
               isPanelFullyOpen:
