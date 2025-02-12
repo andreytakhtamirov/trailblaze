@@ -551,6 +551,7 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
   Future<void> drawInstructionPreviewArrow(Instruction instruction) async {
     if (instruction.coordinates.length == 1) {
       // Likely the last and only point left in the route
+      deleteInstructionPreviewArrow();
       return;
     }
 
