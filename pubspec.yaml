@@ -121,6 +121,7 @@ flutter:
     - assets/location-puck.png
     - assets/feature-puck.png
     - assets/location-pin.png
+    - assets/arrow.png
     - assets/models/blend.onnx
 
 

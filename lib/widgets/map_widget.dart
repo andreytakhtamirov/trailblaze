@@ -81,6 +81,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     implements mbm.OnPointAnnotationClickListener {
   late mbm.MapboxMap _mapboxMap;
   ProviderSubscription<NavigationState>? _navigationListener;
+  late Uint8List _userLocationPuckIcon;
   MapBoxPlace? _selectedPlace;
   MapBoxPlace _startingLocation = MapBoxPlace(placeName: "My Location");
   String _selectedMode = kDefaultTransportationMode.value;
@@ -135,6 +136,8 @@ class _MapWidgetState extends ConsumerState<MapWidget>
   @override
   void initState() {
     super.initState();
+    loadLocationPuckImage();
+
     _mapInitializedCompleter = Completer<void>();
     geo.Geolocator.getServiceStatusStream().listen((geo.ServiceStatus status) {
       // Listen for location permission granting.
@@ -165,10 +168,16 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     KeepScreenOn.turnOn(on: false); // Clear screen on flag
   }
 
+  void loadLocationPuckImage() async {
+    final bytes = await rootBundle.load('assets/location-puck.png');
+    _userLocationPuckIcon = bytes.buffer.asUint8List();
+  }
+
   void _listenToLocation() {
     _navigationListener = ref.listenManual<NavigationState>(
         navigationStateProvider, (previous, next) async {
       if (previous?.snappedLocation != next.snappedLocation) {
+        // Only update if user's snapped location has changed.
         if (next.snappedLocation == null ||
             next.currentInstructionIndex == kInvalidInstruction) {
           return;
@@ -177,6 +186,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
         if (_viewModeContext.viewMode != ViewMode.navigation) {
           // Mode might have switched during update
           await MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
+          await annotationHelper?.deleteInstructionArrow();
           return;
         }
 
@@ -186,6 +196,22 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             _selectedRoute?.instructions);
 
         await MapboxLayerUtil.updateProgressLayer(_mapboxMap, coordinates);
+
+        // Draw arrow on next instruction to show direction more clearly
+        final instructions = _selectedRoute?.instructions;
+        if (instructions != null) {
+          final currIndex = next.currentInstructionIndex;
+          final instructions = _selectedRoute?.instructions;
+          final nextInstruction = (currIndex != null &&
+                  currIndex >= 0 &&
+                  currIndex + 1 < (instructions?.length ?? 0))
+              ? instructions![currIndex + 1]
+              : null;
+
+          if (nextInstruction != null) {
+            await annotationHelper?.drawInstructionArrow(nextInstruction);
+          }
+        }
       }
     });
   }
@@ -200,6 +226,9 @@ class _MapWidgetState extends ConsumerState<MapWidget>
             id: 'point-layer', below: 'multi-point-layer');
     final multiPointAnnotationManager = await _mapboxMap.annotations
         .createPointAnnotationManager(id: 'multi-point-layer');
+    final instructionAnnotationManager = await _mapboxMap.annotations
+        .createPointAnnotationManager(
+            id: 'instruction-arrow-layer', below: "multi-point-layer");
     final circleAnnotationManager = await _mapboxMap.annotations
         .createCircleAnnotationManager(
             id: 'circle-layer', below: 'point-layer');
@@ -212,6 +241,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     annotationHelper = AnnotationHelper(
       pointAnnotationManager,
       multiPointAnnotationManager,
+      instructionAnnotationManager,
       circleAnnotationManager,
       metricAnnotationManager,
       avoidAreaAnnotationManager,
@@ -377,6 +407,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       _mapboxMap,
       NavigationUtil.positionsToList(instruction.coordinates),
     );
+    await annotationHelper?.drawInstructionPreviewArrow(instruction);
 
     final List<mbm.Point> points = [];
     for (turf.Position c in instruction.coordinates) {
@@ -554,9 +585,15 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       key = _topWidgetKey;
     }
 
-    final double height = key.currentContext != null
-        ? (key.currentContext?.findRenderObject() as RenderBox).size.height
-        : 0;
+    double height;
+    try {
+      height = key.currentContext != null
+          ? (key.currentContext?.findRenderObject() as RenderBox).size.height
+          : 0;
+    } catch (e) {
+      // top widget isn't attached
+      height = 0;
+    }
 
     if (_shouldShowDirectionsTopBar() &&
         _viewModeContext.viewMode == ViewMode.search) {
@@ -993,19 +1030,16 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     }
   }
 
-  Future<void> _showUserLocationPuck() async {
-    final ByteData bytes = await rootBundle.load('assets/location-puck.png');
-    final Uint8List list = bytes.buffer.asUint8List();
-
+  Future<void> _showUserLocationPuck({bool enabled = true}) async {
     return await _mapboxMap.location.updateSettings(
       mbm.LocationComponentSettings(
         // Layer order behaves differently on each platform
         layerAbove: Platform.isAndroid ? null : 'multi-point-layer',
         layerBelow: Platform.isAndroid ? 'multi-point-layer' : null,
         locationPuck: mbm.LocationPuck(
-          locationPuck2D: mbm.LocationPuck2D(topImage: list),
+          locationPuck2D: mbm.LocationPuck2D(topImage: _userLocationPuckIcon),
         ),
-        enabled: true,
+        enabled: enabled,
       ),
     );
   }
@@ -1432,7 +1466,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
 
     // Draw active route last so it appears on top
     if (_selectedRoute != null) {
-      _drawRoute(_selectedRoute!);
+      await _drawRoute(_selectedRoute!);
     }
   }
 
@@ -1549,8 +1583,6 @@ class _MapWidgetState extends ConsumerState<MapWidget>
     if (_viewModeContext.viewMode == ViewMode.navigation) {
       ref.read(isNavigationModeOnProvider.notifier).state = false;
       await _setViewMode(ViewMode.directions);
-      _stopListeningToLocation();
-      MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
       KeepScreenOn.turnOn(on: false); // Don't keep screen on
     } else {
       if (!await PositionHelper.hasLocationPermission(
@@ -1562,8 +1594,6 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       FirebaseHelper.logScreen("Navigation");
       ref.read(isNavigationModeOnProvider.notifier).state = true;
       await _setViewMode(ViewMode.navigation);
-      MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
-      _listenToLocation();
       KeepScreenOn.turnOn(on: true); // Keep screen on while navigating
     }
   }
@@ -1732,8 +1762,10 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       setState(() {
         _isFollowingLocation = false;
       });
-      MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
-      MapboxLayerUtil.deleteInstructionLine(_mapboxMap);
+      _stopListeningToLocation();
+      await MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
+      await MapboxLayerUtil.deleteInstructionLine(_mapboxMap);
+      await annotationHelper?.deleteInstructionArrow();
       ref.read(navigationStateProvider.notifier).clearState();
       _redrawRoutes();
       _previousViewModeContext = ViewModeContext(
@@ -1759,12 +1791,22 @@ class _MapWidgetState extends ConsumerState<MapWidget>
       _togglePanel(false);
     } else if (_viewModeContext.viewMode == ViewMode.navigation) {
       await _redrawRoutes();
+      await MapboxLayerUtil.deleteProgressLayer(_mapboxMap);
+      await annotationHelper?.deleteInstructionArrow();
+      _listenToLocation();
       setState(() {
         _isFollowingLocation = true;
       });
+      _toggleLocationPuck();
     }
 
     _setMapControlSettings();
+  }
+
+  void _toggleLocationPuck() async {
+    // This forces the location puck to appear on top of all other elements.
+    await _showUserLocationPuck(enabled: false);
+    await _showUserLocationPuck(enabled: true);
   }
 
   void _setParks(List<tb.Feature>? features) async {
@@ -2281,6 +2323,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
                 text: 'Follow',
                 onTap: () {
                   MapboxLayerUtil.deleteInstructionLine(_mapboxMap);
+                  annotationHelper?.deleteInstructionPreviewArrow();
                   setState(() {
                     _isFollowingLocation = true;
                   });
