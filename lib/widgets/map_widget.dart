@@ -2267,7 +2267,7 @@ class _MapWidgetState extends ConsumerState<MapWidget>
               ),
             ),
           _showNavigationWidgets(bottomOffset, userSpeed),
-          if (_selectedRoute != null &&
+          if (_selectedRoute != null && _selectedRoute?.instructions != null &&
               _panelPos <= 0 &&
               _viewModeContext.viewMode != ViewMode.navigation)
             Positioned(
