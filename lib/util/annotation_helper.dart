@@ -6,8 +6,10 @@ import 'package:trailblaze/constants/map_constants.dart';
 import 'package:trailblaze/data/annotation_state.dart';
 import 'package:trailblaze/data/feature.dart' as tb;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mbm;
+import 'package:trailblaze/data/instruction.dart';
 import 'package:trailblaze/data/trailblaze_route.dart';
 import 'package:trailblaze/util/distance_helper.dart';
+import 'package:trailblaze/util/navigation_util.dart';
 import 'dart:math' as math;
 import 'package:turf/turf.dart' as turf;
 import 'package:undo/undo.dart';
@@ -21,6 +23,7 @@ class AnnotationAction {
 
 class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
   final mbm.PointAnnotationManager _annotationManager;
+  final mbm.PointAnnotationManager _instructionAnnotationManager;
   final mbm.PointAnnotationManager _pointAnnotationManager;
   final mbm.CircleAnnotationManager _circleAnnotationManager;
   final mbm.CircleAnnotationManager _metricAnnotationManager;
@@ -30,12 +33,16 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
 
   late final Uint8List _poiAnnotationImage;
   late final Uint8List _locationPinImage;
+  late final Uint8List _instructionAnnotationImage;
+
   final List<mbm.PointAnnotationOptions> pointAnnotations = [];
   final List<mbm.CircleAnnotation> circleAnnotations = [];
   List<mbm.CircleAnnotation> avoidAnnotations = [];
   final List<mbm.PolygonAnnotation> polygonAnnotations = [];
   mbm.CircleAnnotation? selectOriginAnnotation;
   mbm.CircleAnnotation? _metricAnnotation;
+  mbm.PointAnnotation? _instructionAnnotation;
+  mbm.PointAnnotation? _instructionPreviewAnnotation;
 
   late final SimpleStack _avoidAnnotationChanges;
 
@@ -49,6 +56,7 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
   AnnotationHelper(
       this._annotationManager,
       this._pointAnnotationManager,
+      this._instructionAnnotationManager,
       this._circleAnnotationManager,
       this._metricAnnotationManager,
       this._avoidAnnotationManager,
@@ -69,6 +77,8 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
         redrawAvoidAnnotations(val);
       },
     );
+    _instructionAnnotationManager
+        .setIconRotationAlignment(mbm.IconRotationAlignment.MAP);
     _loadAnnotationImages();
   }
 
@@ -78,6 +88,9 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
 
     bytes = await rootBundle.load('assets/location-pin.png');
     _locationPinImage = bytes.buffer.asUint8List();
+
+    bytes = await rootBundle.load('assets/arrow.png');
+    _instructionAnnotationImage = bytes.buffer.asUint8List();
   }
 
   static Future<tb.Feature?> getFeatureByClickProximity(
@@ -499,6 +512,42 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
     circleAnnotations.add(annotation);
   }
 
+  Future<void> drawInstructionArrow(Instruction instruction, {bool isPreview = false}) async {
+    if (instruction.coordinates.length == 1) {
+      // Likely the last and only point left in the route
+      if (isPreview) {
+        deleteInstructionPreviewArrow();
+      } else {
+        deleteInstructionArrow();
+      }
+      return;
+    }
+
+    final bearing = NavigationUtil.calculateBearing(instruction.coordinates.first, instruction.coordinates[1]);
+    var annotation = isPreview ? _instructionPreviewAnnotation : _instructionAnnotation;
+    if (annotation != null) {
+      annotation.iconRotate = bearing;
+      annotation.geometry = mbm.Point(coordinates: instruction.coordinates.first);
+      annotation.iconAnchor = instruction.distance > 5 ? mbm.IconAnchor.BOTTOM : mbm.IconAnchor.CENTER;
+      await _instructionAnnotationManager.update(annotation);
+      return;
+    }
+
+    final options = mbm.PointAnnotationOptions(
+      image: _instructionAnnotationImage,
+      iconSize: isPreview ? 1 : 0.6,
+      iconRotate: bearing,
+      geometry: mbm.Point(coordinates: instruction.coordinates.first),
+      iconAnchor: instruction.distance > 5 ? mbm.IconAnchor.BOTTOM : mbm.IconAnchor.CENTER,
+    );
+
+    if (isPreview) {
+      _instructionPreviewAnnotation = await _instructionAnnotationManager.create(options);
+    } else {
+      _instructionAnnotation = await _instructionAnnotationManager.create(options);
+    }
+  }
+
   void drawSingleMetricAnnotation(
       BuildContext context, mbm.Position coordinates) async {
     if (_metricAnnotation == null) {
@@ -612,6 +661,22 @@ class AnnotationHelper implements mbm.OnCircleAnnotationClickListener {
       }
       selectOriginAnnotation = null;
     }
+  }
+
+  Future<void> deleteInstructionArrow() async {
+    if (_instructionAnnotation != null || _instructionPreviewAnnotation != null) {
+      await _instructionAnnotationManager.deleteAll();
+      _instructionAnnotation = null;
+      _instructionPreviewAnnotation = null;
+    }
+  }
+
+  Future<void> deleteInstructionPreviewArrow() async {
+    if (_instructionPreviewAnnotation != null) {
+      await _instructionAnnotationManager
+          .delete(_instructionPreviewAnnotation!);
+    }
+    _instructionPreviewAnnotation = null;
   }
 
   @override

@@ -98,7 +98,7 @@ class _MetricsTopBarState extends State<MetricsTopBar> {
                 const Padding(
                   padding: EdgeInsets.only(left: 64, right: 48),
                   child: Text(
-                    'Scrub on graph to see elevation along route.',
+                    'Press and hold on graph to see elevation along route.',
                   ),
                 ),
               Visibility(

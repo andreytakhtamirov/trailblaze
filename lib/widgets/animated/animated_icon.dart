@@ -49,6 +49,12 @@ class _AnimatedIconState extends State<SizeAnimatedIcon>
   }
 
   @override
+  void dispose() {
+    super.dispose();
+    _controller.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final value = widget.size;
 

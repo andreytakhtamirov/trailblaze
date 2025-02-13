@@ -4,7 +4,7 @@ enum Sign {
   uTurnUnknown(-98, Icons.u_turn_left),
   leftUTurn(-8, Icons.u_turn_left),
   keepLeft(-7, Icons.north_west),
-  leaveRoundabout(-6, Icons.roundabout_left),
+  leaveRoundabout(-6, Icons.straight),
   sharpLeft(-3, Icons.turn_sharp_left_sharp),
   turnLeft(-2, Icons.turn_left),
   slightLeft(-1, Icons.turn_slight_left),
