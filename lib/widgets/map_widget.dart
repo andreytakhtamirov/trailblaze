@@ -2267,9 +2267,11 @@ class _MapWidgetState extends ConsumerState<MapWidget>
               ),
             ),
           _showNavigationWidgets(bottomOffset, userSpeed),
-          if (_selectedRoute != null && _selectedRoute?.instructions != null &&
+          if (_selectedRoute != null &&
+              _selectedRoute?.instructions != null &&
               _panelPos <= 0 &&
-              _viewModeContext.viewMode != ViewMode.navigation)
+              _viewModeContext.viewMode != ViewMode.navigation &&
+              !_isEditingAvoidArea)
             Positioned(
               right: 16,
               bottom: bottomOffset + kPanelFabPadding,
